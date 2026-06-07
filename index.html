@@ -71,14 +71,18 @@
       background: #0b1220;
       padding: 10px;
       border-radius: 8px;
-      align-items: flex-start;
+      align-items: center;
     }
 
     .section-icon {
-      font-size: 22px;
+      font-size: 34px;
       min-width: 32px;
       text-align: center;
       opacity: 0.8;
+    }
+
+    .section-icon i {
+      font-size: inherit;
     }
 
     .section-body {
@@ -264,7 +268,29 @@ function render() {
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
         <span>
-          ${s === "error" ? "❌" : s === "warn" ? "⚠️" : s === "ok" ? "✅" : "⏳"}
+          <div class="header" onclick="toggle(this.parentElement)">
+            <b>${id}</b>
+
+            <span style="display:flex; align-items:center; gap:6px;">
+
+              <i class="fa-solid ${
+                s === "error" ? "fa-circle-xmark" :
+                s === "warn" ? "fa-triangle-exclamation" :
+                s === "ok" ? "fa-circle-check" :
+                "fa-clock"
+              }"
+              style="
+                color:
+                  ${s === "error" ? "red" :
+                  s === "warn" ? "orange" :
+                  s === "ok" ? "limegreen" :
+                  "#94a3b8"};
+              "></i>
+
+              ${s.toUpperCase()} • 🔋 ${d.batteryPct}%
+
+            </span>
+          </div>
           ${s.toUpperCase()} • 🔋 ${d.batteryPct}%
         </span>
       </div>
