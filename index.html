@@ -169,6 +169,15 @@ function status(dev, id) {
   return "error";
 }
 
+function isRecentError(d) {
+  if (!d.lastErrorTime || d.lastError === "None") return false;
+
+  const errTime = new Date(d.lastErrorTime.replace(" ", "T"));
+  const lastOk = new Date(d.lastShotOk.replace(" ", "T"));
+
+  return errTime > lastOk;
+}
+
 function lensName(id) {
   switch (id) {
     case 101: return "Wide";
@@ -241,9 +250,37 @@ function render() {
             <div class="section-title">
               <i class="fa-solid fa-heart-pulse"></i> Health
             </div>
+
             <div class="row"><span>Last Seen</span><span>${lastSeen(d.lastUpdate)}</span></div>
             <div class="row"><span>Next</span><span>${nextExpected(d).toLocaleTimeString()}</span></div>
             <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
+
+            ${(() => {
+              const recent = isRecentError(d);
+              const hasError = d.lastError && d.lastError !== "None";
+
+              if (!hasError) {
+                return `
+                  <div style="margin-top:6px; color:limegreen;">
+                    ✅ No errors
+                  </div>
+                `;
+              }
+
+              return `
+                <div style="
+                  margin-top:6px;
+                  padding:6px;
+                  border-radius:6px;
+                  background:${recent ? "#550000" : "#222"};
+                  color:${recent ? "red" : "#aaa"};
+                  ${recent ? "box-shadow:0 0 8px red;" : ""}
+                ">
+                  <div><b>Error:</b> ${d.lastError}</div>
+                  <div style="font-size:12px;">${d.lastErrorTime || "-"}</div>
+                </div>
+              `;
+            })()}
           </div>
 
           <div class="section">
@@ -265,28 +302,6 @@ function render() {
 
             <div class="row"><span>Lens</span><span>${lensName(d.config.lens)}</span></div>
             <div class="row"><span>Output</span><span>${photoOutputName(d.config.output)}</span></div>
-          </div>
-
-          <div class="section">
-            <div class="section-title">
-              <i class="fa-solid fa-triangle-exclamation"></i> Errors
-            </div>
-            <div style="
-              padding:6px;
-              border-radius:6px;
-              background:${isError ? "#550000" : "#002b00"};
-              box-shadow:${isError ? "0 0 8px red" : "none"};
-              color:${isError ? "red" : "limegreen"};
-            ">
-              ${d.lastError}
-            </div>
-            <div class="row">
-              <span>Error Time</span>
-              <span>${d.lastErrorTime || "-"}</span>
-            </div>
-            <div style="font-size:12px; opacity:0.7;">
-              ${d.errorDescription || ""}
-            </div>
           </div>
 
         </div>
