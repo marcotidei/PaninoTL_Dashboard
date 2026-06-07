@@ -142,7 +142,11 @@ function status(dev,id) {
 }
 
 function toggle(el) {
+  const id = el.querySelector("b").innerText;
+
   el.classList.toggle("open");
+
+  openState[id] = el.classList.contains("open");
 }
 
 function render() {
@@ -154,7 +158,12 @@ function render() {
     const s = status(d,id);
 
     const dev = document.createElement("div");
-    dev.className = "device "+s;
+    dev.className = "device " + s;
+
+    // restore previous open/closed state
+    if (openState[id]) {
+      dev.classList.add("open");
+    }
 
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
