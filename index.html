@@ -66,18 +66,29 @@
     }
 
     .section {
+      display: flex;
+      gap: 10px;
       background: #0b1220;
       padding: 10px;
       border-radius: 8px;
+      align-items: flex-start;
+    }
+
+    .section-icon {
+      font-size: 22px;
+      min-width: 32px;
+      text-align: center;
+      opacity: 0.8;
+    }
+
+    .section-body {
+      flex: 1;
     }
 
     .section-title {
       font-weight: bold;
       margin-bottom: 6px;
       font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       opacity: 0.9;
     }
 
@@ -263,61 +274,70 @@ function render() {
         <div class="sections">
 
           <div class="section">
-            <div class="section-title">
-              <i class="fa-solid fa-heart-pulse"></i> Health
+            <div class="section-icon">
+              <i class="fa-solid fa-heart-pulse"></i>
             </div>
 
-            <div class="row"><span>Last Seen</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-            <div class="row"><span>Next</span><span>${formatTime(nextExpected(d))}</span></div>
-            <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
+            <div class="section-body">
+              <div class="section-title">Health</div>
 
-            ${(() => {
-              const recent = isRecentError(d);
-              const hasError = d.lastError && d.lastError !== "None";
+              <div class="row"><span>Last Seen</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+              <div class="row"><span>Next</span><span>${formatTime(nextExpected(d))}</span></div>
+              <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
 
-              if (!hasError) {
+              ${(() => {
+                const recent = isRecentError(d);
+                const hasError = d.lastError && d.lastError !== "None";
+
+                if (!hasError) {
+                  return `<div style="margin-top:6px; color:limegreen;">✅ No errors</div>`;
+                }
+
                 return `
-                  <div style="margin-top:6px; color:limegreen;">
-                    ✅ No errors
+                  <div style="
+                    margin-top:6px;
+                    padding:6px;
+                    border-radius:6px;
+                    background:${recent ? "#550000" : "#222"};
+                    color:${recent ? "red" : "#aaa"};
+                    ${recent ? "box-shadow:0 0 8px red;" : ""}
+                  ">
+                    <div><b>Error:</b> ${d.lastError}</div>
+                    <div style="font-size:12px;">${d.lastErrorTime || "-"}</div>
                   </div>
                 `;
-              }
-
-              return `
-                <div style="
-                  margin-top:6px;
-                  padding:6px;
-                  border-radius:6px;
-                  background:${recent ? "#550000" : "#222"};
-                  color:${recent ? "red" : "#aaa"};
-                  ${recent ? "box-shadow:0 0 8px red;" : ""}
-                ">
-                  <div><b>Error:</b> ${d.lastError}</div>
-                  <div style="font-size:12px;">${d.lastErrorTime || "-"}</div>
-                </div>
-              `;
-            })()}
+              })()}
+            </div>
           </div>
 
           <div class="section">
-            <div class="section-title">
-              <i class="fa-solid fa-calendar-days"></i> Schedule
+            <div class="section-icon">
+              <i class="fa-solid fa-calendar-days"></i>
             </div>
-            <div>${renderDays(d.config.days)}</div>
-            <div class="row"><span>Interval</span><span>${d.config?.interval ?? "-"}s</span></div>
-            <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
+
+            <div class="section-body">
+              <div class="section-title">Schedule</div>
+
+              <div class="row"><span>Interval</span><span>${d.config?.interval ?? "-"}s</span></div>
+              <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
+              <div>${renderDays(d.config.days)}</div>
+            </div>
           </div>
 
           <div class="section">
-            <div class="section-title">
-              <i class="fa-solid fa-camera"></i> Camera
+            <div class="section-icon">
+              <i class="fa-solid fa-camera"></i>
             </div>
 
-            <div class="row"><span>Photos</span><span>${d.sdPhotoCount}</span></div>
-            <div class="row"><span>Last Shot</span><span>${formatTime(d.lastShotOk)}</span></div>
+            <div class="section-body">
+              <div class="section-title">Camera</div>
 
-            <div class="row"><span>Lens</span><span>${lensName(d.config.lens)}</span></div>
-            <div class="row"><span>Output</span><span>${photoOutputName(d.config.output)}</span></div>
+              <div class="row"><span>Photos</span><span>${d.sdPhotoCount}</span></div>
+              <div class="row"><span>Last Shot</span><span>${formatTime(d.lastShotOk)}</span></div>
+
+              <div class="row"><span>Lens</span><span>${lensName(d.config.lens)}</span></div>
+              <div class="row"><span>Output</span><span>${photoOutputName(d.config.output)}</span></div>
+            </div>
           </div>
 
         </div>
