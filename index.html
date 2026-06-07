@@ -71,7 +71,7 @@
       background: #0b1220;
       padding: 10px;
       border-radius: 8px;
-      align-items: center;
+      align-items: flex-start;
     }
 
     .section-icon {
@@ -305,8 +305,6 @@ function render() {
             </div>
 
             <div class="section-body">
-              <div class="section-title">Health</div>
-
               <div class="row"><span>Last Seen</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
               <div class="row"><span>Next</span><span>${formatTime(nextExpected(d))}</span></div>
               <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
@@ -342,11 +340,9 @@ function render() {
             </div>
 
             <div class="section-body">
-              <div class="section-title">Schedule</div>
-
-              <div class="row"><span>Interval</span><span>${d.config?.interval ?? "-"}s</span></div>
-              <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
               <div>${renderDays(d.config.days)}</div>
+              <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
+              <div class="row"><span>Interval</span><span>${d.config?.interval ?? "-"}s</span></div>
             </div>
           </div>
 
@@ -356,8 +352,6 @@ function render() {
             </div>
 
             <div class="section-body">
-              <div class="section-title">Camera</div>
-
               <div class="row"><span>Photos</span><span>${d.sdPhotoCount}</span></div>
               <div class="row"><span>Last Shot</span><span>${formatTime(d.lastShotOk)}</span></div>
 
