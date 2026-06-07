@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PaninoTL Dashboard</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <style>
+    body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: 0.3s;
+    }
+
+    .error { border: 4px solid red; animation: pulse 1s infinite; background: #ffe5e5; }
+    .warn { border: 2px solid orange; background: #fff6d6; }
+    .ok { border: 1px solid green; background: #eaffea; }
+    .idle { border: 1px solid blue; background: #e6f0ff; }
+
+    .bar {
+      height: 10px;
+      border-radius: 5px;
+      margin: 5px 0 10px;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .sum { padding:10px; border-radius:10px; text-align:center; }
+    .green { background:#d4f7d4; }
+    .yellow { background:#fff0b3; }
+    .red { background:#f8cccc; }
+    .blue { background:#d6e6ff; }
+  </style>
+</head>
+
+<body>
+
+<h1>📡 PaninoTL Dashboard</h1>
+
+<div class="summary">
+  <div class="sum green" id="ok">0 OK</div>
+  <div class="sum yellow" id="warn">0 Warning</div>
+  <div class="sum red" id="error">0 Error</div>
+  <div class="sum blue" id="idle">0 Idle</div>
+</div>
+
+<div class="grid" id="devices"></div>
+
+<script>
+const client = mqtt.connect("wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt", {
+  username: "YOUR_USERNAME",
+  password: "YOUR_PASSWORD"
+});
+
+const devices = {};
+const notified = {};
+
+client.on("connect", () => {
+  client.subscribe("panino/status");
+});
+
+client.on("message", (topic, message) => {
+  const data = JSON.parse(message.toString());
+  const id = data.status.deviceId;
+
+  devices[id] = {
+    ...data.status,
+    config: data.config,
+    lastUpdate: Date.now()
+  };
+});
+
+function batteryColor(p) {
+  return p > 60 ? "green" : p > 30 ? "orange" : "red";
+}
+
+function lastSeen(t) {
+  let diff = Math.floor((Date.now() - t)/1000);
+  if (diff<10) return "now";
+  if (diff<60) return diff+"s";
+  if (diff<3600) return Math.floor(diff/60)+"m";
+  return Math.floor(diff/3600)+"h";
+}
+
+function nextExpected(d) {
+  let last = new Date(d.lastShotOk.replace(" ","T"));
+  let next = new Date(last.getTime() + d.config.interval*1000);
+  return next;
+}
+
+function status(dev,id) {
+  let next = nextExpected(dev);
+  let now = new Date();
+  let buffer = dev.config.interval*1.5;
+
+  let gap = (next-now)/1000;
+  if (gap > buffer*2) return "idle";
+
+  if (now <= next) {
+    notified[id]=false;
+    return "ok";
+  }
+
+  let diff = (now-next)/1000;
+
+  if (diff <= buffer) return "warn";
+
+  if (!notified[id]) {
+    if (Notification.permission === "granted") {
+      new Notification("Device "+id+" missed check");
+    }
+    notified[id]=true;
+  }
+
+  return "error";
+}
+
+function render() {
+  let container = document.getElementById("devices");
+  container.innerHTML = "";
+
+  let counts = {ok:0,warn:0,error:0,idle:0};
+
+  Object.keys(devices).forEach(id=>{
+    let d = devices[id];
+    let s = status(d,id);
+    counts[s]++;
+
+    let card = document.createElement("div");
+    card.className = "card "+s;
+
+    card.innerHTML = `
+      <h3>${id}</h3>
+      🔋 ${d.batteryPct}%
+      <div class="bar" style="background:${batteryColor(d.batteryPct)}; width:${d.batteryPct}%"></div>
+
+      📸 ${d.sdPhotoCount}<br>
+      ⏱ ${d.lastShotOk}<br>
+      🕒 ${lastSeen(d.lastUpdate)} ago<br>
+      ⏳ ${nextExpected(d).toLocaleTimeString()}<br>
+      <b>${s.toUpperCase()}</b>
+    `;
+
+    container.appendChild(card);
+  });
+
+  document.getElementById("ok").innerText = counts.ok+" OK";
+  document.getElementById("warn").innerText = counts.warn+" Warning";
+  document.getElementById("error").innerText = counts.error+" Error";
+  document.getElementById("idle").innerText = counts.idle+" Idle";
+}
+
+setInterval(render,1000);
+
+if (Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+</script>
+
+</body>
+</html>
