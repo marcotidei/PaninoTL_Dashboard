@@ -1,10 +1,10 @@
-
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PaninoTL Dashboard</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
     body {
@@ -43,12 +43,6 @@
       display: block;
     }
 
-    .bar {
-      height: 8px;
-      border-radius: 4px;
-      margin: 6px 0;
-    }
-
     .error { border-left: 5px solid red; }
     .warn { border-left: 5px solid orange; }
     .ok { border-left: 5px solid limegreen; }
@@ -66,27 +60,28 @@
 <body>
 
 <h1>📡 PaninoTL Dashboard</h1>
-
 <div id="devices"></div>
 
 <script>
-const client = mqtt.connect("wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt", {
-  username: "dashboard",
-  password: "WebDashboard2026"
-});
+const client = mqtt.connect(
+  "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt",
+  {
+    username: "dashboard",
+    password: "WebDashboard2026"
+  }
+);
 
 const devices = {};
 const notified = {};
 const openState = {};
 
 client.on("connect", () => {
-  console.log("Connected");
+  console.log("✅ Connected");
   client.subscribe("#");
 });
 
 client.on("message", (topic, message) => {
   try {
-    console.log(topic, message.toString());
     const data = JSON.parse(message.toString());
     const id = data.status.deviceId;
 
@@ -95,7 +90,9 @@ client.on("message", (topic, message) => {
       config: data.config,
       lastUpdate: Date.now()
     };
-  } catch {}
+  } catch (e) {
+    console.log("Invalid message");
+  }
 });
 
 function batteryColor(p) {
@@ -103,50 +100,58 @@ function batteryColor(p) {
 }
 
 function lastSeen(t) {
-  let diff = Math.floor((Date.now() - t)/1000);
+  const diff = Math.floor((Date.now() - t) / 1000);
   if (diff < 10) return "now";
-  if (diff < 60) return diff+"s";
-  if (diff < 3600) return Math.floor(diff/60)+"m";
-  return Math.floor(diff/3600)+"h";
+  if (diff < 60) return diff + "s";
+  if (diff < 3600) return Math.floor(diff / 60) + "m";
+  return Math.floor(diff / 3600) + "h";
 }
 
 function nextExpected(d) {
-  let last = new Date(d.lastShotOk.replace(" ","T"));
-  return new Date(last.getTime() + d.config.interval*1000);
+  const last = new Date(d.lastShotOk.replace(" ", "T"));
+  return new Date(last.getTime() + d.config.interval * 1000);
 }
 
-function status(dev,id) {
-  let next = nextExpected(dev);
-  let now = new Date();
-  let buffer = dev.config.interval*1.5;
+function status(dev, id) {
+  const next = nextExpected(dev);
+  const now = new Date();
+  const buffer = dev.config.interval * 1.5;
 
-  let gap = (next-now)/1000;
-  if (gap > buffer*2) return "idle";
+  const gap = (next - now) / 1000;
+  if (gap > buffer * 2) return "idle";
 
   if (now <= next) {
-    notified[id]=false;
+    notified[id] = false;
     return "ok";
   }
 
-  let diff = (now-next)/1000;
+  const diff = (now - next) / 1000;
 
   if (diff <= buffer) return "warn";
 
   if (!notified[id]) {
     if (Notification.permission === "granted") {
-      new Notification("Device "+id+" missed check");
+      new Notification("Device " + id + " missed check");
     }
-    notified[id]=true;
+    notified[id] = true;
   }
 
   return "error";
+}
+
+function renderDays(daysStr) {
+  const days = ["M","T","W","T","F","S","S"];
+  return days.map((d, i) => {
+    return daysStr[i] === d
+      ? `<span style="color:limegreen">✔ ${d}</span>`
+      : `<span style="opacity:0.3">✖ ${d}</span>`;
+  }).join(" ");
 }
 
 function toggle(el) {
   const id = el.querySelector("b").innerText;
 
   el.classList.toggle("open");
-
   openState[id] = el.classList.contains("open");
 }
 
@@ -156,7 +161,7 @@ function render() {
 
   Object.keys(devices).forEach(id => {
     const d = devices[id];
-    const s = status(d,id);
+    const s = status(d, id);
 
     const dev = document.createElement("div");
     dev.className = "device " + s;
@@ -166,10 +171,12 @@ function render() {
       dev.classList.add("open");
     }
 
-    // ✅ restore manual open state
+    // ✅ restore manual state
     if (openState[id]) {
       dev.classList.add("open");
     }
+
+    const isError = d.lastError !== "None";
 
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
@@ -183,8 +190,26 @@ function render() {
         <div class="row"><span>Last Seen</span><span>${lastSeen(d.lastUpdate)}</span></div>
         <div class="row"><span>Next Expected</span><span>${nextExpected(d).toLocaleTimeString()}</span></div>
 
-        <div class="row">Battery</div>
-        <div class="bar" style="background:${batteryColor(d.batteryPct)}; width:${d.batteryPct}%"></div>
+        <hr style="border-color:#334155; margin:8px 0;">
+
+        <div class="row"><span>Interval</span><span>${d.config.interval}s</span></div>
+        <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
+
+        <div style="margin-top:8px; font-size:13px;">
+          <div>Schedule:</div>
+          <div>${renderDays(d.config.days)}</div>
+        </div>
+
+        <hr style="border-color:#334155; margin:8px 0;">
+
+        <div style="
+          padding:6px;
+          border-radius:6px;
+          background:${isError ? "#3b0000" : "#002b00"};
+          color:${isError ? "red" : "limegreen"};
+        ">
+          <b>Error:</b> ${d.lastError}
+        </div>
       </div>
     `;
 
@@ -192,7 +217,7 @@ function render() {
   });
 }
 
-setInterval(render,1000);
+setInterval(render, 1000);
 
 if (Notification.permission !== "granted") {
   Notification.requestPermission();
