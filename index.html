@@ -124,18 +124,23 @@ client.on("message", (topic, message) => {
     devices[id] = {
       ...data.status,
       config: data.config,
-      lastUpdate: Date.now()
+      lastSeenDevice: data.status.time
     };
   } catch {}
 });
 
-function lastSeen(t) {
+function relativeTime(ts) {
+  if (!ts) return "-";
+
+  const t = new Date(ts.replace(" ", "T"));
   const diff = Math.floor((Date.now() - t) / 1000);
+
   if (diff < 10) return "now";
   if (diff < 60) return diff + "s";
   if (diff < 3600) return Math.floor(diff / 60) + "m";
   return Math.floor(diff / 3600) + "h";
 }
+
 
 function nextExpected(d) {
   const last = new Date(d.lastShotOk.replace(" ", "T"));
@@ -251,7 +256,7 @@ function render() {
               <i class="fa-solid fa-heart-pulse"></i> Health
             </div>
 
-            <div class="row"><span>Last Seen</span><span>${lastSeen(d.lastUpdate)}</span></div>
+            <div class="row"><span>Last Seen</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
             <div class="row"><span>Next</span><span>${nextExpected(d).toLocaleTimeString()}</span></div>
             <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
 
