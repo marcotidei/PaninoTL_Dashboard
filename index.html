@@ -77,6 +77,7 @@ const client = mqtt.connect("wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq
 
 const devices = {};
 const notified = {};
+const openState = {};
 
 client.on("connect", () => {
   console.log("Connected");
@@ -160,7 +161,12 @@ function render() {
     const dev = document.createElement("div");
     dev.className = "device " + s;
 
-    // restore previous open/closed state
+    // ✅ auto-open errors
+    if (s === "error") {
+      dev.classList.add("open");
+    }
+
+    // ✅ restore manual open state
     if (openState[id]) {
       dev.classList.add("open");
     }
