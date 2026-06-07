@@ -141,10 +141,21 @@ function relativeTime(ts) {
   return Math.floor(diff / 3600) + "h";
 }
 
+function formatTime(ts) {
+  if (!ts) return "-";
+
+  const t = typeof ts === "string"
+    ? new Date(ts.replace(" ", "T"))
+    : ts;
+
+  return t.toLocaleTimeString();
+}
 
 function nextExpected(d) {
+  if (!d.lastShotOk || !d.config?.interval) return null;
+
   const last = new Date(d.lastShotOk.replace(" ", "T"));
-  return new Date(last.getTime() + d.config?.interval ?? "-" * 1000);
+  return new Date(last.getTime() + d.config.interval * 1000);
 }
 
 function status(dev, id) {
@@ -257,7 +268,7 @@ function render() {
             </div>
 
             <div class="row"><span>Last Seen</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-            <div class="row"><span>Next</span><span>${nextExpected(d).toLocaleTimeString()}</span></div>
+            <div class="row"><span>Next</span><span>${formatTime(nextExpected(d))}</span></div>
             <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
 
             ${(() => {
@@ -292,9 +303,9 @@ function render() {
             <div class="section-title">
               <i class="fa-solid fa-calendar-days"></i> Schedule
             </div>
+            <div>${renderDays(d.config.days)}</div>
             <div class="row"><span>Interval</span><span>${d.config?.interval ?? "-"}s</span></div>
             <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
-            <div>${renderDays(d.config.days)}</div>
           </div>
 
           <div class="section">
@@ -303,7 +314,7 @@ function render() {
             </div>
 
             <div class="row"><span>Photos</span><span>${d.sdPhotoCount}</span></div>
-            <div class="row"><span>Last Shot</span><span>${d.lastShotOk}</span></div>
+            <div class="row"><span>Last Shot</span><span>${formatTime(d.lastShotOk)}</span></div>
 
             <div class="row"><span>Lens</span><span>${lensName(d.config.lens)}</span></div>
             <div class="row"><span>Output</span><span>${photoOutputName(d.config.output)}</span></div>
