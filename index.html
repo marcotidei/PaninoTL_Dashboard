@@ -168,6 +168,16 @@ function formatTime(ts) {
   return t.toLocaleTimeString();
 }
 
+function formatDateTime(ts) {
+  if (!ts || ts === "-") return "-";
+
+  const t = typeof ts === "string"
+    ? new Date(ts.replace(" ", "T"))
+    : ts;
+
+  return t.toLocaleString();
+}
+
 function nextExpected(d) {
   if (!d.lastShotOk || !d.config?.interval) return null;
 
@@ -238,7 +248,7 @@ function renderDays(daysStr) {
   const labels = ["M","T","W","T","F","S","S"];
 
   return labels.map((label, i) => {
-    const active = !!daysStr && i < daysStr.length;
+    const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
 
     return active
       ? `<span style="color:white;">${label}</span>`
@@ -305,7 +315,7 @@ function render() {
             <div class="section-body">
               <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
               <div class="row"><span>Last Connected:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-              <div class="row"><span>Next Connection:</span><span>${formatTime(nextExpected(d))}</span></div>
+              <div class="row"><span>Next Connection:</span><span>${formatDateTime(nextExpected(d))}</span></div>
 
               ${(() => {
                 const recent = isRecentError(d);
@@ -325,7 +335,7 @@ function render() {
                     ${recent ? "box-shadow:0 0 8px red;" : ""}
                   ">
                     <div><b>Error:</b> ${d.lastError}</div>
-                    <div style="font-size:12px;">${d.lastErrorTime || "-"}</div>
+                    <div style="font-size:12px;">${formatDateTime(d.lastErrorTime)}</div>
                   </div>
                 `;
               })()}
@@ -338,7 +348,10 @@ function render() {
             </div>
 
             <div class="section-body">
-              <div>${renderDays(d.config.days)}</div>
+              <div class="row">
+                <span>Days of the week:</span>
+                <span>${renderDays(d.config.days)}</span>
+              </div>
               <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
               <div class="row"><span>Interval:</span><span>${d.config?.interval ?? "-"}s</span></div>
             </div>
@@ -351,8 +364,7 @@ function render() {
 
             <div class="section-body">
               <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
-              <div class="row"><span>Last Successful Shot:</span><span>${formatTime(d.lastShotOk)}</span></div>
-
+              <div class="row"><span>Last Successful Shot:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
               <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
             </div>
