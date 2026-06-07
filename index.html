@@ -132,6 +132,7 @@ const devices = {};
 const notified = {};
 const openState = {};
 const GRACE_SECONDS = 120; // in seconds
+const commLossState = {};
 
 client.on("connect", () => {
   console.log("✅ Connected");
@@ -192,39 +193,39 @@ function nextExpected(d) {
 
 function status(dev, id) {
   const next = nextExpected(dev);
-  if (!next || !dev.config?.interval) return "idle";
+  if (!next || !dev.config?.interval) {
+    delete commLossState[id];
+    return "idle";
+  }
 
   const now = new Date();
   const intervalSec = dev.config.interval;
   const grace = GRACE_SECONDS;
 
-  // next expected connection time
   const nextMs = next.getTime();
-
-  // warning starts if we are more than grace seconds late
   const warnMs = nextMs + grace * 1000;
-
-  // error starts if even the following capture + grace is missed
   const errorMs = nextMs + intervalSec * 1000 + grace * 1000;
 
-  // if next expected is still in the future, everything is fine
   if (now.getTime() <= nextMs) {
     notified[id] = false;
+    delete commLossState[id];
     return "ok";
   }
 
-  // late, but still inside the first grace window
   if (now.getTime() <= warnMs) {
     notified[id] = false;
+    delete commLossState[id];
     return "ok";
   }
 
-  // warning = first expected connection missed + grace exceeded
+  if (!commLossState[id]) {
+    commLossState[id] = new Date();
+  }
+
   if (now.getTime() < errorMs) {
     return "warn";
   }
 
-  // error = also missed the following expected connection + grace
   if (!notified[id]) {
     if (Notification.permission === "granted") {
       new Notification("Device " + id + " missed multiple check-ins");
@@ -242,6 +243,26 @@ function isRecentError(d) {
   const lastOk = new Date(d.lastShotOk.replace(" ", "T"));
 
   return errTime > lastOk;
+}
+
+function effectiveErrorInfo(d, id, s) {
+  if (s === "warn" || s === "error") {
+    return {
+      hasError: true,
+      recent: true,
+      text: s === "warn" ? "COMM DELAY" : "COMM LOST",
+      time: commLossState[id] || new Date()
+    };
+  }
+
+  const hasJsonError = d.lastError && d.lastError !== "None";
+
+  return {
+    hasError: hasJsonError,
+    recent: hasJsonError && isRecentError(d),
+    text: hasJsonError ? d.lastError : "No errors",
+    time: hasJsonError ? d.lastErrorTime : "-"
+  };
 }
 
 function lensName(id) {
@@ -358,11 +379,10 @@ function render() {
               <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
 
               ${(() => {
-                const recent = isRecentError(d);
-                const hasError = d.lastError && d.lastError !== "None";
+                const err = effectiveErrorInfo(d, id, s);
 
-                if (!hasError) {
-                  return `<div style="margin-top:6px; color:limegreen;">✅ No errors</div>`;
+                if (!err.hasError) {
+                  return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
                 }
 
                 return `
@@ -370,12 +390,12 @@ function render() {
                     margin-top:6px;
                     padding:6px;
                     border-radius:6px;
-                    background:${recent ? "#550000" : "#222"};
-                    color:${recent ? "red" : "#aaa"};
-                    ${recent ? "box-shadow:0 0 8px red;" : ""}
+                    background:${err.recent ? "#550000" : "#222"};
+                    color:${err.recent ? "red" : "#aaa"};
+                    ${err.recent ? "box-shadow:0 0 8px red;" : ""}
                   ">
-                    <div><b>Error:</b> ${d.lastError}</div>
-                    <div style="font-size:12px;">${formatDateTime(d.lastErrorTime)}</div>
+                    <div><b>Error:</b> ${err.text}</div>
+                    <div style="font-size:12px;">${formatDateTime(err.time)}</div>
                   </div>
                 `;
               })()}
