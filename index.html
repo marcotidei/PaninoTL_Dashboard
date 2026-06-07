@@ -33,8 +33,8 @@
     .header {
       display: flex;
       justify-content: space-between;
-      padding: 12px;
-      cursor: pointer;
+      align-items: center;
+      flex-wrap: nowrap;
     }
 
     .content {
@@ -67,7 +67,7 @@
 
     .section {
       display: flex;
-      gap: 10px;
+      gap: 16px;
       background: #0b1220;
       padding: 10px;
       border-radius: 8px;
@@ -75,7 +75,7 @@
     }
 
     .section-icon {
-      font-size: 34px;
+      font-size: 48px;
       min-width: 32px;
       text-align: center;
       opacity: 0.8;
@@ -237,7 +237,16 @@ function renderDays(daysStr) {
   return labels.map((label, i) => {
     const active = daysStr[i] !== undefined;
     return active
-      ? `<span style="color:limegreen">✔ ${label}</span>`
+      function renderDays(daysStr) {
+        const labels = ["M","T","W","T","F","S","S"];
+        return labels.map((label, i) => {
+          const active = daysStr[i] !== undefined;
+
+          return active
+            ? `<span style="color:white;">${label}</span>`
+            : `<span style="color:#475569;">${label}</span>`;
+        }).join(" ");
+      }
       : `<span style="opacity:0.3">✖ ${label}</span>`;
   }).join(" ");
 }
@@ -267,31 +276,25 @@ function render() {
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
-        <span>
-          <div class="header" onclick="toggle(this.parentElement)">
-            <b>${id}</b>
 
-            <span style="display:flex; align-items:center; gap:6px;">
+        <span style="display:flex; align-items:center; gap:8px;">
 
-              <i class="fa-solid ${
-                s === "error" ? "fa-circle-xmark" :
-                s === "warn" ? "fa-triangle-exclamation" :
-                s === "ok" ? "fa-circle-check" :
-                "fa-clock"
-              }"
-              style="
-                color:
-                  ${s === "error" ? "red" :
-                  s === "warn" ? "orange" :
-                  s === "ok" ? "limegreen" :
-                  "#94a3b8"};
-              "></i>
+          <i class="fa-solid ${
+            s === "error" ? "fa-circle-xmark" :
+            s === "warn" ? "fa-triangle-exclamation" :
+            s === "ok" ? "fa-circle-check" :
+            "fa-clock"
+          }"
+          style="
+            color:
+              ${s === "error" ? "red" :
+              s === "warn" ? "orange" :
+              s === "ok" ? "limegreen" :
+              "#64748b"};
+          "></i>
 
-              ${s.toUpperCase()} • 🔋 ${d.batteryPct}%
-
-            </span>
-          </div>
           ${s.toUpperCase()} • 🔋 ${d.batteryPct}%
+
         </span>
       </div>
 
