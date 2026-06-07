@@ -76,7 +76,7 @@ const devices = {};
 const notified = {};
 
 client.on("connect", () => {
-  client.subscribe("panino/status");
+  client.subscribe("#");
 });
 
 client.on("message", (topic, message) => {
