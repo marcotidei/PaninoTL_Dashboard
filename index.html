@@ -39,6 +39,10 @@
       cursor: pointer;
     }
 
+    .header span i {
+      font-size: 16px;
+    }
+
     .content {
       padding: 12px;
       border-top: 1px solid #334155;
@@ -301,7 +305,7 @@ function render() {
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
 
-        <span style="display:flex; align-items:center; gap:8px;">
+        <span style="display:flex; align-items:center; gap:10px;">
 
           <i class="fa-solid ${
             s === "error" ? "fa-circle-xmark" :
@@ -317,7 +321,23 @@ function render() {
               "#64748b"};
           "></i>
 
-          ${s.toUpperCase()} • 🔋 ${d.batteryPct}%
+          <span>${s.toUpperCase()}</span>
+
+          <i class="fa-solid ${
+            d.batteryPct >= 90 ? "fa-battery-full" :
+            d.batteryPct >= 65 ? "fa-battery-three-quarters" :
+            d.batteryPct >= 40 ? "fa-battery-half" :
+            d.batteryPct >= 15 ? "fa-battery-quarter" :
+            "fa-battery-empty"
+          }"
+          style="
+            color:
+              ${d.batteryPct >= 40 ? "#e2e8f0" :
+              d.batteryPct >= 15 ? "orange" :
+              "red"};
+          "></i>
+
+          <span>${d.batteryPct}%</span>
 
         </span>
       </div>
