@@ -127,6 +127,7 @@ const client = mqtt.connect(
 const devices = {};
 const notified = {};
 const openState = {};
+const GRACE_SECONDS = 120; // in seconds
 
 client.on("connect", () => {
   console.log("✅ Connected");
@@ -187,24 +188,42 @@ function nextExpected(d) {
 
 function status(dev, id) {
   const next = nextExpected(dev);
+  if (!next || !dev.config?.interval) return "idle";
+
   const now = new Date();
-  const buffer = dev.config.interval * 1.5;
+  const intervalSec = dev.config.interval;
+  const grace = GRACE_SECONDS;
 
-  const gap = (next - now) / 1000;
-  if (gap > buffer * 2) return "idle";
+  // next expected connection time
+  const nextMs = next.getTime();
 
-  if (now <= next) {
+  // warning starts if we are more than grace seconds late
+  const warnMs = nextMs + grace * 1000;
+
+  // error starts if even the following capture + grace is missed
+  const errorMs = nextMs + intervalSec * 1000 + grace * 1000;
+
+  // if next expected is still in the future, everything is fine
+  if (now.getTime() <= nextMs) {
     notified[id] = false;
     return "ok";
   }
 
-  const diff = (now - next) / 1000;
+  // late, but still inside the first grace window
+  if (now.getTime() <= warnMs) {
+    notified[id] = false;
+    return "ok";
+  }
 
-  if (diff <= buffer) return "warn";
+  // warning = first expected connection missed + grace exceeded
+  if (now.getTime() < errorMs) {
+    return "warn";
+  }
 
+  // error = also missed the following expected connection + grace
   if (!notified[id]) {
     if (Notification.permission === "granted") {
-      new Notification("Device " + id + " missed check");
+      new Notification("Device " + id + " missed multiple check-ins");
     }
     notified[id] = true;
   }
