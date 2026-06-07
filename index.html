@@ -4,7 +4,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PaninoTL Dashboard</title>
 
+  <!-- ✅ MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+  <!-- ✅ FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
   <style>
     body {
@@ -54,6 +58,38 @@
       margin: 4px 0;
       font-size: 14px;
     }
+
+    .sections {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .section {
+      background: #0b1220;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.9;
+    }
+
+    .section-title i {
+      opacity: 0.8;
+    }
+
+    @media (min-width: 700px) {
+      .sections {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
   </style>
 </head>
 
@@ -90,14 +126,8 @@ client.on("message", (topic, message) => {
       config: data.config,
       lastUpdate: Date.now()
     };
-  } catch (e) {
-    console.log("Invalid message");
-  }
+  } catch {}
 });
-
-function batteryColor(p) {
-  return p > 60 ? "limegreen" : p > 30 ? "orange" : "red";
-}
 
 function lastSeen(t) {
   const diff = Math.floor((Date.now() - t) / 1000);
@@ -109,7 +139,7 @@ function lastSeen(t) {
 
 function nextExpected(d) {
   const last = new Date(d.lastShotOk.replace(" ", "T"));
-  return new Date(last.getTime() + d.config.interval * 1000);
+  return new Date(last.getTime() + d.config?.interval ?? "-" * 1000);
 }
 
 function status(dev, id) {
@@ -139,18 +169,41 @@ function status(dev, id) {
   return "error";
 }
 
+function lensName(id) {
+  switch (id) {
+    case 101: return "Wide";
+    case 102: return "Linear";
+    case 19:  return "Narrow";
+    case 31:  return "Wide 27 MP";
+    case 32:  return "Linear 27 MP";
+    case 40:  return "Ultra Wide 13MP";
+    case 44:  return "Ultra Linear 13MP";
+    default:  return "Unknown";
+  }
+}
+
+function photoOutputName(id) {
+  switch (id) {
+    case 0: return "Standard";
+    case 1: return "RAW";
+    case 2: return "HDR";
+    case 3: return "SuperPhoto";
+    default: return "Unknown";
+  }
+}
+
 function renderDays(daysStr) {
-  const days = ["M","T","W","T","F","S","S"];
-  return days.map((d, i) => {
-    return daysStr[i] === d
-      ? `<span style="color:limegreen">✔ ${d}</span>`
-      : `<span style="opacity:0.3">✖ ${d}</span>`;
+  const labels = ["M","T","W","T","F","S","S"];
+  return labels.map((label, i) => {
+    const active = daysStr[i] !== undefined;
+    return active
+      ? `<span style="color:limegreen">✔ ${label}</span>`
+      : `<span style="opacity:0.3">✖ ${label}</span>`;
   }).join(" ");
 }
 
 function toggle(el) {
   const id = el.querySelector("b").innerText;
-
   el.classList.toggle("open");
   openState[id] = el.classList.contains("open");
 }
@@ -166,50 +219,78 @@ function render() {
     const dev = document.createElement("div");
     dev.className = "device " + s;
 
-    // ✅ auto-open errors
-    if (s === "error") {
-      dev.classList.add("open");
-    }
-
-    // ✅ restore manual state
-    if (openState[id]) {
-      dev.classList.add("open");
-    }
+    if (s === "error") dev.classList.add("open");
+    if (openState[id]) dev.classList.add("open");
 
     const isError = d.lastError !== "None";
 
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
-        <span>${s.toUpperCase()} • 🔋 ${d.batteryPct}%</span>
+        <span>
+          ${s === "error" ? "❌" : s === "warn" ? "⚠️" : s === "ok" ? "✅" : "⏳"}
+          ${s.toUpperCase()} • 🔋 ${d.batteryPct}%
+        </span>
       </div>
 
       <div class="content">
-        <div class="row"><span>Photos</span><span>${d.sdPhotoCount}</span></div>
-        <div class="row"><span>Last Shot</span><span>${d.lastShotOk}</span></div>
-        <div class="row"><span>Last Seen</span><span>${lastSeen(d.lastUpdate)}</span></div>
-        <div class="row"><span>Next Expected</span><span>${nextExpected(d).toLocaleTimeString()}</span></div>
 
-        <hr style="border-color:#334155; margin:8px 0;">
+        <div class="sections">
 
-        <div class="row"><span>Interval</span><span>${d.config.interval}s</span></div>
-        <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
+          <div class="section">
+            <div class="section-title">
+              <i class="fa-solid fa-heart-pulse"></i> Health
+            </div>
+            <div class="row"><span>Last Seen</span><span>${lastSeen(d.lastUpdate)}</span></div>
+            <div class="row"><span>Next</span><span>${nextExpected(d).toLocaleTimeString()}</span></div>
+            <div class="row"><span>Status</span><span>${s.toUpperCase()}</span></div>
+          </div>
 
-        <div style="margin-top:8px; font-size:13px;">
-          <div>Schedule:</div>
-          <div>${renderDays(d.config.days)}</div>
+          <div class="section">
+            <div class="section-title">
+              <i class="fa-solid fa-calendar-days"></i> Schedule
+            </div>
+            <div class="row"><span>Interval</span><span>${d.config?.interval ?? "-"}s</span></div>
+            <div class="row"><span>Window</span><span>${d.config.start} → ${d.config.end}</span></div>
+            <div>${renderDays(d.config.days)}</div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">
+              <i class="fa-solid fa-camera"></i> Camera
+            </div>
+
+            <div class="row"><span>Photos</span><span>${d.sdPhotoCount}</span></div>
+            <div class="row"><span>Last Shot</span><span>${d.lastShotOk}</span></div>
+
+            <div class="row"><span>Lens</span><span>${lensName(d.config.lens)}</span></div>
+            <div class="row"><span>Output</span><span>${photoOutputName(d.config.output)}</span></div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">
+              <i class="fa-solid fa-triangle-exclamation"></i> Errors
+            </div>
+            <div style="
+              padding:6px;
+              border-radius:6px;
+              background:${isError ? "#550000" : "#002b00"};
+              box-shadow:${isError ? "0 0 8px red" : "none"};
+              color:${isError ? "red" : "limegreen"};
+            ">
+              ${d.lastError}
+            </div>
+            <div class="row">
+              <span>Error Time</span>
+              <span>${d.lastErrorTime || "-"}</span>
+            </div>
+            <div style="font-size:12px; opacity:0.7;">
+              ${d.errorDescription || ""}
+            </div>
+          </div>
+
         </div>
 
-        <hr style="border-color:#334155; margin:8px 0;">
-
-        <div style="
-          padding:6px;
-          border-radius:6px;
-          background:${isError ? "#3b0000" : "#002b00"};
-          color:${isError ? "red" : "limegreen"};
-        ">
-          <b>Error:</b> ${d.lastError}
-        </div>
       </div>
     `;
 
