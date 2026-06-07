@@ -234,20 +234,13 @@ function photoOutputName(id) {
 
 function renderDays(daysStr) {
   const labels = ["M","T","W","T","F","S","S"];
-  return labels.map((label, i) => {
-    const active = daysStr[i] !== undefined;
-    return active
-      function renderDays(daysStr) {
-        const labels = ["M","T","W","T","F","S","S"];
-        return labels.map((label, i) => {
-          const active = daysStr[i] !== undefined;
 
-          return active
-            ? `<span style="color:white;">${label}</span>`
-            : `<span style="color:#475569;">${label}</span>`;
-        }).join(" ");
-      }
-      : `<span style="opacity:0.3">✖ ${label}</span>`;
+  return labels.map((label, i) => {
+    const active = !!daysStr && i < daysStr.length;
+
+    return active
+      ? `<span style="color:white;">${label}</span>`
+      : `<span style="color:#475569;">${label}</span>`;
   }).join(" ");
 }
 
