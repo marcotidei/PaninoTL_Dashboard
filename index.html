@@ -392,7 +392,7 @@
 
     Object.keys(devices).forEach(id => {
       const d = devices[id];
-      if (!d.config) return; // ✅ prevents crashes from devices that haven't sent config yet
+      if (!d.config) return; // ✅ prevents crashes
       const s = status(d, id);
 
       const dev = document.createElement("div");
