@@ -509,11 +509,11 @@
               </div>
               <div class="section-body">
                 <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
-                <div class="row"><span>Last Connected:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-                <div class="row"><span>Next Connection:</span><span>${formatDateTime(nextExpected(d))}</span></div>
-                <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
+                <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpected(d))}</span></div>
+                <div class="row"><span>Last Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
                 <div class="row">
-                  <span>Total Failed Photos:</span>
+                  <span>Failed Photos:</span>
                   <span style="color:${(d.photosFailed ?? 0) > 0 ? 'red' : '#e2e8f0'};">
                     ${d.photosFailed ? d.photosFailed : 0}
                   </span>
@@ -538,8 +538,8 @@
                 <i class="fa-solid fa-camera"></i>
               </div>
               <div class="section-body">
-                <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
-                <div class="row"><span>Last Successful Shot:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
+                <div class="row"><span>Photos:</span><span>${d.sdPhotoCount}</span></div>
+                <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
                 <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
                 <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
               </div>
