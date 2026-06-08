@@ -452,8 +452,12 @@
       const dev = document.createElement("div");
       dev.className = "device " + s;
 
-      // openState or global expandAll drives expand/compact; errors always show expanded
-      if (expandAll || openState[id] || s === "error") {
+      // Use explicit per-device state when available, otherwise fall back to global expandAll.
+      const isOpen = openState.hasOwnProperty(id)
+        ? openState[id]
+        : expandAll;
+
+      if (isOpen || s === "error") {
         dev.classList.add("open");
       }
 
