@@ -458,7 +458,7 @@
                 <div class="row">
                   <span>Total Failed Photos:</span>
                   <span style="color:${(d.photosFailed ?? 0) > 0 ? 'red' : '#e2e8f0'};">
-                    ${d.photosFailed ?? 0}
+                    ${d.photosFailed ? d.photosFailed : 0}
                   </span>
                 </div>
 
