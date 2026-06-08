@@ -206,13 +206,11 @@ function status(dev, id) {
 
   if (now.getTime() <= nextMs) {
     notified[id] = false;
-    delete commLossState[id];
     return "ok";
   }
 
   if (now.getTime() <= warnMs) {
     notified[id] = false;
-    delete commLossState[id];
     return "ok";
   }
 
