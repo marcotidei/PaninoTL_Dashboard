@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PaninoTL</title>
+  <title>PaninoTL - Dashboard</title>
 
   <!-- ✅ MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -12,6 +12,30 @@
 
   <style>
     /* page layout */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .topbar h1 {
+      margin: 0;
+    }
+
+    #toggleAllBtn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    #toggleAllBtn:hover {
+      background: #334155;
+    }
+
     body {
       font-family: Arial;
       background: #0f172a;
@@ -121,8 +145,14 @@
 
 <body>
 
-<h1>📡 PaninoTL Dashboard</h1>
+
+<div class="topbar">
+  <h1>PaninoTL - Dashboard</h1>
+  <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
+</div>
+
 <div id="devices"></div>
+
 
 <script>
   // --------------------------------------------------------
@@ -140,6 +170,7 @@
   const notified = {};          // error notification tracking
   const openState = {};         // expanded card state per device
   const GRACE_SECONDS = 120;    // communication grace period in seconds
+  let expandAll = false;        // global toggle for expanding/collapsing all device panels
 
   client.on("connect", () => {
     console.log("✅ Connected");
@@ -339,6 +370,22 @@
     openState[id] = el.classList.contains("open");
   }
 
+  function toggleAllPanels() {
+    expandAll = !expandAll;
+
+    const btn = document.getElementById("toggleAllBtn");
+    btn.innerText = expandAll ? "Compact" : "Expand all";
+
+    // when going back to compact mode, reset manual opens
+    if (!expandAll) {
+      Object.keys(openState).forEach(id => {
+        openState[id] = false;
+      });
+    }
+
+    render();
+  }
+
   function render() {
     const container = document.getElementById("devices");
     container.innerHTML = "";
@@ -350,8 +397,9 @@
       const dev = document.createElement("div");
       dev.className = "device " + s;
 
-      if (s === "error") dev.classList.add("open");
-      if (openState[id]) dev.classList.add("open");
+      if (expandAll || s === "error" || openState[id]) {
+        dev.classList.add("open");
+      }
 
       const err = effectiveErrorInfo(d, id, s);
 
