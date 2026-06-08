@@ -492,7 +492,7 @@
               <div class="section-body">
                 <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
                 <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-                <div class="row"><span>Interval:</span><span>${d.config?.interval ?? "-"}s</span></div>
+                <div class="row"><span>Interval:</span><span>${d.config && d.config.interval ? d.config.interval + "s" : "-"}</span></div>
               </div>
             </div>
 
