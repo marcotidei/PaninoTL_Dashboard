@@ -452,8 +452,8 @@
       const dev = document.createElement("div");
       dev.className = "device " + s;
 
-      // openState drives expand/compact; errors always show expanded
-      if (openState[id] || s === "error") {
+      // openState or global expandAll drives expand/compact; errors always show expanded
+      if (expandAll || openState[id] || s === "error") {
         dev.classList.add("open");
       }
 
@@ -553,6 +553,7 @@
   // Startup render loop and notification permission
   // FIX 3 — guard Notification API existence before any access.
   // --------------------------------------------------------
+  render();
   setInterval(render, 1000);
 
   if (
