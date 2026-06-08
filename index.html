@@ -430,12 +430,11 @@
     const btn = document.getElementById("toggleAllBtn");
     btn.innerText = expandAll ? "Compact" : "Expand all";
 
-    // when going back to compact mode, reset manual opens
-    if (!expandAll) {
-      Object.keys(openState).forEach(id => {
-        openState[id] = false;
-      });
-    }
+    // Sync openState for every known device so the 1s render loop
+    // doesn't fight the button: true when expanding, false when compacting.
+    Object.keys(devices).forEach(id => {
+      openState[id] = expandAll;
+    });
 
     render();
   }
@@ -453,7 +452,8 @@
       const dev = document.createElement("div");
       dev.className = "device " + s;
 
-      if (expandAll || s === "error" || openState[id]) {
+      // openState drives expand/compact; errors always show expanded
+      if (openState[id] || s === "error") {
         dev.classList.add("open");
       }
 
