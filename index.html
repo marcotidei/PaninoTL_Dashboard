@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PaninoTL Dashboard</title>
+  <title>PaninoTL</title>
 
   <!-- ✅ MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -11,6 +11,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
   <style>
+    /* page layout */
     body {
       font-family: Arial;
       background: #0f172a;
@@ -22,6 +23,7 @@
       margin-bottom: 20px;
     }
 
+    /* device card and header */
     .device {
       background: #1e293b;
       border-radius: 10px;
@@ -53,6 +55,7 @@
       display: block;
     }
 
+    /* status indicator border colors */
     .error { border-left: 5px solid red; }
     .warn { border-left: 5px solid orange; }
     .ok { border-left: 5px solid limegreen; }
@@ -65,6 +68,7 @@
       font-size: 14px;
     }
 
+    /* section cards inside each device detail panel */
     .sections {
       display: grid;
       grid-template-columns: 1fr;
@@ -106,6 +110,7 @@
       opacity: 0.8;
     }
 
+    /* responsive layout */
     @media (min-width: 700px) {
       .sections {
         grid-template-columns: repeat(3, 1fr);
@@ -120,349 +125,356 @@
 <div id="devices"></div>
 
 <script>
-const client = mqtt.connect(
-  "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt",
-  {
-    username: "dashboard",
-    password: "WebDashboard2026"
-  }
-);
-
-const devices = {};
-const notified = {};
-const openState = {};
-const GRACE_SECONDS = 120; // in seconds
-
-client.on("connect", () => {
-  console.log("✅ Connected");
-  client.subscribe("#");
-});
-
-client.on("message", (topic, message) => {
-  try {
-    const data = JSON.parse(message.toString());
-    const id = data.status.deviceId;
-
-    devices[id] = {
-      ...data.status,
-      config: data.config,
-      lastSeenDevice: data.status.time
-    };
-  } catch {}
-});
-
-function relativeTime(ts) {
-  if (!ts) return "-";
-
-  const t = new Date(ts.replace(" ", "T"));
-  const diff = Math.floor((Date.now() - t) / 1000);
-
-  if (diff < 10) return "now";
-  if (diff < 60) return diff + "s";
-  if (diff < 3600) return Math.floor(diff / 60) + "m";
-  return Math.floor(diff / 3600) + "h";
-}
-
-function formatTime(ts) {
-  if (!ts) return "-";
-
-  const t = typeof ts === "string"
-    ? new Date(ts.replace(" ", "T"))
-    : ts;
-
-  return t.toLocaleTimeString();
-}
-
-function formatDateTime(ts) {
-  if (!ts || ts === "-") return "-";
-
-  const t = typeof ts === "string"
-    ? new Date(ts.replace(" ", "T"))
-    : ts;
-
-  return t.toLocaleString();
-}
-
-function nextExpected(d) {
-  if (!d.lastShotOk || !d.config?.interval) return null;
-
-  const last = new Date(d.lastShotOk.replace(" ", "T"));
-  return new Date(last.getTime() + d.config.interval * 1000);
-}
-
-function status(dev, id) {
-  const next = nextExpected(dev);
-  if (!next || !dev.config?.interval) {
-    return "idle";
-  }
-
-  const now = new Date();
-  const intervalSec = dev.config.interval;
-  const grace = GRACE_SECONDS;
-
-  const nextMs = next.getTime();
-  const warnMs = nextMs + grace * 1000;
-  const errorMs = nextMs + intervalSec * 1000 + grace * 1000;
-
-  if (now.getTime() <= nextMs) {
-    notified[id] = false;
-    return "ok";
-  }
-
-  if (now.getTime() <= warnMs) {
-    notified[id] = false;
-    return "ok";
-  }
-
-  if (now.getTime() < errorMs) {
-    return "warn";
-  }
-
-  if (!notified[id]) {
-    if (Notification.permission === "granted") {
-      new Notification("Device " + id + " missed multiple check-ins");
+  // --------------------------------------------------------
+  // MQTT connection and shared state
+  // --------------------------------------------------------
+  const client = mqtt.connect(
+    "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt",
+    {
+      username: "dashboard",
+      password: "WebDashboard2026"
     }
-    notified[id] = true;
+  );
+
+  const devices = {};           // live device state by deviceId
+  const notified = {};          // error notification tracking
+  const openState = {};         // expanded card state per device
+  const GRACE_SECONDS = 120;    // communication grace period in seconds
+
+  client.on("connect", () => {
+    console.log("✅ Connected");
+    client.subscribe("#");
+  });
+
+  client.on("message", (topic, message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      const id = data.status.deviceId;
+
+      devices[id] = {
+        ...data.status,
+        config: data.config,
+        lastSeenDevice: data.status.time
+      };
+    } catch {
+      // ignore malformed MQTT payloads
+    }
+  });
+
+  // --------------------------------------------------------
+  // Date/time formatting helpers
+  // --------------------------------------------------------
+  function relativeTime(ts) {
+    if (!ts) return "-";
+
+    const t = new Date(ts.replace(" ", "T"));
+    const diff = Math.floor((Date.now() - t) / 1000);
+
+    if (diff < 10) return "now";
+    if (diff < 60) return diff + "s";
+    if (diff < 3600) return Math.floor(diff / 60) + "m";
+    return Math.floor(diff / 3600) + "h";
   }
 
-  return "error";
-}
+  function formatTime(ts) {
+    if (!ts) return "-";
 
-function isRecentError(d) {
-  if (!d.lastErrorTime || d.lastError === "None") return false;
+    const t = typeof ts === "string"
+      ? new Date(ts.replace(" ", "T"))
+      : ts;
 
-  const errTime = new Date(d.lastErrorTime.replace(" ", "T"));
-  const lastOk = new Date(d.lastShotOk.replace(" ", "T"));
+    return t.toLocaleTimeString();
+  }
 
-  return errTime > lastOk;
-}
+  function formatDateTime(ts) {
+    if (!ts || ts === "-") return "-";
 
-function effectiveErrorInfo(d, id, s) {
-  const next = nextExpected(d);
+    const t = typeof ts === "string"
+      ? new Date(ts.replace(" ", "T"))
+      : ts;
 
-  // COMM DELAY = next connection + grace
-  if (s === "warn" && next) {
+    return t.toLocaleString();
+  }
+
+  function nextExpected(d) {
+    if (!d.lastShotOk || !d.config?.interval) return null;
+
+    const last = new Date(d.lastShotOk.replace(" ", "T"));
+    return new Date(last.getTime() + d.config.interval * 1000);
+  }
+
+  // --------------------------------------------------------
+  // Device health and error helpers
+  // --------------------------------------------------------
+  function status(dev, id) {
+    const next = nextExpected(dev);
+    if (!next || !dev.config?.interval) {
+      return "idle";
+    }
+
+    const now = new Date();
+    const intervalSec = dev.config.interval;
+    const grace = GRACE_SECONDS;
+
+    const nextMs = next.getTime();
+    const warnMs = nextMs + grace * 1000;
+    const errorMs = nextMs + intervalSec * 1000 + grace * 1000;
+
+    if (now.getTime() <= nextMs) {
+      notified[id] = false;
+      return "ok";
+    }
+
+    if (now.getTime() <= warnMs) {
+      notified[id] = false;
+      return "ok";
+    }
+
+    if (now.getTime() < errorMs) {
+      return "warn";
+    }
+
+    if (!notified[id]) {
+      if (Notification.permission === "granted") {
+        new Notification("Device " + id + " missed multiple check-ins");
+      }
+      notified[id] = true;
+    }
+
+    return "error";
+  }
+
+  function isRecentError(d) {
+    if (!d.lastErrorTime || d.lastError === "None") return false;
+
+    const errTime = new Date(d.lastErrorTime.replace(" ", "T"));
+    const lastOk = new Date(d.lastShotOk.replace(" ", "T"));
+
+    return errTime > lastOk;
+  }
+
+  function effectiveErrorInfo(d, id, statusLevel) {
+    const next = nextExpected(d);
+
+    // COMM DELAY: device is slow but still within grace period
+    if (statusLevel === "warn" && next) {
+      return {
+        hasError: true,
+        text: "COMM DELAY",
+        time: new Date(next.getTime() + GRACE_SECONDS * 1000),
+        bg: "#3a2500",
+        color: "orange",
+        glow: false
+      };
+    }
+
+    // COMM LOST: device missed its interval plus grace period
+    if (statusLevel === "error" && next && d.config?.interval) {
+      return {
+        hasError: true,
+        text: "COMM LOST",
+        time: new Date(next.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
+        bg: "#550000",
+        color: "red",
+        glow: true
+      };
+    }
+
+    const hasJsonError = d.lastError && d.lastError !== "None";
+    const recentJsonError = hasJsonError && isRecentError(d);
+
     return {
-      hasError: true,
-      text: "COMM DELAY",
-      time: new Date(next.getTime() + GRACE_SECONDS * 1000),
-      bg: "#3a2500",
-      color: "orange",
-      glow: false
+      hasError: hasJsonError,
+      text: hasJsonError ? d.lastError : "No errors",
+      time: hasJsonError ? d.lastErrorTime : "-",
+      bg: recentJsonError ? "#550000" : "#222",
+      color: recentJsonError ? "red" : "#aaa",
+      glow: recentJsonError
     };
   }
 
-  // COMM LOST = next connection + interval + grace
-  if (s === "error" && next && d.config?.interval) {
-    return {
-      hasError: true,
-      text: "COMM LOST",
-      time: new Date(next.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
-      bg: "#550000",
-      color: "red",
-      glow: true
-    };
+  // --------------------------------------------------------
+  // Mapping helpers for camera metadata
+  // --------------------------------------------------------
+  function lensName(id) {
+    switch (id) {
+      case 101: return "Wide";
+      case 102: return "Linear";
+      case 19:  return "Narrow";
+      case 31:  return "Wide 27 MP";
+      case 32:  return "Linear 27 MP";
+      case 40:  return "Ultra Wide 13MP";
+      case 44:  return "Ultra Linear 13MP";
+      default:  return "Unknown";
+    }
   }
 
-  // fallback to JSON-reported camera error
-  const hasJsonError = d.lastError && d.lastError !== "None";
-  const recentJsonError = hasJsonError && isRecentError(d);
-
-  return {
-    hasError: hasJsonError,
-    text: hasJsonError ? d.lastError : "No errors",
-    time: hasJsonError ? d.lastErrorTime : "-",
-    bg: recentJsonError ? "#550000" : "#222",
-    color: recentJsonError ? "red" : "#aaa",
-    glow: recentJsonError
-  };
-}
-
-function lensName(id) {
-  switch (id) {
-    case 101: return "Wide";
-    case 102: return "Linear";
-    case 19:  return "Narrow";
-    case 31:  return "Wide 27 MP";
-    case 32:  return "Linear 27 MP";
-    case 40:  return "Ultra Wide 13MP";
-    case 44:  return "Ultra Linear 13MP";
-    default:  return "Unknown";
+  function photoOutputName(id) {
+    switch (id) {
+      case 0: return "Standard";
+      case 1: return "RAW";
+      case 2: return "HDR";
+      case 3: return "SuperPhoto";
+      default: return "Unknown";
+    }
   }
-}
 
-function photoOutputName(id) {
-  switch (id) {
-    case 0: return "Standard";
-    case 1: return "RAW";
-    case 2: return "HDR";
-    case 3: return "SuperPhoto";
-    default: return "Unknown";
+  function renderDays(daysStr) {
+    const labels = ["M","T","W","T","F","S","S"];
+
+    return labels.map((label, i) => {
+      const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
+      return active
+        ? `<span style="color:white;">${label}</span>`
+        : `<span style="color:#475569;">${label}</span>`;
+    }).join(" ");
   }
-}
 
-function renderDays(daysStr) {
-  const labels = ["M","T","W","T","F","S","S"];
+  // --------------------------------------------------------
+  // UI interaction helpers
+  // --------------------------------------------------------
+  function toggle(el) {
+    const id = el.querySelector("b").innerText;
+    el.classList.toggle("open");
+    openState[id] = el.classList.contains("open");
+  }
 
-  return labels.map((label, i) => {
-    const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
+  function render() {
+    const container = document.getElementById("devices");
+    container.innerHTML = "";
 
-    return active
-      ? `<span style="color:white;">${label}</span>`
-      : `<span style="color:#475569;">${label}</span>`;
-  }).join(" ");
-}
+    Object.keys(devices).forEach(id => {
+      const d = devices[id];
+      const s = status(d, id);
 
-function toggle(el) {
-  const id = el.querySelector("b").innerText;
-  el.classList.toggle("open");
-  openState[id] = el.classList.contains("open");
-}
+      const dev = document.createElement("div");
+      dev.className = "device " + s;
 
-function render() {
-  const container = document.getElementById("devices");
-  container.innerHTML = "";
+      if (s === "error") dev.classList.add("open");
+      if (openState[id]) dev.classList.add("open");
 
-  Object.keys(devices).forEach(id => {
-    const d = devices[id];
-    const s = status(d, id);
+      const err = effectiveErrorInfo(d, id, s);
 
-    const dev = document.createElement("div");
-    dev.className = "device " + s;
+      dev.innerHTML = `
+        <div class="header" onclick="toggle(this.parentElement)">
+          <b>${id}</b>
 
-    if (s === "error") dev.classList.add("open");
-    if (openState[id]) dev.classList.add("open");
+          <span style="display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid ${
+              s === "error" ? "fa-circle-xmark" :
+              s === "warn" ? "fa-triangle-exclamation" :
+              s === "ok" ? "fa-circle-check" :
+              "fa-clock"
+            }"
+            style="
+              color:
+                ${s === "error" ? "red" :
+                s === "warn" ? "orange" :
+                s === "ok" ? "limegreen" :
+                "#64748b"};
+            "></i>
 
-    const isError = d.lastError !== "None";
+            <span>${s.toUpperCase()}</span>
 
-    dev.innerHTML = `
-      <div class="header" onclick="toggle(this.parentElement)">
-        <b>${id}</b>
+            <i class="fa-solid ${
+              d.batteryPct >= 90 ? "fa-battery-full" :
+              d.batteryPct >= 65 ? "fa-battery-three-quarters" :
+              d.batteryPct >= 40 ? "fa-battery-half" :
+              d.batteryPct >= 15 ? "fa-battery-quarter" :
+              "fa-battery-empty"
+            }"
+            style="
+              color:
+                ${d.batteryPct >= 40 ? "#e2e8f0" :
+                d.batteryPct >= 15 ? "orange" :
+                "red"};
+            "></i>
 
-        <span style="display:flex; align-items:center; gap:10px;">
-
-          <i class="fa-solid ${
-            s === "error" ? "fa-circle-xmark" :
-            s === "warn" ? "fa-triangle-exclamation" :
-            s === "ok" ? "fa-circle-check" :
-            "fa-clock"
-          }"
-          style="
-            color:
-              ${s === "error" ? "red" :
-              s === "warn" ? "orange" :
-              s === "ok" ? "limegreen" :
-              "#64748b"};
-          "></i>
-
-          <span>${s.toUpperCase()}</span>
-
-          <i class="fa-solid ${
-            d.batteryPct >= 90 ? "fa-battery-full" :
-            d.batteryPct >= 65 ? "fa-battery-three-quarters" :
-            d.batteryPct >= 40 ? "fa-battery-half" :
-            d.batteryPct >= 15 ? "fa-battery-quarter" :
-            "fa-battery-empty"
-          }"
-          style="
-            color:
-              ${d.batteryPct >= 40 ? "#e2e8f0" :
-              d.batteryPct >= 15 ? "orange" :
-              "red"};
-          "></i>
-
-          <span>${d.batteryPct}%</span>
-
-        </span>
-      </div>
-
-      <div class="content">
-
-        <div class="sections">
-
-          <div class="section">
-            <div class="section-icon">
-              <i class="fa-solid fa-heart-pulse"></i>
-            </div>
-
-            <div class="section-body">
-              <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
-              <div class="row"><span>Last Connected:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-              <div class="row"><span>Next Connection:</span><span>${formatDateTime(nextExpected(d))}</span></div>
-              <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
-              <div class="row">
-                <span>Total Failed Photos:</span>
-                <span style="color:${(d.photosFailed ?? 0) > 0 ? 'red' : '#e2e8f0'};">
-                  ${d.photosFailed ?? 0}
-                </span>
-              </div>
-
-              ${(() => {
-                const err = effectiveErrorInfo(d, id, s);
-
-                if (!err.hasError) {
-                  return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
-                }
-
-                return `
-                  <div style="
-                    margin-top:6px;
-                    padding:6px;
-                    border-radius:6px;
-                    background:${err.bg};
-                    color:${err.color};
-                    ${err.glow ? "box-shadow:0 0 8px red;" : ""}
-                  ">
-                    <div><b>Error:</b> ${err.text}</div>
-                    <div style="font-size:12px;">${formatDateTime(err.time)}</div>
-                  </div>
-                `;
-              })()}
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-icon">
-              <i class="fa-solid fa-calendar-days"></i>
-            </div>
-
-            <div class="section-body">
-              <div class="row">
-                <span>Days of the week:</span>
-                <span>${renderDays(d.config.days)}</span>
-              </div>
-              <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-              <div class="row"><span>Interval:</span><span>${d.config?.interval ?? "-"}s</span></div>
-            </div>
-          </div>
-
-          <div class="section">
-            <div class="section-icon">
-              <i class="fa-solid fa-camera"></i>
-            </div>
-
-            <div class="section-body">
-              <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
-              <div class="row"><span>Last Successful Shot:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
-              <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
-              <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
-            </div>
-          </div>
-
+            <span>${d.batteryPct}%</span>
+          </span>
         </div>
 
-      </div>
-    `;
+        <div class="content">
+          <div class="sections">
+            <div class="section">
+              <div class="section-icon">
+                <i class="fa-solid fa-heart-pulse"></i>
+              </div>
 
-    container.appendChild(dev);
-  });
-}
+              <div class="section-body">
+                <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
+                <div class="row"><span>Last Connected:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+                <div class="row"><span>Next Connection:</span><span>${formatDateTime(nextExpected(d))}</span></div>
+                <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
+                <div class="row">
+                  <span>Total Failed Photos:</span>
+                  <span style="color:${(d.photosFailed ?? 0) > 0 ? 'red' : '#e2e8f0'};">
+                    ${d.photosFailed ?? 0}
+                  </span>
+                </div>
 
-setInterval(render, 1000);
+                ${(() => {
+                  if (!err.hasError) {
+                    return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
+                  }
 
-if (Notification.permission !== "granted") {
-  Notification.requestPermission();
-}
+                  return `
+                    <div style="
+                      margin-top:6px;
+                      padding:6px;
+                      border-radius:6px;
+                      background:${err.bg};
+                      color:${err.color};
+                      ${err.glow ? "box-shadow:0 0 8px red;" : ""}
+                    ">
+                      <div><b>Error:</b> ${err.text}</div>
+                      <div style="font-size:12px;">${formatDateTime(err.time)}</div>
+                    </div>
+                  `;
+                })()}
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-icon">
+                <i class="fa-solid fa-calendar-days"></i>
+              </div>
+
+              <div class="section-body">
+                <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
+                <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
+                <div class="row"><span>Interval:</span><span>${d.config?.interval ?? "-"}s</span></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-icon">
+                <i class="fa-solid fa-camera"></i>
+              </div>
+
+              <div class="section-body">
+                <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
+                <div class="row"><span>Last Successful Shot:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
+                <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
+                <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(dev);
+    });
+  }
+
+  // --------------------------------------------------------
+  // Startup render loop and notification permission
+  // --------------------------------------------------------
+  setInterval(render, 1000);
+
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
 </script>
 
 </body>
