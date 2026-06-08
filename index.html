@@ -4,10 +4,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PaninoTL - Dashboard</title>
 
-  <!-- ✅ MQTT -->
+  <!-- MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-  <!-- ✅ FontAwesome Icons -->
+  <!-- FontAwesome Icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
   <style>
@@ -81,9 +81,9 @@
 
     /* status indicator border colors */
     .error { border-left: 5px solid red; }
-    .warn { border-left: 5px solid orange; }
-    .ok { border-left: 5px solid limegreen; }
-    .idle { border-left: 5px solid deepskyblue; }
+    .warn  { border-left: 5px solid orange; }
+    .ok    { border-left: 5px solid limegreen; }
+    .idle  { border-left: 5px solid deepskyblue; }
 
     .row {
       display: flex;
@@ -103,7 +103,7 @@
       display: flex;
       gap: 16px;
       background: #0b1220;
-      padding: 10px 10px 10px 12px;  /* top right bottom left */
+      padding: 10px 10px 10px 12px;
       border-radius: 8px;
       align-items: flex-start;
     }
@@ -145,7 +145,6 @@
 
 <body>
 
-
 <div class="topbar">
   <h1>PaninoTL - Dashboard</h1>
   <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
@@ -153,8 +152,20 @@
 
 <div id="devices"></div>
 
-
 <script>
+  // --------------------------------------------------------
+  // FIX 4 — Robust date parser
+  // Replaces all .replace(" ", "T") calls.
+  // Handles "YYYY-MM-DD HH:MM:SS" and "YYYY-MM-DD HH:MM:SS +HH:MM"
+  // without leaving stray spaces that break iOS Safari's Date parser.
+  // --------------------------------------------------------
+  function parseTS(ts) {
+    if (!ts || ts === "-") return null;
+    // Replace the space between date and time, then any space before a
+    // timezone offset (+/-), producing a fully valid ISO 8601 string.
+    return new Date(ts.replace(" ", "T").replace(/\s([+-])/, "T$1"));
+  }
+
   // --------------------------------------------------------
   // MQTT connection and shared state
   // --------------------------------------------------------
@@ -166,11 +177,11 @@
     }
   );
 
-  const devices = {};           // live device state by deviceId
-  const notified = {};          // error notification tracking
-  const openState = {};         // expanded card state per device
-  const GRACE_SECONDS = 120;    // communication grace period in seconds
-  let expandAll = false;        // global toggle for expanding/collapsing all device panels
+  const devices    = {};          // live device state by deviceId
+  const notified   = {};          // error notification tracking
+  const openState  = {};          // expanded card state per device
+  const GRACE_SECONDS = 120;      // communication grace period in seconds
+  let expandAll    = false;       // global toggle for expanding/collapsing all device panels
 
   client.on("connect", () => {
     console.log("✅ Connected");
@@ -194,15 +205,18 @@
 
   // --------------------------------------------------------
   // Date/time formatting helpers
+  // All use parseTS() instead of inline .replace(" ", "T")
   // --------------------------------------------------------
   function relativeTime(ts) {
     if (!ts) return "-";
 
-    const t = new Date(ts.replace(" ", "T"));
+    const t = parseTS(ts);
+    if (!t || isNaN(t)) return "-";
+
     const diff = Math.floor((Date.now() - t) / 1000);
 
-    if (diff < 10) return "now";
-    if (diff < 60) return diff + "s";
+    if (diff < 10)   return "now";
+    if (diff < 60)   return diff + "s";
     if (diff < 3600) return Math.floor(diff / 60) + "m";
     return Math.floor(diff / 3600) + "h";
   }
@@ -210,9 +224,8 @@
   function formatTime(ts) {
     if (!ts) return "-";
 
-    const t = typeof ts === "string"
-      ? new Date(ts.replace(" ", "T"))
-      : ts;
+    const t = typeof ts === "string" ? parseTS(ts) : ts;
+    if (!t || isNaN(t)) return "-";
 
     return t.toLocaleTimeString();
   }
@@ -220,17 +233,21 @@
   function formatDateTime(ts) {
     if (!ts || ts === "-") return "-";
 
-    const t = typeof ts === "string"
-      ? new Date(ts.replace(" ", "T"))
-      : ts;
+    const t = typeof ts === "string" ? parseTS(ts) : ts;
+    if (!t || isNaN(t)) return "-";
 
     return t.toLocaleString();
   }
 
   function nextExpected(d) {
-    if (!d.lastShotOk || !d.config && d.config.interval) return null;
+    // FIX 1 — correct logical operators: was (!d.config && d.config.interval)
+    // which always short-circuits to false when d.config is falsy, then tries
+    // to read d.config.interval on a null object → TypeError on iOS Safari.
+    if (!d.lastShotOk || !d.config || !d.config.interval) return null;
 
-    const last = new Date(d.lastShotOk.replace(" ", "T"));
+    const last = parseTS(d.lastShotOk);
+    if (!last || isNaN(last)) return null;
+
     return new Date(last.getTime() + d.config.interval * 1000);
   }
 
@@ -243,12 +260,12 @@
       return "idle";
     }
 
-    const now = new Date();
+    const now         = new Date();
     const intervalSec = dev.config.interval;
-    const grace = GRACE_SECONDS;
+    const grace       = GRACE_SECONDS;
 
-    const nextMs = next.getTime();
-    const warnMs = nextMs + grace * 1000;
+    const nextMs  = next.getTime();
+    const warnMs  = nextMs + grace * 1000;
     const errorMs = nextMs + intervalSec * 1000 + grace * 1000;
 
     if (now.getTime() <= nextMs) {
@@ -265,8 +282,15 @@
       return "warn";
     }
 
+    // FIX 3 — guard Notification API before accessing it.
+    // On iOS Safari in WKWebView / standalone PWA mode the Notification
+    // global may not exist at all, causing a ReferenceError that kills
+    // the entire script execution.
     if (!notified[id]) {
-      if (Notification.permission === "granted") {
+      if (
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted"
+      ) {
         new Notification("Device " + id + " missed multiple check-ins");
       }
       notified[id] = true;
@@ -278,8 +302,9 @@
   function isRecentError(d) {
     if (!d.lastErrorTime || d.lastError === "None") return false;
 
-    const errTime = new Date(d.lastErrorTime.replace(" ", "T"));
-    const lastOk = new Date(d.lastShotOk.replace(" ", "T"));
+    const errTime = parseTS(d.lastErrorTime);
+    const lastOk  = parseTS(d.lastShotOk);
+    if (!errTime || !lastOk || isNaN(errTime) || isNaN(lastOk)) return false;
 
     return errTime > lastOk;
   }
@@ -311,16 +336,16 @@
       };
     }
 
-    const hasJsonError = d.lastError && d.lastError !== "None";
+    const hasJsonError    = d.lastError && d.lastError !== "None";
     const recentJsonError = hasJsonError && isRecentError(d);
 
     return {
       hasError: hasJsonError,
-      text: hasJsonError ? d.lastError : "No errors",
-      time: hasJsonError ? d.lastErrorTime : "-",
-      bg: recentJsonError ? "#550000" : "#222",
-      color: recentJsonError ? "red" : "#aaa",
-      glow: recentJsonError
+      text:     hasJsonError ? d.lastError : "No errors",
+      time:     hasJsonError ? d.lastErrorTime : "-",
+      bg:       recentJsonError ? "#550000" : "#222",
+      color:    recentJsonError ? "red" : "#aaa",
+      glow:     recentJsonError
     };
   }
 
@@ -362,6 +387,35 @@
   }
 
   // --------------------------------------------------------
+  // FIX 2 — Error block extracted to a named function.
+  // The original code used an IIFE (immediately-invoked function
+  // expression) inside a template literal assigned to innerHTML:
+  //   ${ (() => { ... })() }
+  // iOS Safari 15 and earlier has known parsing issues with this
+  // pattern inside innerHTML strings. Moving it to a regular named
+  // function called as a normal expression eliminates the problem.
+  // --------------------------------------------------------
+  function errorBlock(err) {
+    if (!err.hasError) {
+      return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
+    }
+
+    return `
+      <div style="
+        margin-top:6px;
+        padding:6px;
+        border-radius:6px;
+        background:${err.bg};
+        color:${err.color};
+        ${err.glow ? "box-shadow:0 0 8px red;" : ""}
+      ">
+        <div><b>Error:</b> ${err.text}</div>
+        <div style="font-size:12px;">${formatDateTime(err.time)}</div>
+      </div>
+    `;
+  }
+
+  // --------------------------------------------------------
   // UI interaction helpers
   // --------------------------------------------------------
   function toggle(el) {
@@ -392,7 +446,8 @@
 
     Object.keys(devices).forEach(id => {
       const d = devices[id];
-      if (!d.config) return; // ✅ prevents crashes
+      if (!d.config) return;   // prevents crashes on incomplete payloads
+
       const s = status(d, id);
 
       const dev = document.createElement("div");
@@ -411,17 +466,16 @@
           <span style="display:flex; align-items:center; gap:10px;">
             <i class="fa-solid ${
               s === "error" ? "fa-circle-xmark" :
-              s === "warn" ? "fa-triangle-exclamation" :
-              s === "ok" ? "fa-circle-check" :
+              s === "warn"  ? "fa-triangle-exclamation" :
+              s === "ok"    ? "fa-circle-check" :
               "fa-clock"
             }"
-            style="
-              color:
-                ${s === "error" ? "red" :
-                s === "warn" ? "orange" :
-                s === "ok" ? "limegreen" :
-                "#64748b"};
-            "></i>
+            style="color:${
+              s === "error" ? "red" :
+              s === "warn"  ? "orange" :
+              s === "ok"    ? "limegreen" :
+              "#64748b"
+            };"></i>
 
             <span>${s.toUpperCase()}</span>
 
@@ -432,12 +486,11 @@
               d.batteryPct >= 15 ? "fa-battery-quarter" :
               "fa-battery-empty"
             }"
-            style="
-              color:
-                ${d.batteryPct >= 40 ? "#e2e8f0" :
-                d.batteryPct >= 15 ? "orange" :
-                "red"};
-            "></i>
+            style="color:${
+              d.batteryPct >= 40 ? "#e2e8f0" :
+              d.batteryPct >= 15 ? "orange" :
+              "red"
+            };"></i>
 
             <span>${d.batteryPct}%</span>
           </span>
@@ -445,11 +498,11 @@
 
         <div class="content">
           <div class="sections">
+
             <div class="section">
               <div class="section-icon">
                 <i class="fa-solid fa-heart-pulse"></i>
               </div>
-
               <div class="section-body">
                 <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
                 <div class="row"><span>Last Connected:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
@@ -461,26 +514,7 @@
                     ${d.photosFailed ? d.photosFailed : 0}
                   </span>
                 </div>
-
-                ${(() => {
-                  if (!err.hasError) {
-                    return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
-                  }
-
-                  return `
-                    <div style="
-                      margin-top:6px;
-                      padding:6px;
-                      border-radius:6px;
-                      background:${err.bg};
-                      color:${err.color};
-                      ${err.glow ? "box-shadow:0 0 8px red;" : ""}
-                    ">
-                      <div><b>Error:</b> ${err.text}</div>
-                      <div style="font-size:12px;">${formatDateTime(err.time)}</div>
-                    </div>
-                  `;
-                })()}
+                ${errorBlock(err)}
               </div>
             </div>
 
@@ -488,11 +522,10 @@
               <div class="section-icon">
                 <i class="fa-solid fa-calendar-days"></i>
               </div>
-
               <div class="section-body">
                 <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
                 <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-                <div class="row"><span>Interval:</span><span>${d.config && d.config.interval ? d.config.interval + "s" : "-"}</span></div>
+                <div class="row"><span>Interval:</span><span>${d.config.interval ? d.config.interval + "s" : "-"}</span></div>
               </div>
             </div>
 
@@ -500,7 +533,6 @@
               <div class="section-icon">
                 <i class="fa-solid fa-camera"></i>
               </div>
-
               <div class="section-body">
                 <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
                 <div class="row"><span>Last Successful Shot:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
@@ -508,6 +540,7 @@
                 <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
               </div>
             </div>
+
           </div>
         </div>
       `;
@@ -518,10 +551,14 @@
 
   // --------------------------------------------------------
   // Startup render loop and notification permission
+  // FIX 3 — guard Notification API existence before any access.
   // --------------------------------------------------------
   setInterval(render, 1000);
 
-  if (Notification.permission !== "granted") {
+  if (
+    typeof Notification !== "undefined" &&
+    Notification.permission !== "granted"
+  ) {
     Notification.requestPermission();
   }
 </script>
