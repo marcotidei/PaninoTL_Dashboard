@@ -497,7 +497,6 @@
       dev.innerHTML = `
         <div class="header" onclick="toggle(this.parentElement)">
           <b>${id}</b>
-
           <span style="display:flex; align-items:center; gap:10px;">
             <i class="fa-solid ${
               s === "error" ? "fa-circle-xmark" :
@@ -513,6 +512,9 @@
             };"></i>
 
             <span>${s.toUpperCase()}</span>
+
+            <i class="fa-solid fa-sd-card" style="color:#e2e8f0;"></i>
+            <span>${d.sdPhotoCount}</span>
 
             <i class="fa-solid ${
               d.batteryPct >= 90 ? "fa-battery-full" :
