@@ -390,6 +390,12 @@ function render() {
               <div class="row"><span>Last Connected:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
               <div class="row"><span>Next Connection:</span><span>${formatDateTime(nextExpected(d))}</span></div>
               <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
+              <div class="row">
+                <span>Total Failed Photos:</span>
+                <span style="color:${(d.photosFailed ?? 0) > 0 ? 'red' : '#e2e8f0'};">
+                  ${d.photosFailed ?? 0}
+                </span>
+              </div>
 
               ${(() => {
                 const err = effectiveErrorInfo(d, id, s);
