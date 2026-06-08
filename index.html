@@ -132,7 +132,6 @@ const devices = {};
 const notified = {};
 const openState = {};
 const GRACE_SECONDS = 120; // in seconds
-const commLossState = {};
 
 client.on("connect", () => {
   console.log("✅ Connected");
@@ -194,7 +193,6 @@ function nextExpected(d) {
 function status(dev, id) {
   const next = nextExpected(dev);
   if (!next || !dev.config?.interval) {
-    delete commLossState[id];
     return "idle";
   }
 
@@ -216,10 +214,6 @@ function status(dev, id) {
     notified[id] = false;
     delete commLossState[id];
     return "ok";
-  }
-
-  if (!commLossState[id]) {
-    commLossState[id] = new Date();
   }
 
   if (now.getTime() < errorMs) {
@@ -246,22 +240,43 @@ function isRecentError(d) {
 }
 
 function effectiveErrorInfo(d, id, s) {
-  if (s === "warn" || s === "error") {
+  const next = nextExpected(d);
+
+  // COMM DELAY = next connection + grace
+  if (s === "warn" && next) {
     return {
       hasError: true,
-      recent: true,
-      text: s === "warn" ? "COMM DELAY" : "COMM LOST",
-      time: commLossState[id] || new Date()
+      text: "COMM DELAY",
+      time: new Date(next.getTime() + GRACE_SECONDS * 1000),
+      bg: "#3a2500",
+      color: "orange",
+      glow: false
     };
   }
 
+  // COMM LOST = next connection + interval + grace
+  if (s === "error" && next && d.config?.interval) {
+    return {
+      hasError: true,
+      text: "COMM LOST",
+      time: new Date(next.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
+      bg: "#550000",
+      color: "red",
+      glow: true
+    };
+  }
+
+  // fallback to JSON-reported camera error
   const hasJsonError = d.lastError && d.lastError !== "None";
+  const recentJsonError = hasJsonError && isRecentError(d);
 
   return {
     hasError: hasJsonError,
-    recent: hasJsonError && isRecentError(d),
     text: hasJsonError ? d.lastError : "No errors",
-    time: hasJsonError ? d.lastErrorTime : "-"
+    time: hasJsonError ? d.lastErrorTime : "-",
+    bg: recentJsonError ? "#550000" : "#222",
+    color: recentJsonError ? "red" : "#aaa",
+    glow: recentJsonError
   };
 }
 
@@ -390,9 +405,9 @@ function render() {
                     margin-top:6px;
                     padding:6px;
                     border-radius:6px;
-                    background:${err.recent ? "#550000" : "#222"};
-                    color:${err.recent ? "red" : "#aaa"};
-                    ${err.recent ? "box-shadow:0 0 8px red;" : ""}
+                    background:${err.bg};
+                    color:${err.color};
+                    ${err.glow ? "box-shadow:0 0 8px red;" : ""}
                   ">
                     <div><b>Error:</b> ${err.text}</div>
                     <div style="font-size:12px;">${formatDateTime(err.time)}</div>
