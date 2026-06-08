@@ -215,13 +215,33 @@
     } catch {}
   });
 
+
   // --------------------------------------------------------
   // Date/time formatting helpers
   // --------------------------------------------------------
+  function parseTS(ts) {
+    if (!ts || ts === "-") return null;
+
+    const m = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+    if (!m) return null;
+
+    return new Date(
+      Number(m[1]),
+      Number(m[2]) - 1,
+      Number(m[3]),
+      Number(m[4]),
+      Number(m[5]),
+      Number(m[6])
+    );
+  }
+
   function relativeTime(ts) {
     if (!ts) return "-";
 
-    const diff = Math.floor((Date.now() - ts * 1000) / 1000);
+    const t = parseTS(ts);
+    if (!t || isNaN(t)) return "-";
+
+    const diff = Math.floor((Date.now() - t.getTime()) / 1000);
 
     if (diff < 10) return "now";
     if (diff < 60) return diff + "s";
@@ -232,11 +252,8 @@
   function formatTime(ts) {
     if (!ts || ts === "-") return "-";
 
-    const t = ts instanceof Date
-      ? ts
-      : new Date(ts * 1000);
-
-    if (isNaN(t)) return "-";
+    const t = ts instanceof Date ? ts : parseTS(ts);
+    if (!t || isNaN(t)) return "-";
 
     return t.toLocaleTimeString();
   }
@@ -244,19 +261,21 @@
   function formatDateTime(ts) {
     if (!ts || ts === "-") return "-";
 
-    const t = ts instanceof Date
-      ? ts
-      : new Date(ts * 1000);
-
-    if (isNaN(t)) return "-";
+    const t = ts instanceof Date ? ts : parseTS(ts);
+    if (!t || isNaN(t)) return "-";
 
     return t.toLocaleString();
   }
 
   function nextExpected(d) {
     if (!d.lastShotOk || !d.config || !d.config.interval) return null;
-    return new Date((d.lastShotOk + d.config.interval) * 1000);
+
+    const last = parseTS(d.lastShotOk);
+    if (!last || isNaN(last)) return null;
+
+    return new Date(last.getTime() + d.config.interval * 1000);
   }
+
 
   // --------------------------------------------------------
   // Device health and error helpers
@@ -373,6 +392,16 @@
       case 2: return "HDR";
       case 3: return "SuperPhoto";
       default: return "Unknown";
+    }
+  }
+
+  function goproModelName(code) {
+    switch (code) {
+      case 10: return "HERO10 Black";
+      case 11: return "HERO11 Black";
+      case 12: return "HERO12 Black";
+      case 13: return "HERO13 Black";
+      default: return "-";
     }
   }
 
@@ -518,7 +547,7 @@
           ">
             <b>GoPro:</b>
 
-            <span>${(d.gopro && d.gopro.m) || "-"}</span>
+            <span>${goproModelName(d.gopro && d.gopro.m)}</span>
 
             <span style="opacity:0.6;">FW:</span>
             <span>${(d.gopro && d.gopro.fw) || "-"}</span>
