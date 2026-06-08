@@ -153,18 +153,6 @@
 <div id="devices"></div>
 
 <script>
-  // --------------------------------------------------------
-  // FIX 4 — Robust date parser
-  // Replaces all .replace(" ", "T") calls.
-  // Handles "YYYY-MM-DD HH:MM:SS" and "YYYY-MM-DD HH:MM:SS +HH:MM"
-  // without leaving stray spaces that break iOS Safari's Date parser.
-  // --------------------------------------------------------
-  function parseTS(ts) {
-    if (!ts || ts === "-") return null;
-    // Replace the space between date and time, then any space before a
-    // timezone offset (+/-), producing a fully valid ISO 8601 string.
-    return new Date(ts.replace(" ", "T").replace(/\s([+-])/, "T$1"));
-  }
 
   // --------------------------------------------------------
   // MQTT connection and shared state
@@ -190,42 +178,65 @@
 
   client.on("message", (topic, message) => {
     try {
+      const parts = topic.split("/");
+
+      // only accept panino/<id>/state
+      if (parts.length < 3 || parts[2] !== "state") return;
+
       const data = JSON.parse(message.toString());
-      const id = data.status.deviceId;
+      const id = parts[1];
+
+      const s = data.s || {};
+      const c = data.c || {};
+      const g = data.g || {};
 
       devices[id] = {
-        ...data.status,
-        config: data.config,
-        lastSeenDevice: data.status.time
+        id,
+        time: s.t,
+        batteryPct: s.b,
+        sdPhotoCount: s.pc,
+        photosFailed: s.pf,
+        lastShotOk: s.ok,
+        lastCaptureFail: s.cf,
+        lastError: s.err,
+        lastErrorTime: s.et,
+        config: {
+          interval: c.i,
+          days: c.d,
+          start: c.s,
+          end: c.e,
+          lens: c.l,
+          output: c.o
+        },
+        gopro: g,
+        lastSeenDevice: s.t
       };
-    } catch {
-      // ignore malformed MQTT payloads
-    }
+
+    } catch {}
   });
 
   // --------------------------------------------------------
   // Date/time formatting helpers
-  // All use parseTS() instead of inline .replace(" ", "T")
   // --------------------------------------------------------
   function relativeTime(ts) {
     if (!ts) return "-";
 
-    const t = parseTS(ts);
-    if (!t || isNaN(t)) return "-";
+    const diff = Math.floor((Date.now() - ts * 1000) / 1000);
 
-    const diff = Math.floor((Date.now() - t) / 1000);
-
-    if (diff < 10)   return "now";
-    if (diff < 60)   return diff + "s";
+    if (diff < 10) return "now";
+    if (diff < 60) return diff + "s";
     if (diff < 3600) return Math.floor(diff / 60) + "m";
     return Math.floor(diff / 3600) + "h";
   }
 
   function formatTime(ts) {
-    if (!ts) return "-";
+    if (!ts || ts === "-") return "-";
 
-    const t = typeof ts === "string" ? parseTS(ts) : ts;
-    if (!t || isNaN(t)) return "-";
+    const t = ts instanceof Date
+      ? ts
+      : new Date(ts * 1000);
+
+    if (isNaN(t)) return "-";
 
     return t.toLocaleTimeString();
   }
@@ -233,22 +244,18 @@
   function formatDateTime(ts) {
     if (!ts || ts === "-") return "-";
 
-    const t = typeof ts === "string" ? parseTS(ts) : ts;
-    if (!t || isNaN(t)) return "-";
+    const t = ts instanceof Date
+      ? ts
+      : new Date(ts * 1000);
+
+    if (isNaN(t)) return "-";
 
     return t.toLocaleString();
   }
 
   function nextExpected(d) {
-    // FIX 1 — correct logical operators: was (!d.config && d.config.interval)
-    // which always short-circuits to false when d.config is falsy, then tries
-    // to read d.config.interval on a null object → TypeError on iOS Safari.
     if (!d.lastShotOk || !d.config || !d.config.interval) return null;
-
-    const last = parseTS(d.lastShotOk);
-    if (!last || isNaN(last)) return null;
-
-    return new Date(last.getTime() + d.config.interval * 1000);
+    return new Date((d.lastShotOk + d.config.interval) * 1000);
   }
 
   // --------------------------------------------------------
@@ -256,7 +263,7 @@
   // --------------------------------------------------------
   function status(dev, id) {
     const next = nextExpected(dev);
-    if (!next || !dev.config?.interval) {
+    if (!next || !dev.config || !dev.config.interval) {
       return "idle";
     }
 
@@ -282,10 +289,6 @@
       return "warn";
     }
 
-    // FIX 3 — guard Notification API before accessing it.
-    // On iOS Safari in WKWebView / standalone PWA mode the Notification
-    // global may not exist at all, causing a ReferenceError that kills
-    // the entire script execution.
     if (!notified[id]) {
       if (
         typeof Notification !== "undefined" &&
@@ -299,14 +302,12 @@
     return "error";
   }
 
+
   function isRecentError(d) {
     if (!d.lastErrorTime || d.lastError === "None") return false;
+    if (!d.lastShotOk) return false;
 
-    const errTime = parseTS(d.lastErrorTime);
-    const lastOk  = parseTS(d.lastShotOk);
-    if (!errTime || !lastOk || isNaN(errTime) || isNaN(lastOk)) return false;
-
-    return errTime > lastOk;
+    return d.lastErrorTime > d.lastShotOk;
   }
 
   function effectiveErrorInfo(d, id, statusLevel) {
@@ -501,6 +502,34 @@
         </div>
 
         <div class="content">
+
+          <!-- GOPRO BAR -->
+          <div style="
+            background:#020617;
+            padding:8px 10px;
+            border-radius:8px;
+            margin-bottom:10px;
+            font-size:12px;
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+            align-items:center;
+            border:1px solid #334155;
+          ">
+            <b>GoPro:</b>
+
+            <span>${(d.gopro && d.gopro.m) || "-"}</span>
+
+            <span style="opacity:0.6;">FW:</span>
+            <span>${(d.gopro && d.gopro.fw) || "-"}</span>
+
+            <span style="opacity:0.6;">SN:</span>
+            <span>${(d.gopro && d.gopro.sn) || "-"}</span>
+
+            <span style="opacity:0.6;">MAC:</span>
+            <span>${(d.gopro && d.gopro.mac) || "-"}</span>
+          </div>
+
           <div class="sections">
 
             <div class="section">
@@ -514,7 +543,7 @@
                 <div class="row"><span>Last Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
                 <div class="row">
                   <span>Failed Photos:</span>
-                  <span style="color:${(d.photosFailed ?? 0) > 0 ? 'red' : '#e2e8f0'};">
+                  <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
                     ${d.photosFailed ? d.photosFailed : 0}
                   </span>
                 </div>
