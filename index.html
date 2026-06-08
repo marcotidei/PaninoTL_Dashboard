@@ -228,7 +228,7 @@
   }
 
   function nextExpected(d) {
-    if (!d.lastShotOk || !d.config?.interval) return null;
+    if (!d.lastShotOk || !d.config && d.config.interval) return null;
 
     const last = new Date(d.lastShotOk.replace(" ", "T"));
     return new Date(last.getTime() + d.config.interval * 1000);
