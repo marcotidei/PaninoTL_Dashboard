@@ -594,19 +594,19 @@
               title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
               style="color:${wifiQualityColor(d.wifiQuality)};"></i>
 
-            <i class="fa-solid ${
-              d.batteryPct >= 90 ? "fa-battery-full" :
-              d.batteryPct >= 65 ? "fa-battery-three-quarters" :
-              d.batteryPct >= 40 ? "fa-battery-half" :
-              d.batteryPct >= 15 ? "fa-battery-quarter" :
-              "fa-battery-empty"
-            }"
-            style="color:${
-              d.batteryPct >= 40 ? "#e2e8f0" :
-              d.batteryPct >= 15 ? "orange" :
-              "red"
-            };"></i>
-
+              <i class="fa-solid ${
+                d.batteryPct >= 90 ? "fa-battery-full" :
+                d.batteryPct >= 65 ? "fa-battery-three-quarters" :
+                d.batteryPct >= 40 ? "fa-battery-half" :
+                d.batteryPct >= 15 ? "fa-battery-quarter" :
+                "fa-battery-empty"
+              }"
+              title="Battery ${d.batteryPct}%"
+              style="color:${
+                d.batteryPct >= 40 ? "#e2e8f0" :
+                d.batteryPct >= 15 ? "orange" :
+                "red"
+              };"></i>
             <span>${d.batteryPct}%</span>
           </span>
         </div>
@@ -642,20 +642,31 @@
 
           <div class="sections">
 
-            <div class="section">
-              <div class="section-icon">
-                <i class="fa-solid fa-heart-pulse"></i>
-              </div>
-              <div class="section-body">
-                <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-                <div class="row">
-                  <span>Wi-Fi:</span>
-                  <span style="color:${wifiQualityColor(d.wifiQuality)};">
-                    ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
-                  </span>
+              <div class="section">
+                <div class="section-icon">
+                  <i class="fa-solid fa-heart-pulse"></i>
                 </div>
-                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpectedComm(d))}</span></div>
-                ${errorBlock(err)}
+                <div class="section-body">
+                  <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+                  <div class="row">
+                    <span>Wi-Fi:</span>
+                    <span style="color:${wifiQualityColor(d.wifiQuality)};">
+                      ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
+                    </span>
+                  </div>
+                  <div class="row">
+                    <span>Battery:</span>
+                    <span style="color:${
+                      d.batteryPct >= 40 ? "#e2e8f0" :
+                      d.batteryPct >= 15 ? "orange" :
+                      "red"
+                    };">
+                      ${d.batteryPct}%
+                    </span>
+                  </div>
+                  <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpectedComm(d))}</span></div>
+                  ${errorBlock(err)}
+                </div>
               </div>
             </div>
 
