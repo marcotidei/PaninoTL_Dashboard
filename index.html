@@ -647,7 +647,7 @@
                 <i class="fa-solid fa-heart-pulse"></i>
               </div>
               <div class="section-body">
-                <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
+              <div class="section-body">
                 <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
                 <div class="row">
                   <span>Wi-Fi:</span>
@@ -656,13 +656,6 @@
                   </span>
                 </div>
                 <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpectedComm(d))}</span></div>
-                <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
-                <div class="row">
-                  <span>Failed Photos:</span>
-                  <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
-                    ${d.photosFailed ? d.photosFailed : 0}
-                  </span>
-                </div>
                 ${errorBlock(err)}
               </div>
             </div>
@@ -684,12 +677,17 @@
               </div>
               <div class="section-body">
                 <div class="row"><span>Photos:</span><span>${d.sdPhotoCount}</span></div>
+                <div class="row">
+                  <span>Failed Photos:</span>
+                  <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
+                    ${d.photosFailed ? d.photosFailed : 0}
+                  </span>
+                </div>
                 <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
                 <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
                 <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
               </div>
             </div>
-
           </div>
         </div>
       `;
