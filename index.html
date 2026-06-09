@@ -269,10 +269,54 @@
     return t.toLocaleString();
   }
 
-  function nextExpected(d) {
-    if (!d.lastShotOk || !d.config || !d.config.interval) return null;
+  function isScheduleActiveNow(d, now = new Date()) {
+    if (!d.config || !d.config.days || !d.config.start || !d.config.end) return false;
 
-    const last = parseTS(d.lastShotOk);
+    const days = d.config.days; // e.g. "MTWTFSS" with "-" for inactive
+    if (!days || days.length < 7) return false;
+
+    // JS getDay(): Sun=0 ... Sat=6
+    // Dashboard days string: Mon=0 ... Sun=6
+    const dowMon0 = (now.getDay() + 6) % 7;
+    const prevDow = (dowMon0 + 6) % 7;
+
+    const curMin = now.getHours() * 60 + now.getMinutes();
+
+    const parseHHMM = (hhmm) => {
+      if (!hhmm || typeof hhmm !== "string" || hhmm.length < 5) return null;
+      const hh = Number(hhmm.substring(0, 2));
+      const mm = Number(hhmm.substring(3, 5));
+      if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+      return hh * 60 + mm;
+    };
+
+    const startMin = parseHHMM(d.config.start);
+    const endMin   = parseHHMM(d.config.end);
+
+    if (startMin == null || endMin == null) return false;
+
+    const wraps = startMin >= endMin;
+
+    if (!wraps) {
+      return (days[dowMon0] && days[dowMon0] !== "-") &&
+            curMin >= startMin &&
+            curMin < endMin;
+    }
+
+    // wrapped window, e.g. 09:10 -> 09:00 next day
+    const todayActive = (days[dowMon0] && days[dowMon0] !== "-");
+    const prevActive  = (days[prevDow] && days[prevDow] !== "-");
+
+    if (todayActive && curMin >= startMin) return true;
+    if (prevActive  && curMin < endMin)    return true;
+
+    return false;
+  }
+
+  function nextExpectedComm(d) {
+    if (!d.lastSeenDevice || !d.config || !d.config.interval) return null;
+
+    const last = parseTS(d.lastSeenDevice);
     if (!last || isNaN(last)) return null;
 
     return new Date(last.getTime() + d.config.interval * 1000);
@@ -283,23 +327,25 @@
   // Device health and error helpers
   // --------------------------------------------------------
   function status(dev, id) {
-    const next = nextExpected(dev);
+    const now = new Date();
+
+    // Outside active schedule -> no communication expected
+    if (!isScheduleActiveNow(dev, now)) {
+      notified[id] = false;
+      return "idle";
+    }
+
+    const next = nextExpectedComm(dev);
     if (!next || !dev.config || !dev.config.interval) {
       return "idle";
     }
 
-    const now         = new Date();
     const intervalSec = dev.config.interval;
     const grace       = GRACE_SECONDS;
 
     const nextMs  = next.getTime();
     const warnMs  = nextMs + grace * 1000;
     const errorMs = nextMs + intervalSec * 1000 + grace * 1000;
-
-    if (now.getTime() <= nextMs) {
-      notified[id] = false;
-      return "ok";
-    }
 
     if (now.getTime() <= warnMs) {
       notified[id] = false;
@@ -315,7 +361,7 @@
         typeof Notification !== "undefined" &&
         Notification.permission === "granted"
       ) {
-        new Notification("Device " + id + " missed multiple check-ins");
+        new Notification("Device " + id + " communication lost");
       }
       notified[id] = true;
     }
@@ -324,52 +370,52 @@
   }
 
 
-  function isRecentError(d) {
-    if (!d.lastErrorTime || d.lastError === "None") return false;
-    if (!d.lastShotOk) return false;
+    function isRecentError(d) {
+      if (!d.lastErrorTime || d.lastError === "None") return false;
+      if (!d.lastShotOk) return false;
 
-    return d.lastErrorTime > d.lastShotOk;
-  }
-
-  function effectiveErrorInfo(d, id, statusLevel) {
-    const next = nextExpected(d);
-
-    // COMM DELAY: device is slow but still within grace period
-    if (statusLevel === "warn" && next && d.config) {
-      return {
-        hasError: true,
-        text: "COMM DELAY",
-        time: new Date(next.getTime() + GRACE_SECONDS * 1000),
-        bg: "#3a2500",
-        color: "orange",
-        glow: false
-      };
+      return d.lastErrorTime > d.lastShotOk;
     }
 
-    // COMM LOST: device missed its interval plus grace period
-    if (statusLevel === "error" && next && d.config && d.config.interval) {
+    function effectiveErrorInfo(d, id, statusLevel) {
+      const next = nextExpectedComm(d);
+
+      // Communication problems always override shooting/capture errors
+      if (statusLevel === "warn" && next && d.config) {
+        return {
+          hasError: true,
+          text: "COMM DELAY",
+          time: new Date(next.getTime() + GRACE_SECONDS * 1000),
+          bg: "#3a2500",
+          color: "orange",
+          glow: false
+        };
+      }
+
+      if (statusLevel === "error" && next && d.config && d.config.interval) {
+        return {
+          hasError: true,
+          text: "COMM LOST",
+          time: new Date(next.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
+          bg: "#550000",
+          color: "red",
+          glow: true
+        };
+      }
+
+      // Only surface capture/shooting errors when communication is healthy
+      const hasJsonError    = d.lastError && d.lastError !== "None";
+      const recentJsonError = hasJsonError && isRecentError(d);
+
       return {
-        hasError: true,
-        text: "COMM LOST",
-        time: new Date(next.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
-        bg: "#550000",
-        color: "red",
-        glow: true
+        hasError: hasJsonError,
+        text:     hasJsonError ? d.lastError : "No errors",
+        time:     hasJsonError ? d.lastErrorTime : "-",
+        bg:       recentJsonError ? "#550000" : "#222",
+        color:    recentJsonError ? "red" : "#aaa",
+        glow:     recentJsonError
       };
     }
-
-    const hasJsonError    = d.lastError && d.lastError !== "None";
-    const recentJsonError = hasJsonError && isRecentError(d);
-
-    return {
-      hasError: hasJsonError,
-      text:     hasJsonError ? d.lastError : "No errors",
-      time:     hasJsonError ? d.lastErrorTime : "-",
-      bg:       recentJsonError ? "#550000" : "#222",
-      color:    recentJsonError ? "red" : "#aaa",
-      glow:     recentJsonError
-    };
-  }
 
   // --------------------------------------------------------
   // Mapping helpers for camera metadata
@@ -601,7 +647,7 @@
                     ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
                   </span>
                 </div>
-                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpected(d))}</span></div>
+                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpectedComm(d))}</span></div>
                 <div class="row"><span>Last Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
                 <div class="row">
                   <span>Failed Photos:</span>
