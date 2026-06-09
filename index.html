@@ -408,23 +408,23 @@
   }
 
   function wifiQualityLabel(q) {
-  const v = Number(q ?? 0);
+    const v = Number(q ?? 0);
 
-  if (v <= 0)  return "Offline";
-  if (v >= 80) return "Excellent";
-  if (v >= 60) return "Good";
-  if (v >= 40) return "Fair";
-  return "Weak";
-}
+    if (v <= 0)  return "Offline";
+    if (v >= 80) return "Excellent";
+    if (v >= 60) return "Good";
+    if (v >= 40) return "Fair";
+    return "Weak";
+  }
 
-function wifiQualityColor(q) {
-  const v = Number(q ?? 0);
+  function wifiQualityColor(q) {
+    const v = Number(q ?? 0);
 
-  if (v <= 0)  return "#64748b";  // slate
-  if (v >= 60) return "#e2e8f0";  // normal light text
-  if (v >= 40) return "orange";
-  return "red";
-}
+    if (v <= 0)  return "#64748b";  // slate
+    if (v >= 60) return "#e2e8f0";  // normal light text
+    if (v >= 40) return "orange";
+    return "red";
+  }
 
   function renderDays(daysStr) {
     const labels = ["M","T","W","T","F","S","S"];
