@@ -194,10 +194,10 @@
       devices[id] = {
         id,
         time: s.t,
-        batteryPct: s.b,
+        batteryPct: (typeof s.b === "number") ? s.b : 0,
         wifiQuality: (typeof s.wq === "number") ? s.wq : 0,
-        sdPhotoCount: s.pc,
-        photosFailed: s.pf,
+        sdPhotoCount: (typeof s.pc === "number") ? s.pc : 0,
+        photosFailed: (typeof s.pf === "number") ? s.pf : 0,
         lastShotOk: s.ok,
         lastCaptureFail: s.cf,
         lastError: s.err,
@@ -369,13 +369,21 @@
     return "error";
   }
 
+  function isRecentError(d) {
+    if (!d.lastErrorTime || d.lastError === "None") return false;
 
-    function isRecentError(d) {
-      if (!d.lastErrorTime || d.lastError === "None") return false;
-      if (!d.lastShotOk) return false;
+    const err = parseTS(d.lastErrorTime);
+    if (!err || isNaN(err)) return false;
 
-      return d.lastErrorTime > d.lastShotOk;
+    if (!d.lastShotOk || d.lastShotOk === "-") {
+      return true;
     }
+
+    const shot = parseTS(d.lastShotOk);
+    if (!shot || isNaN(shot)) return true;
+
+    return err.getTime() > shot.getTime();
+  }
 
     function effectiveErrorInfo(d, id, statusLevel) {
       const next = nextExpectedComm(d);
@@ -648,7 +656,7 @@
                   </span>
                 </div>
                 <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpectedComm(d))}</span></div>
-                <div class="row"><span>Last Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
+                <div class="row"><span>Last Capture Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
                 <div class="row">
                   <span>Failed Photos:</span>
                   <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
