@@ -195,6 +195,7 @@
         id,
         time: s.t,
         batteryPct: s.b,
+        wifiQuality: (typeof s.wq === "number") ? s.wq : 0,
         sdPhotoCount: s.pc,
         photosFailed: s.pf,
         lastShotOk: s.ok,
@@ -406,6 +407,25 @@
     }
   }
 
+  function wifiQualityLabel(q) {
+  const v = Number(q ?? 0);
+
+  if (v <= 0)  return "Offline";
+  if (v >= 80) return "Excellent";
+  if (v >= 60) return "Good";
+  if (v >= 40) return "Fair";
+  return "Weak";
+}
+
+function wifiQualityColor(q) {
+  const v = Number(q ?? 0);
+
+  if (v <= 0)  return "#64748b";  // slate
+  if (v >= 60) return "#e2e8f0";  // normal light text
+  if (v >= 40) return "orange";
+  return "red";
+}
+
   function renderDays(daysStr) {
     const labels = ["M","T","W","T","F","S","S"];
 
@@ -516,6 +536,10 @@
             <i class="fa-solid fa-sd-card" style="color:#e2e8f0;"></i>
             <span>${d.sdPhotoCount}</span>
 
+            <i class="fa-solid fa-wifi"
+              title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
+              style="color:${wifiQualityColor(d.wifiQuality)};"></i>
+
             <i class="fa-solid ${
               d.batteryPct >= 90 ? "fa-battery-full" :
               d.batteryPct >= 65 ? "fa-battery-three-quarters" :
@@ -571,6 +595,12 @@
               <div class="section-body">
                 <div class="row"><span>Status:</span><span>${s.toUpperCase()}</span></div>
                 <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+                <div class="row">
+                  <span>Wi-Fi:</span>
+                  <span style="color:${wifiQualityColor(d.wifiQuality)};">
+                    ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
+                  </span>
+                </div>
                 <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpected(d))}</span></div>
                 <div class="row"><span>Last Fail:</span><span>${formatDateTime(d.lastCaptureFail)}</span></div>
                 <div class="row">
