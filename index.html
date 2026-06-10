@@ -579,14 +579,21 @@
       const s = status(d, id);
       const err = effectiveErrorInfo(d, id, s);
 
+      let panelState = s;
+
+      if (err.hasError) {
+        if (err.color === "red") panelState = "error";
+        else if (err.color === "orange") panelState = "warn";
+      }
+
       const dev = document.createElement("div");
-      dev.className = "device " + s;
+      dev.className = "device " + panelState;
 
       const isOpen = Object.prototype.hasOwnProperty.call(openState, id)
         ? openState[id]
         : expandAll;
 
-      if (isOpen || s === "error") {
+      if (isOpen || panelState === "error") {
         dev.classList.add("open");
       }
 
@@ -594,18 +601,18 @@
         <div class="header" onclick="toggle(this.parentElement)">
           <b>${id}</b>
           <span style="display:flex; align-items:center; gap:10px;">
-            ${s !== "ok" ? `
+            ${panelState !== "ok" ? `
               <i class="fa-solid ${
-                s === "error" ? "fa-circle-xmark" :
-                s === "warn"  ? "fa-circle-exclamation" :
+                panelState === "error" ? "fa-circle-xmark" :
+                panelState === "warn"  ? "fa-circle-exclamation" :
                 "fa-clock"
               }"
               style="color:${
-                s === "error" ? "red" :
-                s === "warn"  ? "orange" :
+                panelState === "error" ? "red" :
+                panelState === "warn"  ? "orange" :
                 "#64748b"
               };"></i>
-              <span>${s.toUpperCase()}</span>
+              <span>${panelState.toUpperCase()}</span>
             ` : ""}
 
             <i class="fa-solid fa-sd-card" style="color:#e2e8f0;"></i>
