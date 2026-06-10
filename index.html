@@ -322,6 +322,80 @@
     return new Date(last.getTime() + d.config.interval * 1000);
   }
 
+function hhmmToSeconds(hhmm) {
+  if (!hhmm) return 0;
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 3600 + m * 60;
+}
+
+function dayIndexMon0(jsDay) {
+  return (jsDay + 6) % 7; // JS: Sun=0 ... Sat=6 -> Mon=0 ... Sun=6
+}
+
+function isDayActive(days, date) {
+  if (!days || days.length < 7) return false;
+  return days[dayIndexMon0(date.getDay())] !== "-";
+}
+
+function isInsideWindow(d, date) {
+  if (!d.config || !d.config.days) return false;
+
+  const startSec = hhmmToSeconds(d.config.start);
+  const endSec   = hhmmToSeconds(d.config.end);
+  const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  const wraps    = startSec >= endSec;
+
+  if (!wraps) {
+    return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endSec;
+  }
+
+  const prev = new Date(date);
+  prev.setDate(prev.getDate() - 1);
+
+  return (
+    (isDayActive(d.config.days, date) && curSec >= startSec) ||
+    (isDayActive(d.config.days, prev) && curSec < endSec)
+  );
+}
+
+function nextScheduledConnection(d, from = new Date()) {
+  if (!d.config || !d.config.interval) return null;
+
+  const intervalMs = d.config.interval * 1000;
+  const search = new Date(from);
+
+  for (let i = 0; i < 8 * 24 * 60; i++) {
+    const t = new Date(search.getTime() + i * 60000);
+
+    const midnight = new Date(t);
+    midnight.setHours(0, 0, 0, 0);
+
+    const elapsedMs = t.getTime() - midnight.getTime();
+    const nextElapsedMs = Math.ceil(elapsedMs / intervalMs) * intervalMs;
+    const candidate = new Date(midnight.getTime() + nextElapsedMs);
+
+    if (candidate <= from) continue;
+    if (isInsideWindow(d, candidate)) return candidate;
+  }
+
+  return null;
+}
+
+function latestDueConnection(d, now = new Date()) {
+  if (!d.config || !d.config.interval) return null;
+
+  const intervalMs = d.config.interval * 1000;
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
+
+  const elapsedMs = now.getTime() - midnight.getTime();
+  const dueElapsedMs = Math.floor(elapsedMs / intervalMs) * intervalMs;
+  const candidate = new Date(midnight.getTime() + dueElapsedMs);
+
+  if (isInsideWindow(d, candidate)) return candidate;
+  return null;
+}
+
 
   // --------------------------------------------------------
   // Device health and error helpers
@@ -335,7 +409,7 @@
       return "idle";
     }
 
-    const next = nextExpectedComm(dev);
+    const next = latestDueConnection(dev);
     if (!next || !dev.config || !dev.config.interval) {
       return "idle";
     }
@@ -386,7 +460,7 @@
   }
 
     function effectiveErrorInfo(d, id, statusLevel) {
-      const next = nextExpectedComm(d);
+      const next = latestDueConnection(d);
 
       // Communication problems always override shooting/capture errors
       if (statusLevel === "warn" && next && d.config) {
@@ -663,7 +737,7 @@
                     ${d.batteryPct}%
                   </span>
                 </div>
-                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextExpectedComm(d))}</span></div>
+                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
                 ${errorBlock(err)}
               </div>
             </div>
