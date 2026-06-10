@@ -634,45 +634,23 @@
         <div class="content">
 
           <div style="
-            background:#020617;
             padding:8px 10px;
             border-radius:8px;
             margin-bottom:10px;
             font-size:12px;
             display:flex;
-            gap:12px;
+            gap:10px;
             flex-wrap:wrap;
             align-items:center;
-            border:1px solid #334155;
+            border:1px solid ${err.hasError ? err.color : "#334155"};
+            background:${err.hasError ? err.bg : "#020617"};
+            color:${err.hasError ? err.color : "#e2e8f0"};
+            ${err.glow ? "box-shadow:0 0 8px red;" : ""}
           ">
-            <b>GoPro:</b>
-
-            <span>${goproModelName(d.gopro && d.gopro.m)}</span>
-
-            <span style="opacity:0.6;">FW:</span>
-            <span>${(d.gopro && d.gopro.fw) || "-"}</span>
-
-            <span style="opacity:0.6;">SN:</span>
-            <span>${(d.gopro && d.gopro.sn) || "-"}</span>
-
-            <span style="opacity:0.6;">MAC:</span>
-            <span>${(d.gopro && d.gopro.mac) || "-"}</span>
-
+            <b>${err.hasError ? "Alert:" : "No alerts"}</b>
             ${err.hasError ? `
-              <span style="
-                margin-left:auto;
-                display:inline-flex;
-                align-items:center;
-                gap:6px;
-                padding:4px 8px;
-                border-radius:999px;
-                background:${err.bg};
-                color:${err.color};
-                ${err.glow ? "box-shadow:0 0 8px red;" : ""}
-              ">
-                <span>${err.text}</span>
-                <span style="opacity:0.85;">${formatDateTime(err.time)}</span>
-              </span>
+              <span>${err.text}</span>
+              <span style="opacity:0.85;">${formatDateTime(err.time)}</span>
             ` : ""}
           </div>
 
