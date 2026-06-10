@@ -618,6 +618,12 @@
             <i class="fa-solid fa-sd-card" style="color:#e2e8f0;"></i>
             <span>${d.sdPhotoCount}</span>
 
+            <i class="fa-solid fa-circle-xmark"
+              style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#64748b'};"></i>
+            <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
+              ${d.photosFailed ? d.photosFailed : 0}
+            </span>
+
             <i class="fa-solid fa-wifi"
               title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
               style="color:${wifiQualityColor(d.wifiQuality)};"></i>
