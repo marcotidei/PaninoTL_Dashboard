@@ -174,7 +174,7 @@
 
   client.on("connect", () => {
     console.log("✅ Connected");
-    client.subscribe("#");
+    client.subscribe("panino/+/state");
   });
 
   client.on("message", (topic, message) => {
@@ -193,7 +193,6 @@
 
       devices[id] = {
         id,
-        time: s.t,
         batteryPct: (typeof s.b === "number") ? s.b : 0,
         wifiQuality: (typeof s.wq === "number") ? s.wq : 0,
         sdPhotoCount: (typeof s.pc === "number") ? s.pc : 0,
