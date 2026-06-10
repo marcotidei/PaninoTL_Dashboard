@@ -11,7 +11,6 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
   <style>
-    /* page layout */
     .topbar {
       display: flex;
       justify-content: space-between;
@@ -37,17 +36,13 @@
     }
 
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e2e8f0;
       padding: 20px;
+      margin: 0;
     }
 
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    /* device card and header */
     .device {
       background: #1e293b;
       border-radius: 10px;
@@ -63,6 +58,7 @@
       flex-wrap: nowrap;
       padding: 12px 14px;
       cursor: pointer;
+      gap: 12px;
     }
 
     .header span i {
@@ -79,7 +75,6 @@
       display: block;
     }
 
-    /* status indicator border colors */
     .error { border-left: 5px solid red; }
     .warn  { border-left: 5px solid orange; }
     .ok    { border-left: 5px solid limegreen; }
@@ -98,7 +93,6 @@
       word-break: break-word;
     }
 
-    /* section cards inside each device detail panel */
     .sections {
       display: grid;
       grid-template-columns: 1fr;
@@ -131,18 +125,6 @@
       min-width: 0;
     }
 
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 6px;
-      font-size: 13px;
-      opacity: 0.9;
-    }
-
-    .section-title i {
-      opacity: 0.8;
-    }
-
-    /* responsive layout */
     @media (min-width: 700px) {
       .sections {
         grid-template-columns: repeat(3, 1fr);
@@ -210,14 +192,14 @@
     }
   );
 
-  const devices   = {};
-  const notified  = {};
+  const devices = {};
+  const notified = {};
   const openState = {};
   const GRACE_SECONDS = 120;
   let expandAll = false;
 
   client.on("connect", () => {
-    console.log("✅ Connected");
+    console.log("Connected");
     client.subscribe("panino/+/state");
   });
 
@@ -255,7 +237,7 @@
         lastSeenDevice: s.t
       };
 
-      // clear any comm notification immediately on fresh message
+      // fresh packet clears comm retention
       notified[id] = false;
 
     } catch (e) {
@@ -264,7 +246,7 @@
   });
 
   // --------------------------------------------------------
-  // Date/time formatting helpers
+  // Time helpers
   // --------------------------------------------------------
   function parseTS(ts) {
     if (!ts || ts === "-") return null;
@@ -305,6 +287,9 @@
     return t.toLocaleString();
   }
 
+  // --------------------------------------------------------
+  // Schedule helpers
+  // --------------------------------------------------------
   function hhmmToSeconds(hhmm) {
     if (!hhmm) return 0;
     const [h, m] = hhmm.split(":").map(Number);
@@ -312,7 +297,7 @@
   }
 
   function dayIndexMon0(jsDay) {
-    return (jsDay + 6) % 7;
+    return (jsDay + 6) % 7; // JS: Sun=0..Sat=6 -> Mon=0..Sun=6
   }
 
   function isDayActive(days, date) {
@@ -365,7 +350,7 @@
   }
 
   // --------------------------------------------------------
-  // Device health and error helpers
+  // Health / error logic
   // --------------------------------------------------------
   function status(dev, id) {
     const now = new Date();
@@ -415,9 +400,7 @@
     const err = parseTS(d.lastErrorTime);
     if (!err || isNaN(err)) return false;
 
-    if (!d.lastShotOk || d.lastShotOk === "-") {
-      return true;
-    }
+    if (!d.lastShotOk || d.lastShotOk === "-") return true;
 
     const shot = parseTS(d.lastShotOk);
     if (!shot || isNaN(shot)) return true;
@@ -468,7 +451,7 @@
   }
 
   // --------------------------------------------------------
-  // Mapping helpers for camera metadata
+  // Mapping helpers
   // --------------------------------------------------------
   function lensName(id) {
     switch (id) {
@@ -522,7 +505,6 @@
 
   function renderDays(daysStr) {
     const labels = ["M","T","W","T","F","S","S"];
-
     return labels.map((label, i) => {
       const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
       return active
@@ -531,28 +513,8 @@
     }).join(" ");
   }
 
-  function errorBlock(err) {
-    if (!err.hasError) {
-      return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
-    }
-
-    return `
-      <div style="
-        margin-top:6px;
-        padding:6px;
-        border-radius:6px;
-        background:${err.bg};
-        color:${err.color};
-        ${err.glow ? "box-shadow:0 0 8px red;" : ""}
-      ">
-        <div><b>Error:</b> ${err.text}</div>
-        <div style="font-size:12px;">${formatDateTime(err.time)}</div>
-      </div>
-    `;
-  }
-
   // --------------------------------------------------------
-  // UI interaction helpers
+  // UI helpers
   // --------------------------------------------------------
   function toggle(el) {
     const id = el.querySelector("b").innerText;
@@ -603,6 +565,9 @@
     if (e.key === "Escape") closeCameraModal();
   });
 
+  // --------------------------------------------------------
+  // Render
+  // --------------------------------------------------------
   function render() {
     const container = document.getElementById("devices");
     container.innerHTML = "";
@@ -612,6 +577,7 @@
       if (!d.config) return;
 
       const s = status(d, id);
+      const err = effectiveErrorInfo(d, id, s);
 
       const dev = document.createElement("div");
       dev.className = "device " + s;
@@ -623,8 +589,6 @@
       if (isOpen || s === "error") {
         dev.classList.add("open");
       }
-
-      const err = effectiveErrorInfo(d, id, s);
 
       dev.innerHTML = `
         <div class="header" onclick="toggle(this.parentElement)">
@@ -641,7 +605,6 @@
                 s === "warn"  ? "orange" :
                 "#64748b"
               };"></i>
-
               <span>${s.toUpperCase()}</span>
             ` : ""}
 
@@ -694,6 +657,23 @@
 
             <span style="opacity:0.6;">MAC:</span>
             <span>${(d.gopro && d.gopro.mac) || "-"}</span>
+
+            ${err.hasError ? `
+              <span style="
+                margin-left:auto;
+                display:inline-flex;
+                align-items:center;
+                gap:6px;
+                padding:4px 8px;
+                border-radius:999px;
+                background:${err.bg};
+                color:${err.color};
+                ${err.glow ? "box-shadow:0 0 8px red;" : ""}
+              ">
+                <span>${err.text}</span>
+                <span style="opacity:0.85;">${formatDateTime(err.time)}</span>
+              </span>
+            ` : ""}
           </div>
 
           <div class="sections">
@@ -721,7 +701,6 @@
                   </span>
                 </div>
                 <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
-                ${errorBlock(err)}
               </div>
             </div>
 
