@@ -90,6 +90,12 @@
       justify-content: space-between;
       margin: 4px 0;
       font-size: 14px;
+      gap: 12px;
+    }
+
+    .row span:last-child {
+      text-align: right;
+      word-break: break-word;
     }
 
     /* section cards inside each device detail panel */
@@ -122,6 +128,7 @@
 
     .section-body {
       flex: 1;
+      min-width: 0;
     }
 
     .section-title {
@@ -153,8 +160,45 @@
 
 <div id="devices"></div>
 
-<script>
+<!-- CAMERA MODAL -->
+<div id="cameraModal" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+">
+  <div id="cameraModalCard" style="
+    background:#0b1220;
+    color:#e2e8f0;
+    width:min(420px, calc(100vw - 32px));
+    border:1px solid #334155;
+    border-radius:10px;
+    padding:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
+  ">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <b>Camera Information</b>
+      <button onclick="closeCameraModal()" style="
+        background:#1e293b;
+        color:#e2e8f0;
+        border:1px solid #334155;
+        border-radius:6px;
+        padding:4px 8px;
+        cursor:pointer;
+      ">Close</button>
+    </div>
 
+    <div class="row"><span>Model:</span><span id="camInfoModel">-</span></div>
+    <div class="row"><span>Firmware:</span><span id="camInfoFw">-</span></div>
+    <div class="row"><span>Serial:</span><span id="camInfoSn">-</span></div>
+    <div class="row"><span>MAC:</span><span id="camInfoMac">-</span></div>
+  </div>
+</div>
+
+<script>
   // --------------------------------------------------------
   // MQTT connection and shared state
   // --------------------------------------------------------
@@ -166,11 +210,11 @@
     }
   );
 
-  const devices    = {};          // live device state by deviceId
-  const notified   = {};          // error notification tracking
-  const openState  = {};          // expanded card state per device
-  const GRACE_SECONDS = 120;      // communication grace period in seconds
-  let expandAll    = false;       // global toggle for expanding/collapsing all device panels
+  const devices   = {};
+  const notified  = {};
+  const openState = {};
+  const GRACE_SECONDS = 120;
+  let expandAll = false;
 
   client.on("connect", () => {
     console.log("✅ Connected");
@@ -180,8 +224,6 @@
   client.on("message", (topic, message) => {
     try {
       const parts = topic.split("/");
-
-      // only accept panino/<id>/state
       if (parts.length < 3 || parts[2] !== "state") return;
 
       const data = JSON.parse(message.toString());
@@ -213,9 +255,13 @@
         lastSeenDevice: s.t
       };
 
-    } catch {}
-  });
+      // clear any comm notification immediately on fresh message
+      notified[id] = false;
 
+    } catch (e) {
+      console.error("MQTT parse error:", e);
+    }
+  });
 
   // --------------------------------------------------------
   // Date/time formatting helpers
@@ -250,15 +296,6 @@
     return Math.floor(diff / 3600) + "h";
   }
 
-  function formatTime(ts) {
-    if (!ts || ts === "-") return "-";
-
-    const t = ts instanceof Date ? ts : parseTS(ts);
-    if (!t || isNaN(t)) return "-";
-
-    return t.toLocaleTimeString();
-  }
-
   function formatDateTime(ts) {
     if (!ts || ts === "-") return "-";
 
@@ -268,65 +305,64 @@
     return t.toLocaleString();
   }
 
-function hhmmToSeconds(hhmm) {
-  if (!hhmm) return 0;
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 3600 + m * 60;
-}
-
-function dayIndexMon0(jsDay) {
-  return (jsDay + 6) % 7; // JS: Sun=0 ... Sat=6 -> Mon=0 ... Sun=6
-}
-
-function isDayActive(days, date) {
-  if (!days || days.length < 7) return false;
-  return days[dayIndexMon0(date.getDay())] !== "-";
-}
-
-function isInsideWindow(d, date) {
-  if (!d.config || !d.config.days) return false;
-
-  const startSec = hhmmToSeconds(d.config.start);
-  const endSec   = hhmmToSeconds(d.config.end);
-  const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
-  const wraps    = startSec >= endSec;
-
-  if (!wraps) {
-    return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endSec;
+  function hhmmToSeconds(hhmm) {
+    if (!hhmm) return 0;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 3600 + m * 60;
   }
 
-  const prev = new Date(date);
-  prev.setDate(prev.getDate() - 1);
-
-  return (
-    (isDayActive(d.config.days, date) && curSec >= startSec) ||
-    (isDayActive(d.config.days, prev) && curSec < endSec)
-  );
-}
-
-function nextScheduledConnection(d, from = new Date()) {
-  if (!d.config || !d.config.interval) return null;
-
-  const intervalMs = d.config.interval * 1000;
-  const search = new Date(from);
-
-  for (let i = 0; i < 8 * 24 * 60; i++) {
-    const t = new Date(search.getTime() + i * 60000);
-
-    const midnight = new Date(t);
-    midnight.setHours(0, 0, 0, 0);
-
-    const elapsedMs = t.getTime() - midnight.getTime();
-    const nextElapsedMs = Math.ceil(elapsedMs / intervalMs) * intervalMs;
-    const candidate = new Date(midnight.getTime() + nextElapsedMs);
-
-    if (candidate <= from) continue;
-    if (isInsideWindow(d, candidate)) return candidate;
+  function dayIndexMon0(jsDay) {
+    return (jsDay + 6) % 7;
   }
 
-  return null;
-}
+  function isDayActive(days, date) {
+    if (!days || days.length < 7) return false;
+    return days[dayIndexMon0(date.getDay())] !== "-";
+  }
 
+  function isInsideWindow(d, date) {
+    if (!d.config || !d.config.days) return false;
+
+    const startSec = hhmmToSeconds(d.config.start);
+    const endSec   = hhmmToSeconds(d.config.end);
+    const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+    const wraps    = startSec >= endSec;
+
+    if (!wraps) {
+      return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endSec;
+    }
+
+    const prev = new Date(date);
+    prev.setDate(prev.getDate() - 1);
+
+    return (
+      (isDayActive(d.config.days, date) && curSec >= startSec) ||
+      (isDayActive(d.config.days, prev) && curSec < endSec)
+    );
+  }
+
+  function nextScheduledConnection(d, from = new Date()) {
+    if (!d.config || !d.config.interval) return null;
+
+    const intervalMs = d.config.interval * 1000;
+    const search = new Date(from);
+
+    for (let i = 0; i < 8 * 24 * 60; i++) {
+      const t = new Date(search.getTime() + i * 60000);
+
+      const midnight = new Date(t);
+      midnight.setHours(0, 0, 0, 0);
+
+      const elapsedMs = t.getTime() - midnight.getTime();
+      const nextElapsedMs = Math.ceil(elapsedMs / intervalMs) * intervalMs;
+      const candidate = new Date(midnight.getTime() + nextElapsedMs);
+
+      if (candidate <= from) continue;
+      if (isInsideWindow(d, candidate)) return candidate;
+    }
+
+    return null;
+  }
 
   // --------------------------------------------------------
   // Device health and error helpers
@@ -334,7 +370,6 @@ function nextScheduledConnection(d, from = new Date()) {
   function status(dev, id) {
     const now = new Date();
 
-    // outside schedule = no comm expected
     if (!isInsideWindow(dev, now)) {
       notified[id] = false;
       return "idle";
@@ -432,7 +467,6 @@ function nextScheduledConnection(d, from = new Date()) {
     };
   }
 
-
   // --------------------------------------------------------
   // Mapping helpers for camera metadata
   // --------------------------------------------------------
@@ -471,7 +505,6 @@ function nextScheduledConnection(d, from = new Date()) {
 
   function wifiQualityLabel(q) {
     const v = Number(q ?? 0);
-
     if (v <= 0)  return "Offline";
     if (v >= 80) return "Excellent";
     if (v >= 60) return "Good";
@@ -481,9 +514,8 @@ function nextScheduledConnection(d, from = new Date()) {
 
   function wifiQualityColor(q) {
     const v = Number(q ?? 0);
-
-    if (v <= 0)  return "#64748b";  // slate
-    if (v >= 60) return "#e2e8f0";  // normal light text
+    if (v <= 0)  return "#64748b";
+    if (v >= 60) return "#e2e8f0";
     if (v >= 40) return "orange";
     return "red";
   }
@@ -499,15 +531,6 @@ function nextScheduledConnection(d, from = new Date()) {
     }).join(" ");
   }
 
-  // --------------------------------------------------------
-  // FIX 2 — Error block extracted to a named function.
-  // The original code used an IIFE (immediately-invoked function
-  // expression) inside a template literal assigned to innerHTML:
-  //   ${ (() => { ... })() }
-  // iOS Safari 15 and earlier has known parsing issues with this
-  // pattern inside innerHTML strings. Moving it to a regular named
-  // function called as a normal expression eliminates the problem.
-  // --------------------------------------------------------
   function errorBlock(err) {
     if (!err.hasError) {
       return `<div style="margin-top:6px; color:limegreen;">No errors</div>`;
@@ -543,8 +566,6 @@ function nextScheduledConnection(d, from = new Date()) {
     const btn = document.getElementById("toggleAllBtn");
     btn.innerText = expandAll ? "Compact" : "Expand all";
 
-    // Sync openState for every known device so the 1s render loop
-    // doesn't fight the button: true when expanding, false when compacting.
     Object.keys(devices).forEach(id => {
       openState[id] = expandAll;
     });
@@ -552,21 +573,50 @@ function nextScheduledConnection(d, from = new Date()) {
     render();
   }
 
+  // --------------------------------------------------------
+  // Camera modal helpers
+  // --------------------------------------------------------
+  function openCameraModal(id) {
+    const d = devices[id];
+    if (!d) return;
+
+    document.getElementById("camInfoModel").innerText = goproModelName(d.gopro && d.gopro.m);
+    document.getElementById("camInfoFw").innerText    = (d.gopro && d.gopro.fw) || "-";
+    document.getElementById("camInfoSn").innerText    = (d.gopro && d.gopro.sn) || "-";
+    document.getElementById("camInfoMac").innerText   = (d.gopro && d.gopro.mac) || "-";
+
+    document.getElementById("cameraModal").style.display = "flex";
+  }
+
+  function closeCameraModal() {
+    document.getElementById("cameraModal").style.display = "none";
+  }
+
+  document.addEventListener("click", (e) => {
+    const modal = document.getElementById("cameraModal");
+    if (modal && modal.style.display === "flex" && e.target === modal) {
+      closeCameraModal();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeCameraModal();
+  });
+
   function render() {
     const container = document.getElementById("devices");
     container.innerHTML = "";
 
     Object.keys(devices).forEach(id => {
       const d = devices[id];
-      if (!d.config) return;   // prevents crashes on incomplete payloads
+      if (!d.config) return;
 
       const s = status(d, id);
 
       const dev = document.createElement("div");
       dev.className = "device " + s;
 
-      // Use explicit per-device state when available, otherwise fall back to global expandAll.
-      const isOpen = openState.hasOwnProperty(id)
+      const isOpen = Object.prototype.hasOwnProperty.call(openState, id)
         ? openState[id]
         : expandAll;
 
@@ -579,7 +629,7 @@ function nextScheduledConnection(d, from = new Date()) {
       dev.innerHTML = `
         <div class="header" onclick="toggle(this.parentElement)">
           <b>${id}</b>
-            <span style="display:flex; align-items:center; gap:10px;">
+          <span style="display:flex; align-items:center; gap:10px;">
             ${s !== "ok" ? `
               <i class="fa-solid ${
                 s === "error" ? "fa-circle-xmark" :
@@ -602,25 +652,24 @@ function nextScheduledConnection(d, from = new Date()) {
               title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
               style="color:${wifiQualityColor(d.wifiQuality)};"></i>
 
-              <i class="fa-solid ${
-                d.batteryPct >= 90 ? "fa-battery-full" :
-                d.batteryPct >= 65 ? "fa-battery-three-quarters" :
-                d.batteryPct >= 40 ? "fa-battery-half" :
-                d.batteryPct >= 15 ? "fa-battery-quarter" :
-                "fa-battery-empty"
-              }"
-              title="Battery ${d.batteryPct}%"
-              style="color:${
-                d.batteryPct >= 40 ? "#e2e8f0" :
-                d.batteryPct >= 15 ? "orange" :
-                "red"
-              };"></i>
+            <i class="fa-solid ${
+              d.batteryPct >= 90 ? "fa-battery-full" :
+              d.batteryPct >= 65 ? "fa-battery-three-quarters" :
+              d.batteryPct >= 40 ? "fa-battery-half" :
+              d.batteryPct >= 15 ? "fa-battery-quarter" :
+              "fa-battery-empty"
+            }"
+            title="Battery ${d.batteryPct}%"
+            style="color:${
+              d.batteryPct >= 40 ? "#e2e8f0" :
+              d.batteryPct >= 15 ? "orange" :
+              "red"
+            };"></i>
           </span>
         </div>
 
         <div class="content">
 
-          <!-- GOPRO BAR -->
           <div style="
             background:#020617;
             padding:8px 10px;
@@ -687,7 +736,7 @@ function nextScheduledConnection(d, from = new Date()) {
               </div>
             </div>
 
-            <div class="section">
+            <div class="section" onclick="openCameraModal('${id}')" style="cursor:pointer;">
               <div class="section-icon">
                 <i class="fa-solid fa-camera"></i>
               </div>
@@ -704,6 +753,7 @@ function nextScheduledConnection(d, from = new Date()) {
                 <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
               </div>
             </div>
+
           </div>
         </div>
       `;
@@ -712,10 +762,6 @@ function nextScheduledConnection(d, from = new Date()) {
     });
   }
 
-  // --------------------------------------------------------
-  // Startup render loop and notification permission
-  // FIX 3 — guard Notification API existence before any access.
-  // --------------------------------------------------------
   render();
   setInterval(render, 1000);
 
