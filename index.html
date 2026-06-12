@@ -289,6 +289,11 @@
     return t.toLocaleString();
   }
 
+  function sdUsagePercent(d) {
+    if (!d.sdTotalMB || d.sdTotalMB === 0) return 0;
+    return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
+  }
+
   // --------------------------------------------------------
   // Schedule helpers
   // --------------------------------------------------------
@@ -712,19 +717,53 @@
               <div class="section-icon">
                 <i class="fa-solid fa-camera"></i>
               </div>
+
               <div class="section-body">
+
+                <!-- ✅ SD CARD BELOW CAMERA ICON -->
+                <div class="row" style="align-items:center;">
+                  <span style="display:flex; align-items:center; gap:6px;">
+
+                    <i class="fa-solid fa-sd-card"></i>
+
+                    <div style="
+                      width:70px;
+                      height:8px;
+                      background:#334155;
+                      border-radius:4px;
+                      overflow:hidden;
+                    ">
+                      <div style="
+                        height:100%;
+                        width:${sdUsagePercent(d)}%;
+                        background:${
+                          sdUsagePercent(d) < 70 ? 'limegreen' :
+                          sdUsagePercent(d) < 90 ? 'orange' : 'red'
+                        };
+                      "></div>
+                    </div>
+
+                    <span style="font-size:12px;">
+                      ${d.sdFreeMB} / ${d.sdTotalMB} MB
+                    </span>
+
+                  </span>
+                </div>
+
+                <!-- existing content -->
                 <div class="row"><span>Photos:</span><span>${d.sdPhotoCount}</span></div>
+
                 <div class="row">
                   <span>Failed Photos:</span>
                   <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
                     ${d.photosFailed ? d.photosFailed : 0}
                   </span>
                 </div>
+
                 <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
-                <div class="row"><span>SD Total:</span><span>${d.sdTotalMB} MB</span></div>
-                <div class="row"><span>SD Free:</span><span>${d.sdFreeMB} MB</span></div>
                 <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
                 <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
+
               </div>
             </div>
 
