@@ -163,6 +163,13 @@
   ">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <b>Camera Information</b>
+      <div style="text-align:center; margin-bottom:12px;">
+        <img id="camImage" src="" style="
+          max-width:120px;
+          height:auto;
+          opacity:0.95;
+        ">
+      </div>
       <button onclick="closeCameraModal()" style="
         background:#1e293b;
         color:#e2e8f0;
@@ -551,6 +558,16 @@
     }
   }
 
+  function goproModelImage(code) {
+    switch (code) {
+      case 10: return "img/hero10.png";
+      case 11: return "img/hero11.png";
+      case 12: return "img/hero12.png";
+      case 13: return "img/hero13.png";
+      default: return "";
+    }
+  }
+
   function wifiQualityLabel(q) {
     const v = Number(q ?? 0);
     if (v <= 0)  return "Offline";
@@ -611,6 +628,17 @@
     document.getElementById("camInfoFw").innerText    = (d.gopro && d.gopro.fw) || "-";
     document.getElementById("camInfoSn").innerText    = (d.gopro && d.gopro.sn) || "-";
     document.getElementById("camInfoMac").innerText   = (d.gopro && d.gopro.mac) || "-";
+
+    // ✅ SET IMAGE
+    const img = document.getElementById("camImage");
+    const src = goproModelImage(d.gopro && d.gopro.m);
+
+    if (src) {
+      img.src = src;
+      img.style.display = "block";
+    } else {
+      img.style.display = "none";
+    }
 
     document.getElementById("cameraModal").style.display = "flex";
   }
