@@ -221,6 +221,8 @@
         wifiQuality: (typeof s.wq === "number") ? s.wq : 0,
         sdPhotoCount: (typeof s.pc === "number") ? s.pc : 0,
         photosFailed: (typeof s.pf === "number") ? s.pf : 0,
+        sdTotalMB: (typeof s.st === "number") ? s.st : 0,
+        sdFreeMB:  (typeof s.sf === "number") ? s.sf : 0,
         lastShotOk: s.ok,
         lastCaptureFail: s.cf,
         lastError: s.err,
@@ -719,6 +721,8 @@
                   </span>
                 </div>
                 <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
+                <div class="row"><span>SD Total:</span><span>${d.sdTotalMB} MB</span></div>
+                <div class="row"><span>SD Free:</span><span>${d.sdFreeMB} MB</span></div>
                 <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
                 <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
               </div>
