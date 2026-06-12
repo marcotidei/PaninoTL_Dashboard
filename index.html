@@ -163,13 +163,6 @@
   ">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <b>Camera Information</b>
-      <div style="text-align:center; margin-bottom:12px;">
-        <img id="camImage" src="" style="
-          max-width:120px;
-          height:auto;
-          opacity:0.95;
-        ">
-      </div>
       <button onclick="closeCameraModal()" style="
         background:#1e293b;
         color:#e2e8f0;
@@ -178,6 +171,24 @@
         padding:4px 8px;
         cursor:pointer;
       ">Close</button>
+    </div>
+    <div style="margin:10px 0 14px 0;">
+      <div style="
+        background:#ffffff;
+        border-radius:12px;
+        padding:10px;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        box-shadow:0 4px 12px rgba(0,0,0,0.3);
+      ">
+        <img id="camImage" src="" style="
+          width:100%;
+          max-height:140px;
+          object-fit:contain;
+          display:none;
+        ">
+      </div>
     </div>
 
     <div class="row"><span>Model:</span><span id="camInfoModel">-</span></div>
