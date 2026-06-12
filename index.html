@@ -289,9 +289,33 @@
     return t.toLocaleString();
   }
 
+  // --------------------------------------------------------
+  // Unit converion helpers
+  // --------------------------------------------------------
   function sdUsagePercent(d) {
     if (!d.sdTotalMB || d.sdTotalMB === 0) return 0;
     return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
+  }
+
+  function formatTotalGB(mb) {
+    if (!mb || mb <= 0) return "-";
+    const gb = mb / 1024;
+    return Math.round(gb) + " GB";   // rounded full size (clean, like real SD)
+  }
+
+  function formatFreeSmart(mb) {
+    if (!mb || mb <= 0) return "-";
+
+    if (mb >= 1024) {
+      const gb = mb / 1024;
+
+      // keep max ~3 digits total
+      if (gb >= 100) return Math.round(gb) + " GB";
+      if (gb >= 10)  return gb.toFixed(1) + " GB";
+      return gb.toFixed(2) + " GB";
+    }
+
+    return Math.round(mb) + " MB";
   }
 
   // --------------------------------------------------------
@@ -744,7 +768,7 @@
                     </div>
 
                     <span style="font-size:12px;">
-                      ${d.sdFreeMB} / ${d.sdTotalMB} MB
+                      ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
                     </span>
 
                   </span>
