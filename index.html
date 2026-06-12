@@ -779,13 +779,15 @@
               <div class="section-body">
                 <!-- ✅ SD CARD BELOW CAMERA ICON -->
                 <div class="row" style="align-items:center;">
-                  <span style="display:flex; align-items:center; gap:6px;">
+                  <div style="display:flex; align-items:center; width:100%; gap:8px;">
 
+                    <!-- icon -->
                     <i class="fa-solid fa-sd-card"></i>
 
+                    <!-- flexible bar -->
                     <div style="
-                      width:70px;
-                      height:8px;
+                      flex:1;
+                      height:10px;
                       background:#334155;
                       border-radius:4px;
                       overflow:hidden;
@@ -800,11 +802,16 @@
                       "></div>
                     </div>
 
-                    <span style="font-size:12px;">
+                    <!-- right-aligned text -->
+                    <span style="
+                      min-width:90px;
+                      text-align:right;
+                      white-space:nowrap;
+                    ">
                       ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
                     </span>
 
-                  </span>
+                  </div>
                 </div>
 
                 <!-- existing content -->
