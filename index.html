@@ -3,24 +3,27 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PaninoTL - Dashboard</title>
-
-  <!-- MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-
-  <!-- FontAwesome Icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
   <style>
+    /* ── Base ── */
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 20px;
+      margin: 0;
+    }
+
+    /* ── Topbar ── */
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
     }
-
-    .topbar h1 {
-      margin: 0;
-    }
+    .topbar h1 { margin: 0; }
 
     #toggleAllBtn {
       background: #1e293b;
@@ -30,19 +33,9 @@
       padding: 8px 12px;
       cursor: pointer;
     }
+    #toggleAllBtn:hover { background: #334155; }
 
-    #toggleAllBtn:hover {
-      background: #334155;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 20px;
-      margin: 0;
-    }
-
+    /* ── Device cards ── */
     .device {
       background: #1e293b;
       border-radius: 10px;
@@ -51,6 +44,12 @@
       transition: 0.3s;
     }
 
+    .error { border-left: 5px solid red; }
+    .warn  { border-left: 5px solid orange; }
+    .ok    { border-left: 5px solid limegreen; }
+    .idle  { border-left: 5px solid deepskyblue; }
+
+    /* ── Card header ── */
     .header {
       display: flex;
       justify-content: space-between;
@@ -60,26 +59,17 @@
       cursor: pointer;
       gap: 12px;
     }
+    .header span i { font-size: 16px; }
 
-    .header span i {
-      font-size: 16px;
-    }
-
+    /* ── Card content ── */
     .content {
       padding: 12px;
       border-top: 1px solid #334155;
       display: none;
     }
+    .open .content { display: block; }
 
-    .open .content {
-      display: block;
-    }
-
-    .error { border-left: 5px solid red; }
-    .warn  { border-left: 5px solid orange; }
-    .ok    { border-left: 5px solid limegreen; }
-    .idle  { border-left: 5px solid deepskyblue; }
-
+    /* ── Rows ── */
     .row {
       display: flex;
       justify-content: space-between;
@@ -87,16 +77,19 @@
       font-size: 14px;
       gap: 12px;
     }
-
     .row span:last-child {
       text-align: right;
       word-break: break-word;
     }
 
+    /* ── Section grid ── */
     .sections {
       display: grid;
       grid-template-columns: 1fr;
       gap: 10px;
+    }
+    @media (min-width: 700px) {
+      .sections { grid-template-columns: repeat(3, 1fr); }
     }
 
     .section {
@@ -107,7 +100,6 @@
       border-radius: 8px;
       align-items: flex-start;
     }
-
     .section-icon {
       font-size: 48px;
       width: 56px;
@@ -115,62 +107,64 @@
       text-align: center;
       opacity: 0.8;
     }
+    .section-icon i { font-size: inherit; }
+    .section-body { flex: 1; min-width: 0; }
 
-    .section-icon i {
-      font-size: inherit;
+    /* ── Modals ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
     }
-
-    .section-body {
-      flex: 1;
-      min-width: 0;
+    .modal-card {
+      background: #0b1220;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     }
-
-    @media (min-width: 700px) {
-      .sections {
-        grid-template-columns: repeat(3, 1fr);
-      }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .modal-close-btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
     }
   </style>
 </head>
 
 <body>
 
+<!-- ── Topbar ── -->
 <div class="topbar">
   <h1>PaninoTL - Dashboard</h1>
-  <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <span id="connStatus">🔴 Disconnected</span>
+    <button onclick="openConfigModal(currentConfig || {})" aria-label="Connection settings">⚙</button>
+    <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
+  </div>
 </div>
 
 <div id="devices"></div>
 
-<!-- CAMERA MODAL -->
-<div id="cameraModal" style="
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.6);
-  z-index:1000;
-  align-items:center;
-  justify-content:center;
-">
-  <div id="cameraModalCard" style="
-    background:#0b1220;
-    color:#e2e8f0;
-    width:min(420px, calc(100vw - 32px));
-    border:1px solid #334155;
-    border-radius:10px;
-    padding:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.45);
-  ">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+<!-- ── Camera modal ── -->
+<div id="cameraModal" class="modal-overlay">
+  <div class="modal-card" style="width:min(420px, calc(100vw - 32px));">
+    <div class="modal-header">
       <b>Camera Information</b>
-      <button onclick="closeCameraModal()" style="
-        background:#1e293b;
-        color:#e2e8f0;
-        border:1px solid #334155;
-        border-radius:6px;
-        padding:4px 8px;
-        cursor:pointer;
-      ">Close</button>
+      <button class="modal-close-btn" onclick="closeCameraModal()">Close</button>
     </div>
     <div style="margin:10px 0 14px 0;">
       <div style="
@@ -182,15 +176,9 @@
         align-items:center;
         box-shadow:0 4px 12px rgba(0,0,0,0.3);
       ">
-        <img id="camImage" src="" style="
-          width:100%;
-          max-height:140px;
-          object-fit:contain;
-          display:none;
-        ">
+        <img id="camImage" src="" style="width:100%; max-height:140px; object-fit:contain; display:none;">
       </div>
     </div>
-
     <div class="row"><span>Model:</span><span id="camInfoModel">-</span></div>
     <div class="row"><span>Firmware:</span><span id="camInfoFw">-</span></div>
     <div class="row"><span>Serial:</span><span id="camInfoSn">-</span></div>
@@ -198,711 +186,819 @@
   </div>
 </div>
 
+<!-- ── Config modal ── -->
+<div id="configModal" class="modal-overlay" style="z-index:1001;">
+  <div class="modal-card" style="width:min(400px, 90vw); padding:16px;">
+    <h3>Connect to Broker</h3>
+    <div class="row">
+      <span>Broker URL:</span>
+      <input id="cfg_url" style="width:100%;">
+    </div>
+    <div class="row">
+      <span>Username:</span>
+      <input id="cfg_user" style="width:100%;">
+    </div>
+    <div class="row">
+      <span>Password:</span>
+      <input id="cfg_pass" type="password" style="width:100%;">
+    </div>
+    <div style="margin-top:12px; display:flex; justify-content:space-between;">
+      <button onclick="closeConfigModal()">Cancel</button>
+      <button onclick="resetConfig()">Reset</button>
+      <button onclick="saveConfig()">Connect</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // --------------------------------------------------------
-  // MQTT connection and shared state
-  // --------------------------------------------------------
-  const client = mqtt.connect(
-    "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt",
-    {
-      //username: "dashboard",
-      //password: "WebDashboard2026"
-      username: "dashboard2",
-      password: "Panino2026"      
-    }
-  );
+// ============================================================
+// CONSTANTS
+// ============================================================
+const TOPIC_FILTER  = "panino/+/state";
+const TOPIC_PREFIX  = "panino";
+const GRACE_SECONDS = 120;
 
-  const devices = {};
-  const notified = {};
-  const openState = {};
-  const GRACE_SECONDS = 120;
-  let expandAll = false;
-  let uiLocked = false;
+// ============================================================
+// APPLICATION STATE
+// ============================================================
+let client        = null;
+let currentConfig = null;
+let expandAll     = false;
+let uiLocked      = false;
 
+// NOTE: These objects are mutated in-place (never reassigned)
+// because the MQTT message handler closes over the original
+// references. Reassigning would break the stale-client guard
+// inside connectMQTT — the old handler would write into the
+// new objects and corrupt state.
+const devices   = {};
+const notified  = {};
+const openState = {};
 
-  client.on("connect", () => {
-    console.log("Connected");
-    client.subscribe("panino/+/state");
+// ============================================================
+// CONFIG — persistence & broker connection
+// ============================================================
+async function loadConfig() {
+  const saved = localStorage.getItem("mqtt_config");
+  if (saved) {
+    try { return JSON.parse(saved); } catch { localStorage.removeItem("mqtt_config"); }
+  }
+  try {
+    const res = await fetch("config.json");
+    if (!res.ok) throw new Error("no config.json");
+    const cfg = await res.json();
+    return { ...cfg, username: "", password: "" }; // force credential entry
+  } catch {
+    return null;
+  }
+}
+
+function openConfigModal(prefill) {
+  prefill = prefill || {};
+  document.getElementById("cfg_url").value  = prefill.url      || "";
+  document.getElementById("cfg_user").value = prefill.username || "";
+  document.getElementById("cfg_pass").value = prefill.password || "";
+  document.getElementById("configModal").style.display = "flex";
+}
+function closeConfigModal() {
+  document.getElementById("configModal").style.display = "none";
+}
+function saveConfig() {
+  const config = {
+    url:      document.getElementById("cfg_url").value.trim(),
+    username: document.getElementById("cfg_user").value.trim(),
+    password: document.getElementById("cfg_pass").value
+  };
+  if (!config.url || !config.username) { alert("Please enter broker URL and username"); return; }
+  localStorage.setItem("mqtt_config", JSON.stringify(config));
+  closeConfigModal();
+  connectMQTT(config);
+}
+function resetConfig() {
+  localStorage.removeItem("mqtt_config");
+  location.reload();
+}
+
+// ============================================================
+// MQTT
+// ============================================================
+function connectMQTT(config) {
+  currentConfig = config;
+
+  // Clear state objects in-place (see note at top of STATE section)
+  Object.keys(devices).forEach(k   => delete devices[k]);
+  Object.keys(notified).forEach(k  => delete notified[k]);
+  Object.keys(openState).forEach(k => delete openState[k]);
+  render();
+
+  if (client) client.end(true);
+
+  const newClient = mqtt.connect(config.url, {
+    username: config.username,
+    password: config.password
+  });
+  client = newClient;
+
+  newClient.on("connect", () => {
+    if (client !== newClient) return;
+    console.log("✅ Connected");
+    newClient.subscribe(TOPIC_FILTER);
+    document.getElementById("connStatus").innerText = "🟢 Connected";
   });
 
-  client.on("message", (topic, message) => {
+  newClient.on("reconnect", () => {
+    if (client !== newClient) return;
+    document.getElementById("connStatus").innerText = "🟡 Reconnecting...";
+  });
+
+  newClient.on("close", () => {
+    if (client !== newClient) return;
+    document.getElementById("connStatus").innerText = "🔴 Disconnected";
+  });
+
+  newClient.on("error", (err) => {
+    if (client !== newClient) return;
+    console.error("MQTT error:", err);
+    document.getElementById("connStatus").innerText = "🔴 Error";
+  });
+
+  newClient.on("message", (topic, message) => {
+    if (client !== newClient) return;
+
     try {
       const parts = topic.split("/");
-      if (parts.length < 3 || parts[2] !== "state") return;
+      if (parts.length !== 3 || parts[0] !== TOPIC_PREFIX || parts[2] !== "state") return;
 
-      const data = JSON.parse(message.toString());
-      const id = parts[1];
+      // FIX #4: An empty payload means the retained message was cleared by the broker.
+      // JSON.parse("") throws — guard against it explicitly.
+      const raw = message.toString();
+      if (!raw) return;
 
-      const s = data.s || {};
-      const c = data.c || {};
-      const g = data.g || {};
+      const data = JSON.parse(raw);
+      const id   = parts[1];
+      const s    = data.s || {};
+      const c    = data.c || {};
+      const g    = data.g || {};
 
       devices[id] = {
         id,
-        batteryPct: (typeof s.b === "number") ? s.b : 0,
-        wifiQuality: (typeof s.wq === "number") ? s.wq : 0,
-        sdPhotoCount: (typeof s.pc === "number") ? s.pc : 0,
-        photosFailed: (typeof s.pf === "number") ? s.pf : 0,
-        sdTotalMB: (typeof s.st === "number") ? s.st : 0,
-        sdFreeMB:  (typeof s.sf === "number") ? s.sf : 0,
-        lastShotOk: s.ok,
+        batteryPct:    (typeof s.b  === "number") ? s.b  : 0,
+        wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
+        sdPhotoCount:  (typeof s.pc === "number") ? s.pc : 0,
+        photosFailed:  (typeof s.pf === "number") ? s.pf : 0,
+        sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
+        sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
+        lastShotOk:    s.ok,
         lastCaptureFail: s.cf,
-        lastError: s.err,
+        lastError:     s.err,
         lastErrorTime: s.et,
         config: {
           interval: c.i,
-          days: c.d,
-          start: c.s,
-          end: c.e,
-          lens: c.l,
-          output: c.o
+          days:     c.d,
+          start:    c.s,
+          end:      c.e,
+          lens:     c.l,
+          output:   c.o
         },
-        gopro: g,
+        gopro:         g,
         lastSeenDevice: s.t
       };
 
-      // fresh packet clears comm retention
       notified[id] = false;
-
     } catch (e) {
       console.error("MQTT parse error:", e);
     }
   });
+}
 
-  
-  function clearDeviceState(event, id) {
-    event.stopPropagation();
+function clearDeviceState(event, id) {
+  event.stopPropagation();
+  if (!client || !client.connected) { alert("Not connected to broker"); return; }
+  if (!confirm(`Clear retained state for ${id}?`)) return;
 
-    uiLocked = true; // 🚫 stop render
+  uiLocked = true;
+  const topic = `${TOPIC_PREFIX}/${id}/state`;
 
-    const ok = confirm(`Clear retained state for ${id}?`);
+  client.publish(topic, "", { retain: true }, (err) => {
+    uiLocked = false;
+    if (err) { console.error("Publish failed:", err); return; }
+    console.log("✅ Cleared retained state for", topic);
+    delete devices[id];
+    delete notified[id];
+    delete openState[id];
+    render();
+  });
+}
 
-    uiLocked = false; // ✅ resume render
+// ============================================================
+// TIME HELPERS
+// ============================================================
+function parseTS(ts) {
+  if (!ts || ts === "-") return null;
+  const m = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]));
+}
 
-    if (!ok) return;
+// FIX #14: accepts both Date objects and timestamp strings (was strings-only).
+function relativeTime(ts) {
+  if (!ts) return "-";
+  const t = (ts instanceof Date) ? ts : parseTS(ts);
+  if (!t || isNaN(t)) return "-";
+  const diff = Math.floor((Date.now() - t.getTime()) / 1000);
+  if (diff < 10)   return "now";
+  if (diff < 60)   return diff + "s";
+  if (diff < 3600) return Math.floor(diff / 60) + "m";
+  // FIX #11: show hours + minutes for anything over 1 hour instead of bare "Xh".
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
 
-    const topic = `panino/${id}/state`;
+function formatDateTime(ts) {
+  if (!ts || ts === "-") return "-";
+  const t = (ts instanceof Date) ? ts : parseTS(ts);
+  if (!t || isNaN(t)) return "-";
+  return t.toLocaleString();
+}
 
-    client.publish(topic, "", { retain: true }, (err) => {
-      if (err) {
-        console.error("Publish failed:", err);
-        return;
-      }
+// ============================================================
+// UNIT CONVERSION HELPERS
+// ============================================================
+function sdUsagePercent(d) {
+  if (!d.sdTotalMB || d.sdTotalMB === 0) return 0;
+  return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
+}
 
-      console.log("✅ Cleared retained state for", topic);
+function formatTotalGB(mb) {
+  if (!mb || mb <= 0) return "-";
+  return Math.round(mb / 1024) + " GB";
+}
 
-      delete devices[id];
-      delete notified[id];
-      delete openState[id];
-
-      render();
-    });
-  }
-
-  // --------------------------------------------------------
-  // Time helpers
-  // --------------------------------------------------------
-  function parseTS(ts) {
-    if (!ts || ts === "-") return null;
-
-    const m = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
-    if (!m) return null;
-
-    return new Date(
-      Number(m[1]),
-      Number(m[2]) - 1,
-      Number(m[3]),
-      Number(m[4]),
-      Number(m[5]),
-      Number(m[6])
-    );
-  }
-
-  function relativeTime(ts) {
-    if (!ts) return "-";
-
-    const t = parseTS(ts);
-    if (!t || isNaN(t)) return "-";
-
-    const diff = Math.floor((Date.now() - t.getTime()) / 1000);
-
-    if (diff < 10) return "now";
-    if (diff < 60) return diff + "s";
-    if (diff < 3600) return Math.floor(diff / 60) + "m";
-    return Math.floor(diff / 3600) + "h";
-  }
-
-  function formatDateTime(ts) {
-    if (!ts || ts === "-") return "-";
-
-    const t = ts instanceof Date ? ts : parseTS(ts);
-    if (!t || isNaN(t)) return "-";
-
-    return t.toLocaleString();
-  }
-
-  // --------------------------------------------------------
-  // Unit converion helpers
-  // --------------------------------------------------------
-  function sdUsagePercent(d) {
-    if (!d.sdTotalMB || d.sdTotalMB === 0) return 0;
-    return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
-  }
-
-  function formatTotalGB(mb) {
-    if (!mb || mb <= 0) return "-";
+function formatFreeSmart(mb) {
+  if (!mb || mb <= 0) return "-";
+  if (mb >= 1024) {
     const gb = mb / 1024;
-    return Math.round(gb) + " GB";   // rounded full size (clean, like real SD)
+    if (gb >= 100) return Math.round(gb) + " GB";
+    if (gb >= 10)  return gb.toFixed(1) + " GB";
+    return gb.toFixed(2) + " GB";
+  }
+  return Math.round(mb) + " MB";
+}
+
+// ============================================================
+// SCHEDULE HELPERS
+// ============================================================
+function hhmmToSeconds(hhmm) {
+  if (!hhmm) return 0;
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 3600 + m * 60;
+}
+
+function dayIndexMon0(jsDay) {
+  return (jsDay + 6) % 7; // JS: Sun=0..Sat=6 → Mon=0..Sun=6
+}
+
+function isDayActive(days, date) {
+  if (!days || days.length < 7) return false;
+  return days[dayIndexMon0(date.getDay())] !== "-";
+}
+
+function isInsideWindow(d, date) {
+  if (!d.config || !d.config.days) return false;
+  const startSec = hhmmToSeconds(d.config.start);
+  const endSec   = hhmmToSeconds(d.config.end);
+  const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  const wraps    = startSec >= endSec;
+
+  if (!wraps) {
+    return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endSec;
+  }
+  const prev = new Date(date);
+  prev.setDate(prev.getDate() - 1);
+  return (
+    (isDayActive(d.config.days, date) && curSec >= startSec) ||
+    (isDayActive(d.config.days, prev) && curSec < endSec)
+  );
+}
+
+// NOTE: Steps by one minute and finds the next interval-aligned slot from midnight.
+// For intervals shorter than 60 s the returned time may be up to 59 s late.
+// In practice device intervals are always ≥ 60 s, so this is acceptable.
+function nextScheduledConnection(d, from = new Date()) {
+  if (!d.config || !d.config.interval) return null;
+  const intervalMs = d.config.interval * 1000;
+  const search     = new Date(from);
+
+  for (let i = 0; i < 8 * 24 * 60; i++) {
+    const t        = new Date(search.getTime() + i * 60000);
+    const midnight = new Date(t);
+    midnight.setHours(0, 0, 0, 0);
+    const elapsedMs     = t.getTime() - midnight.getTime();
+    const nextElapsedMs = Math.ceil(elapsedMs / intervalMs) * intervalMs;
+    const candidate     = new Date(midnight.getTime() + nextElapsedMs);
+    if (candidate <= from) continue;
+    if (isInsideWindow(d, candidate)) return candidate;
+  }
+  return null;
+}
+
+// ============================================================
+// HEALTH / STATUS LOGIC
+// ============================================================
+function status(dev, id) {
+  const now = new Date();
+
+  if (!isInsideWindow(dev, now)) {
+    notified[id] = false;
+    return "idle";
   }
 
-  function formatFreeSmart(mb) {
-    if (!mb || mb <= 0) return "-";
+  // Device inside schedule window but has never reported — stay idle rather
+  // than raising a false alarm; a brand-new or mis-configured device will show
+  // idle until its first successful transmission.
+  if (!dev.lastSeenDevice || !dev.config || !dev.config.interval) return "idle";
 
-    if (mb >= 1024) {
-      const gb = mb / 1024;
+  const lastSeen = parseTS(dev.lastSeenDevice);
+  if (!lastSeen || isNaN(lastSeen)) return "idle";
 
-      // keep max ~3 digits total
-      if (gb >= 100) return Math.round(gb) + " GB";
-      if (gb >= 10)  return gb.toFixed(1) + " GB";
-      return gb.toFixed(2) + " GB";
-    }
+  const ageSec     = (now.getTime() - lastSeen.getTime()) / 1000;
+  const intervalSec = dev.config.interval;
 
-    return Math.round(mb) + " MB";
+  if (ageSec <= intervalSec + GRACE_SECONDS) {
+    notified[id] = false;
+    return "ok";
   }
 
-  // --------------------------------------------------------
-  // Schedule helpers
-  // --------------------------------------------------------
-  function hhmmToSeconds(hhmm) {
-    if (!hhmm) return 0;
-    const [h, m] = hhmm.split(":").map(Number);
-    return h * 3600 + m * 60;
+  if (ageSec < (2 * intervalSec) + GRACE_SECONDS) return "warn";
+
+  if (!notified[id]) {
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      new Notification("Device " + id + " communication lost");
+    }
+    notified[id] = true;
+  }
+  return "error";
+}
+
+function isRecentError(d) {
+  if (!d.lastErrorTime || d.lastError === "None") return false;
+  const err = parseTS(d.lastErrorTime);
+  if (!err || isNaN(err)) return false;
+  if (!d.lastShotOk || d.lastShotOk === "-") return true;
+  const shot = parseTS(d.lastShotOk);
+  if (!shot || isNaN(shot)) return true;
+  return err.getTime() > shot.getTime();
+}
+
+// FIX #7: Communication errors and JSON errors are now evaluated independently.
+// A comm delay/loss sets the alert banner; the returned object also carries
+// jsonError so the panel can show both when they co-occur.
+function effectiveErrorInfo(d, id, statusLevel) {
+  // Communication-level alert
+  let commAlert = null;
+  if (statusLevel === "warn" && d.lastSeenDevice && d.config && d.config.interval) {
+    const lastSeen = parseTS(d.lastSeenDevice);
+    if (lastSeen && !isNaN(lastSeen)) {
+      commAlert = {
+        text:  "COMM DELAY",
+        time:  new Date(lastSeen.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
+        bg:    "#3a2500",
+        color: "orange",
+        glow:  false
+      };
+    }
+  } else if (statusLevel === "error" && d.lastSeenDevice && d.config && d.config.interval) {
+    const lastSeen = parseTS(d.lastSeenDevice);
+    if (lastSeen && !isNaN(lastSeen)) {
+      commAlert = {
+        text:  "COMM LOST",
+        time:  new Date(lastSeen.getTime() + ((2 * d.config.interval) + GRACE_SECONDS) * 1000),
+        bg:    "#550000",
+        color: "red",
+        glow:  true
+      };
+    }
   }
 
-  function dayIndexMon0(jsDay) {
-    return (jsDay + 6) % 7; // JS: Sun=0..Sat=6 -> Mon=0..Sun=6
-  }
+  // JSON-level error (independent of comm status)
+  const hasJsonError    = !!(d.lastError && d.lastError !== "None");
+  const recentJsonError = hasJsonError && isRecentError(d);
 
-  function isDayActive(days, date) {
-    if (!days || days.length < 7) return false;
-    return days[dayIndexMon0(date.getDay())] !== "-";
-  }
-
-  function isInsideWindow(d, date) {
-    if (!d.config || !d.config.days) return false;
-
-    const startSec = hhmmToSeconds(d.config.start);
-    const endSec   = hhmmToSeconds(d.config.end);
-    const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
-    const wraps    = startSec >= endSec;
-
-    if (!wraps) {
-      return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endSec;
-    }
-
-    const prev = new Date(date);
-    prev.setDate(prev.getDate() - 1);
-
-    return (
-      (isDayActive(d.config.days, date) && curSec >= startSec) ||
-      (isDayActive(d.config.days, prev) && curSec < endSec)
-    );
-  }
-
-  function nextScheduledConnection(d, from = new Date()) {
-    if (!d.config || !d.config.interval) return null;
-
-    const intervalMs = d.config.interval * 1000;
-    const search = new Date(from);
-
-    for (let i = 0; i < 8 * 24 * 60; i++) {
-      const t = new Date(search.getTime() + i * 60000);
-
-      const midnight = new Date(t);
-      midnight.setHours(0, 0, 0, 0);
-
-      const elapsedMs = t.getTime() - midnight.getTime();
-      const nextElapsedMs = Math.ceil(elapsedMs / intervalMs) * intervalMs;
-      const candidate = new Date(midnight.getTime() + nextElapsedMs);
-
-      if (candidate <= from) continue;
-      if (isInsideWindow(d, candidate)) return candidate;
-    }
-
-    return null;
-  }
-
-  // --------------------------------------------------------
-  // Health / error logic
-  // --------------------------------------------------------
-  function status(dev, id) {
-    const now = new Date();
-
-    if (!isInsideWindow(dev, now)) {
-      notified[id] = false;
-      return "idle";
-    }
-
-    if (!dev.lastSeenDevice || !dev.config || !dev.config.interval) {
-      return "idle";
-    }
-
-    const lastSeen = parseTS(dev.lastSeenDevice);
-    if (!lastSeen || isNaN(lastSeen)) {
-      return "idle";
-    }
-
-    const ageSec = (now.getTime() - lastSeen.getTime()) / 1000;
-    const intervalSec = dev.config.interval;
-
-    if (ageSec <= intervalSec + GRACE_SECONDS) {
-      notified[id] = false;
-      return "ok";
-    }
-
-    if (ageSec < (2 * intervalSec) + GRACE_SECONDS) {
-      return "warn";
-    }
-
-    if (!notified[id]) {
-      if (
-        typeof Notification !== "undefined" &&
-        Notification.permission === "granted"
-      ) {
-        new Notification("Device " + id + " communication lost");
-      }
-      notified[id] = true;
-    }
-
-    return "error";
-  }
-
-  function isRecentError(d) {
-    if (!d.lastErrorTime || d.lastError === "None") return false;
-
-    const err = parseTS(d.lastErrorTime);
-    if (!err || isNaN(err)) return false;
-
-    if (!d.lastShotOk || d.lastShotOk === "-") return true;
-
-    const shot = parseTS(d.lastShotOk);
-    if (!shot || isNaN(shot)) return true;
-
-    return err.getTime() > shot.getTime();
-  }
-
-  function effectiveErrorInfo(d, id, statusLevel) {
-    if (statusLevel === "warn" && d.lastSeenDevice && d.config && d.config.interval) {
-      const lastSeen = parseTS(d.lastSeenDevice);
-      if (lastSeen && !isNaN(lastSeen)) {
-        return {
-          hasError: true,
-          text: "COMM DELAY",
-          time: new Date(lastSeen.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
-          bg: "#3a2500",
-          color: "orange",
-          glow: false
-        };
-      }
-    }
-
-    if (statusLevel === "error" && d.lastSeenDevice && d.config && d.config.interval) {
-      const lastSeen = parseTS(d.lastSeenDevice);
-      if (lastSeen && !isNaN(lastSeen)) {
-        return {
-          hasError: true,
-          text: "COMM LOST",
-          time: new Date(lastSeen.getTime() + ((2 * d.config.interval) + GRACE_SECONDS) * 1000),
-          bg: "#550000",
-          color: "red",
-          glow: true
-        };
-      }
-    }
-
-    const hasJsonError = d.lastError && d.lastError !== "None";
-    const recentJsonError = hasJsonError && isRecentError(d);
-
+  // Primary alert: comm takes priority for the banner (it's the more urgent signal);
+  // JSON error is passed through separately so callers can surface both.
+  if (commAlert) {
     return {
-      hasError: hasJsonError,
-      text: hasJsonError ? d.lastError : "No errors",
-      time: hasJsonError ? d.lastErrorTime : "-",
-      bg: recentJsonError ? "#550000" : "#222",
-      color: recentJsonError ? "red" : "#aaa",
-      glow: recentJsonError
+      hasError:      true,
+      text:          commAlert.text,
+      time:          commAlert.time,
+      bg:            commAlert.bg,
+      color:         commAlert.color,
+      glow:          commAlert.glow,
+      jsonError:     hasJsonError ? d.lastError : null,
+      jsonErrorTime: hasJsonError ? d.lastErrorTime : null
     };
   }
 
-  // --------------------------------------------------------
-  // Mapping helpers
-  // --------------------------------------------------------
-  function lensName(id) {
-    switch (id) {
-      case 101: return "Wide";
-      case 102: return "Linear";
-      case 19:  return "Narrow";
-      case 31:  return "Wide 27 MP";
-      case 32:  return "Linear 27 MP";
-      case 40:  return "Ultra Wide 13MP";
-      case 44:  return "Ultra Linear 13MP";
-      default:  return "Unknown";
-    }
+  return {
+    hasError:      hasJsonError,
+    text:          hasJsonError ? d.lastError : "No errors",
+    time:          hasJsonError ? d.lastErrorTime : "-",
+    bg:            recentJsonError ? "#550000" : "#222",
+    color:         recentJsonError ? "red" : "#aaa",
+    glow:          recentJsonError,
+    jsonError:     null,
+    jsonErrorTime: null
+  };
+}
+
+// ============================================================
+// MAPPING HELPERS
+// ============================================================
+function lensName(id) {
+  switch (id) {
+    case 101: return "Wide";
+    case 102: return "Linear";
+    case 19:  return "Narrow";
+    case 31:  return "Wide 27 MP";
+    case 32:  return "Linear 27 MP";
+    case 40:  return "Ultra Wide 13MP";
+    case 44:  return "Ultra Linear 13MP";
+    default:  return "Unknown";
   }
+}
 
-  function photoOutputName(id) {
-    switch (id) {
-      case 0: return "Standard";
-      case 1: return "RAW";
-      case 2: return "HDR";
-      case 3: return "SuperPhoto";
-      default: return "Unknown";
-    }
+function photoOutputName(id) {
+  switch (id) {
+    case 0: return "Standard";
+    case 1: return "RAW";
+    case 2: return "HDR";
+    case 3: return "SuperPhoto";
+    default: return "Unknown";
   }
+}
 
-  function goproModelName(code) {
-    switch (code) {
-      case 10: return "HERO10 Black";
-      case 11: return "HERO11 Black";
-      case 12: return "HERO12 Black";
-      case 13: return "HERO13 Black";
-      default: return "-";
-    }
+function goproModelName(code) {
+  switch (code) {
+    case 10: return "HERO10 Black";
+    case 11: return "HERO11 Black";
+    case 12: return "HERO12 Black";
+    case 13: return "HERO13 Black";
+    default: return "-";
   }
+}
 
-  function goproModelImage(code) {
-    switch (code) {
-      case 10: return "img/hero10.png";
-      case 11: return "img/hero11.png";
-      case 12: return "img/hero12.png";
-      case 13: return "img/hero13.png";
-      default: return "";
-    }
+function goproModelImage(code) {
+  switch (code) {
+    case 10: return "img/hero10.png";
+    case 11: return "img/hero11.png";
+    case 12: return "img/hero12.png";
+    case 13: return "img/hero13.png";
+    default: return "";
   }
+}
 
-  function wifiQualityLabel(q) {
-    const v = Number(q ?? 0);
-    if (v <= 0)  return "Offline";
-    if (v >= 80) return "Excellent";
-    if (v >= 60) return "Good";
-    if (v >= 40) return "Fair";
-    return "Weak";
-  }
+function wifiQualityLabel(q) {
+  const v = Number(q ?? 0);
+  if (v <= 0)  return "Offline";
+  if (v >= 80) return "Excellent";
+  if (v >= 60) return "Good";
+  if (v >= 40) return "Fair";
+  return "Weak";
+}
 
-  function wifiQualityColor(q) {
-    const v = Number(q ?? 0);
-    if (v <= 0)  return "#64748b";
-    if (v >= 60) return "#e2e8f0";
-    if (v >= 40) return "orange";
-    return "red";
-  }
+function wifiQualityColor(q) {
+  const v = Number(q ?? 0);
+  if (v <= 0)  return "#64748b";
+  if (v >= 60) return "#e2e8f0";
+  if (v >= 40) return "orange";
+  return "red";
+}
 
-  function renderDays(daysStr) {
-    const labels = ["M","T","W","T","F","S","S"];
-    return labels.map((label, i) => {
-      const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
-      return active
-        ? `<span style="color:white;">${label}</span>`
-        : `<span style="color:#475569;">${label}</span>`;
-    }).join(" ");
-  }
+function renderDays(daysStr) {
+  const labels = ["M","T","W","T","F","S","S"];
+  return labels.map((label, i) => {
+    const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
+    return active
+      ? `<span style="color:white;">${label}</span>`
+      : `<span style="color:#475569;">${label}</span>`;
+  }).join(" ");
+}
 
-  // --------------------------------------------------------
-  // UI helpers
-  // --------------------------------------------------------
-  function toggle(el) {
-    const id = el.querySelector("b").innerText;
-    el.classList.toggle("open");
-    openState[id] = el.classList.contains("open");
-  }
+// ============================================================
+// PANEL OPEN/COLLAPSE
+// ============================================================
+// FIX #1: ID is read from data-id attribute, not from DOM text content.
+function toggle(el) {
+  const id = el.dataset.id;
+  el.classList.toggle("open");
+  openState[id] = el.classList.contains("open");
+}
 
-  function toggleAllPanels() {
-    expandAll = !expandAll;
-
-    const btn = document.getElementById("toggleAllBtn");
-    btn.innerText = expandAll ? "Compact" : "Expand all";
-
-    Object.keys(devices).forEach(id => {
-      openState[id] = expandAll;
-    });
-
-    render();
-  }
-
-  // --------------------------------------------------------
-  // Camera modal helpers
-  // --------------------------------------------------------
-  function openCameraModal(id) {
-    const d = devices[id];
-    if (!d) return;
-
-    document.getElementById("camInfoModel").innerText = goproModelName(d.gopro && d.gopro.m);
-    document.getElementById("camInfoFw").innerText    = (d.gopro && d.gopro.fw) || "-";
-    document.getElementById("camInfoSn").innerText    = (d.gopro && d.gopro.sn) || "-";
-    document.getElementById("camInfoMac").innerText   = (d.gopro && d.gopro.mac) || "-";
-
-    // ✅ SET IMAGE
-    const img = document.getElementById("camImage");
-    const src = goproModelImage(d.gopro && d.gopro.m);
-
-    if (src) {
-      img.src = src;
-      img.style.display = "block";
-    } else {
-      img.style.display = "none";
-    }
-
-    document.getElementById("cameraModal").style.display = "flex";
-  }
-
-  function closeCameraModal() {
-    document.getElementById("cameraModal").style.display = "none";
-  }
-
-  document.addEventListener("click", (e) => {
-    const modal = document.getElementById("cameraModal");
-    if (modal && modal.style.display === "flex" && e.target === modal) {
-      closeCameraModal();
-    }
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeCameraModal();
-  });
-
-  // --------------------------------------------------------
-  // Render
-  // --------------------------------------------------------
-  function render() {
-    const container = document.getElementById("devices");
-    container.innerHTML = "";
-
-    Object.keys(devices).forEach(id => {
-      const d = devices[id];
-      if (!d.config) return;
-
-      const s = status(d, id);
-      const err = effectiveErrorInfo(d, id, s);
-
-      let panelState = s;
-
-      if (err.hasError) {
-        if (err.color === "red") panelState = "error";
-        else if (err.color === "orange") panelState = "warn";
-      }
-
-      const dev = document.createElement("div");
-      dev.className = "device " + panelState;
-
-      const isOpen = Object.prototype.hasOwnProperty.call(openState, id)
-        ? openState[id]
-        : expandAll;
-
-      if (isOpen || panelState === "error") {
-        dev.classList.add("open");
-      }
-
-      dev.innerHTML = `
-        <div class="header" onclick="toggle(this.parentElement)">
-          <b>${id}</b>
-          <span style="display:flex; align-items:center; gap:10px;">
-            ${panelState !== "ok" ? `
-              <i class="fa-solid ${
-                panelState === "error" ? "fa-circle-xmark" :
-                panelState === "warn"  ? "fa-circle-exclamation" :
-                "fa-clock"
-              }"
-              style="color:${
-                panelState === "error" ? "red" :
-                panelState === "warn"  ? "orange" :
-                "#64748b"
-              };"></i>
-              <span>${panelState.toUpperCase()}</span>
-            ` : ""}
-
-            <i class="fa-solid fa-camera" style="color:#e2e8f0;"></i>
-            <span>${d.sdPhotoCount}</span>
-
-            <i class="fa-solid fa-circle-xmark"
-              style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#64748b'};"></i>
-            <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
-              ${d.photosFailed ? d.photosFailed : 0}
-            </span>
-
-            <i class="fa-solid fa-wifi"
-              title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
-              style="color:${wifiQualityColor(d.wifiQuality)};"></i>
-
-            <i class="fa-solid ${
-              d.batteryPct >= 90 ? "fa-battery-full" :
-              d.batteryPct >= 65 ? "fa-battery-three-quarters" :
-              d.batteryPct >= 40 ? "fa-battery-half" :
-              d.batteryPct >= 15 ? "fa-battery-quarter" :
-              "fa-battery-empty"
-            }"
-            title="Battery ${d.batteryPct}%"
-            style="color:${
-              d.batteryPct >= 40 ? "#e2e8f0" :
-              d.batteryPct >= 15 ? "orange" :
-              "red"
-            };"></i>
-          </span>
-        </div>
-
-        <div class="content">
-
-          <div style="
-            padding:8px 10px;
-            border-radius:8px;
-            margin-bottom:10px;
-            font-size:12px;
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-            align-items:center;
-            border:1px solid ${err.hasError ? err.color : "#334155"};
-            background:${err.hasError ? err.bg : "#020617"};
-            color:${err.hasError ? err.color : "#e2e8f0"};
-            ${err.glow ? "box-shadow:0 0 8px red;" : ""}
-          ">
-            <b>${err.hasError ? "Alert:" : "No alerts"}</b>
-            ${err.hasError ? `
-              <span>${err.text}</span>
-              <span style="opacity:0.85;">${formatDateTime(err.time)}</span>
-            ` : ""}
-          </div>
-
-          <div class="sections">
-
-            <div class="section">
-              <div class="section-icon">
-                <i class="fa-solid fa-heart-pulse"></i>
-              </div>
-              <div class="section-body">
-                <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-                <div class="row">
-                  <span>Wi-Fi:</span>
-                  <span style="color:${wifiQualityColor(d.wifiQuality)};">
-                    ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
-                  </span>
-                </div>
-                <div class="row">
-                  <span>Battery:</span>
-                  <span style="color:${
-                    d.batteryPct >= 40 ? "#e2e8f0" :
-                    d.batteryPct >= 15 ? "orange" :
-                    "red"
-                  };">
-                    ${d.batteryPct}%
-                  </span>
-                </div>
-                <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
-              </div>
-            </div>
-
-            <div class="section">
-              <div class="section-icon">
-                <i class="fa-solid fa-calendar-days"></i>
-              </div>
-              <div class="section-body">
-                <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
-                <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-                <div class="row"><span>Interval:</span><span>${d.config.interval ? d.config.interval + "s" : "-"}</span></div>
-              </div>
-            </div>
-
-            <div class="section" onclick="openCameraModal('${id}')" style="cursor:pointer;">
-              <div class="section-icon">
-                <i class="fa-solid fa-camera"></i>
-              </div>
-
-              <div class="section-body">
-                <!-- ✅ SD CARD BELOW CAMERA ICON -->
-                <div class="row" style="align-items:center;">
-                  <div style="display:flex; align-items:center; width:100%; gap:8px;">
-
-                    <!-- icon -->
-                    <i class="fa-solid fa-sd-card"></i>
-
-                    <!-- flexible bar -->
-                    <div style="
-                      flex:1;
-                      height:10px;
-                      background:#334155;
-                      border-radius:4px;
-                      overflow:hidden;
-                    ">
-                      <div style="
-                        height:100%;
-                        width:${sdUsagePercent(d)}%;
-                        background:${
-                          sdUsagePercent(d) < 70 ? 'limegreen' :
-                          sdUsagePercent(d) < 90 ? 'orange' : 'red'
-                        };
-                      "></div>
-                    </div>
-
-                    <!-- right-aligned text -->
-                    <span style="
-                      min-width:90px;
-                      text-align:right;
-                      white-space:nowrap;
-                    ">
-                      ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
-                    </span>
-
-                  </div>
-                </div>
-
-                <!-- existing content -->
-                <div class="row"><span>Photos:</span><span>${d.sdPhotoCount}</span></div>
-
-                <div class="row">
-                  <span>Failed Photos:</span>
-                  <span style="color:${(d.photosFailed ? d.photosFailed : 0) > 0 ? 'red' : '#e2e8f0'};">
-                    ${d.photosFailed ? d.photosFailed : 0}
-                  </span>
-                </div>
-
-                <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
-                <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
-                <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
-
-              </div>
-            </div>
-
-          </div>
-          <!-- ✅ CLEAR BUTTON (BOTTOM) -->
-          <div style="margin-top:12px; text-align:right;">
-            <button onclick="clearDeviceState(event, '${id}')" style="
-              background:#3b0d0d;
-              color:#fff;
-              border:1px solid #7f1d1d;
-              border-radius:6px;
-              padding:6px 10px;
-              cursor:pointer;
-              font-size:12px;
-            ">
-              Clear Device
-            </button>
-          </div>
-        </div>
-      `;
-
-      container.appendChild(dev);
-    });
-  }
-
+function toggleAllPanels() {
+  expandAll = !expandAll;
+  document.getElementById("toggleAllBtn").innerText = expandAll ? "Compact" : "Expand all";
+  Object.keys(devices).forEach(id => { openState[id] = expandAll; });
   render();
-  setInterval(() => {
-    if (!uiLocked) render();
-  }, 1000);
+}
 
-  if (
-    typeof Notification !== "undefined" &&
-    Notification.permission !== "granted"
-  ) {
-    Notification.requestPermission();
+// ============================================================
+// CAMERA MODAL
+// ============================================================
+function openCameraModal(id) {
+  const d = devices[id];
+  if (!d) return;
+
+  // d.gopro is always an object (defaulted to {} in the message handler)
+  // so we only guard the inner property access.
+  const g = d.gopro;
+  document.getElementById("camInfoModel").innerText = goproModelName(g.m);
+  document.getElementById("camInfoFw").innerText    = g.fw  || "-";
+  document.getElementById("camInfoSn").innerText    = g.sn  || "-";
+  document.getElementById("camInfoMac").innerText   = g.mac || "-";
+
+  const img = document.getElementById("camImage");
+  const src = goproModelImage(g.m);
+  if (src) { img.src = src; img.style.display = "block"; }
+  else      { img.style.display = "none"; }
+
+  document.getElementById("cameraModal").style.display = "flex";
+}
+
+function closeCameraModal() {
+  document.getElementById("cameraModal").style.display = "none";
+}
+
+// Close modals on backdrop click or Escape
+document.addEventListener("click", (e) => {
+  const cameraModal = document.getElementById("cameraModal");
+  const configModal = document.getElementById("configModal");
+  if (cameraModal.style.display === "flex" && e.target === cameraModal) closeCameraModal();
+  if (configModal.style.display === "flex" && e.target === configModal) closeConfigModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { closeCameraModal(); closeConfigModal(); }
+});
+
+// ============================================================
+// RENDER
+// ============================================================
+
+// FIX #13: Track the last-rendered snapshot so we can skip the
+// full DOM rebuild when nothing has changed, avoiding focus loss
+// and unnecessary flicker.
+let lastRenderSnapshot = "";
+
+function buildSnapshot() {
+  // Stringify the parts of state that affect the visual output.
+  return JSON.stringify(
+    Object.keys(devices).map(id => {
+      const d = devices[id];
+      const s = status(d, id);
+      return {
+        id,
+        s,
+        lastSeenDevice: d.lastSeenDevice,
+        batteryPct:     d.batteryPct,
+        wifiQuality:    d.wifiQuality,
+        sdPhotoCount:   d.sdPhotoCount,
+        photosFailed:   d.photosFailed,
+        sdFreeMB:       d.sdFreeMB,
+        sdTotalMB:      d.sdTotalMB,
+        lastShotOk:     d.lastShotOk,
+        lastError:      d.lastError,
+        lastErrorTime:  d.lastErrorTime,
+        open:           !!openState[id]
+      };
+    })
+  );
+}
+
+function render() {
+  const snapshot = buildSnapshot();
+  if (snapshot === lastRenderSnapshot) return;
+  lastRenderSnapshot = snapshot;
+
+  const container = document.getElementById("devices");
+  container.innerHTML = "";
+
+  Object.keys(devices).forEach(id => {
+    const d = devices[id];
+    if (!d.config) return;
+
+    const s   = status(d, id);
+    const err = effectiveErrorInfo(d, id, s);
+
+    // FIX #8: panelState escalates severity — it never downgrades.
+    // Map status + error color to a numeric severity, take the maximum.
+    const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
+    const errLevel   = err.hasError ? (err.color === "red" ? "error" : err.color === "orange" ? "warn" : s) : s;
+    const panelState = [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
+
+    const dev = document.createElement("div");
+    // FIX #1: store the id in data-id so toggle() can read it reliably.
+    dev.className    = "device " + panelState;
+    dev.dataset.id   = id;
+
+    // FIX #9: auto-expand only if the user hasn't manually interacted with
+    // this panel yet (openState not set). Once touched, honour their choice.
+    const userHasInteracted = Object.prototype.hasOwnProperty.call(openState, id);
+    const shouldOpen = userHasInteracted ? openState[id] : (expandAll || panelState === "error");
+
+    if (shouldOpen) dev.classList.add("open");
+
+    // Build alert banner HTML (shows comm alert; secondary JSON error if both present)
+    const alertBannerHtml = `
+      <div style="
+        padding:8px 10px;
+        border-radius:8px;
+        margin-bottom:10px;
+        font-size:12px;
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        align-items:center;
+        border:1px solid ${err.hasError ? err.color : "#334155"};
+        background:${err.hasError ? err.bg : "#020617"};
+        color:${err.hasError ? err.color : "#e2e8f0"};
+        ${err.glow ? "box-shadow:0 0 8px red;" : ""}
+      ">
+        <b>${err.hasError ? "Alert:" : "No alerts"}</b>
+        ${err.hasError ? `
+          <span>${err.text}</span>
+          <span style="opacity:0.85;">${formatDateTime(err.time)}</span>
+          ${err.jsonError ? `
+            <span style="color:orange; margin-left:8px;">Also: ${err.jsonError} @ ${formatDateTime(err.jsonErrorTime)}</span>
+          ` : ""}
+        ` : ""}
+      </div>
+    `;
+
+    dev.innerHTML = `
+      <div class="header" onclick="toggle(this.parentElement)">
+        <b>${id}</b>
+        <span style="display:flex; align-items:center; gap:10px;">
+          ${panelState !== "ok" ? `
+            <i class="fa-solid ${
+              panelState === "error" ? "fa-circle-xmark" :
+              panelState === "warn"  ? "fa-circle-exclamation" :
+              "fa-clock"
+            }" style="color:${
+              panelState === "error" ? "red" :
+              panelState === "warn"  ? "orange" :
+              "#64748b"
+            };"></i>
+            <span>${panelState.toUpperCase()}</span>
+          ` : ""}
+
+          <i class="fa-solid fa-camera" style="color:#e2e8f0;"></i>
+          <span>${d.sdPhotoCount}</span>
+
+          <i class="fa-solid fa-circle-xmark"
+            style="color:${(d.photosFailed || 0) > 0 ? "red" : "#64748b"};"></i>
+          <span style="color:${(d.photosFailed || 0) > 0 ? "red" : "#e2e8f0"};">
+            ${d.photosFailed || 0}
+          </span>
+
+          <i class="fa-solid fa-wifi"
+            title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
+            style="color:${wifiQualityColor(d.wifiQuality)};"></i>
+
+          <i class="fa-solid ${
+            d.batteryPct >= 90 ? "fa-battery-full" :
+            d.batteryPct >= 65 ? "fa-battery-three-quarters" :
+            d.batteryPct >= 40 ? "fa-battery-half" :
+            d.batteryPct >= 15 ? "fa-battery-quarter" :
+            "fa-battery-empty"
+          }" title="Battery ${d.batteryPct}%"
+          style="color:${
+            d.batteryPct >= 40 ? "#e2e8f0" :
+            d.batteryPct >= 15 ? "orange" :
+            "red"
+          };"></i>
+        </span>
+      </div>
+
+      <div class="content">
+        ${alertBannerHtml}
+
+        <div class="sections">
+
+          <!-- Health section -->
+          <div class="section">
+            <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+            <div class="section-body">
+              <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+              <div class="row">
+                <span>Wi-Fi:</span>
+                <span style="color:${wifiQualityColor(d.wifiQuality)};">
+                  ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
+                </span>
+              </div>
+              <div class="row">
+                <span>Battery:</span>
+                <span style="color:${
+                  d.batteryPct >= 40 ? "#e2e8f0" :
+                  d.batteryPct >= 15 ? "orange" : "red"
+                };">${d.batteryPct}%</span>
+              </div>
+              <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
+            </div>
+          </div>
+
+          <!-- Schedule section -->
+          <div class="section">
+            <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
+            <div class="section-body">
+              <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
+              <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
+              <div class="row"><span>Interval:</span><span>${d.config.interval ? d.config.interval + "s" : "-"}</span></div>
+            </div>
+          </div>
+
+          <!-- Camera / SD section -->
+          <div class="section" onclick="openCameraModal('${id}')" style="cursor:pointer;">
+            <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
+            <div class="section-body">
+
+              <!-- SD card bar -->
+              <div class="row" style="align-items:center;">
+                <div style="display:flex; align-items:center; width:100%; gap:8px;">
+                  <i class="fa-solid fa-sd-card"></i>
+                  <div style="
+                    flex:1; height:10px; background:#334155;
+                    border-radius:4px; overflow:hidden;
+                  ">
+                    <div style="
+                      height:100%;
+                      width:${sdUsagePercent(d)}%;
+                      background:${
+                        sdUsagePercent(d) < 70 ? "limegreen" :
+                        sdUsagePercent(d) < 90 ? "orange" : "red"
+                      };
+                    "></div>
+                  </div>
+                  <span style="min-width:90px; text-align:right; white-space:nowrap;">
+                    ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
+                  </span>
+                </div>
+              </div>
+
+              <div class="row"><span>Photos:</span><span>${d.sdPhotoCount}</span></div>
+              <div class="row">
+                <span>Failed Photos:</span>
+                <span style="color:${(d.photosFailed || 0) > 0 ? "red" : "#e2e8f0"};">
+                  ${d.photosFailed || 0}
+                </span>
+              </div>
+              <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
+              <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
+              <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Clear button -->
+        <div style="margin-top:12px; text-align:right;">
+          <button onclick="clearDeviceState(event, '${id}')" style="
+            background:#3b0d0d;
+            color:#fff;
+            border:1px solid #7f1d1d;
+            border-radius:6px;
+            padding:6px 10px;
+            cursor:pointer;
+            font-size:12px;
+          ">Clear Device</button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(dev);
+  });
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+render();
+
+setInterval(() => {
+  if (!uiLocked) render();
+}, 1000);
+
+if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
+
+(async () => {
+  const cfg = await loadConfig();
+  if (!cfg || !cfg.url || !cfg.username) {
+    openConfigModal(cfg || {});
+    return;
   }
+  connectMQTT(cfg);
+})();
 </script>
 
 </body>
