@@ -236,8 +236,32 @@
 <div class="topbar">
   <h1>PaninoTL - Dashboard</h1>
   <div style="display:flex; gap:10px; align-items:center;">
-    <span id="connStatus">🔴 Disconnected</span>
+
+    <!-- Connection status pill -->
+    <div id="connStatus" style="
+      display:flex; align-items:center; gap:7px;
+      background:#1e293b; border:1px solid #334155;
+      border-radius:8px; padding:6px 11px;
+      font-size:13px; color:#64748b;
+    ">
+      <i id="connIcon" class="fa-solid fa-plug" style="font-size:13px; color:#475569;"></i>
+      <span id="connLabel">Disconnected</span>
+    </div>
+
+    <!-- Disconnect button (hidden when not connected) -->
+    <button id="disconnectBtn" onclick="disconnectMQTT()" aria-label="Disconnect" title="Disconnect" style="
+      display:none;
+      background:none; border:none;
+      color:#64748b; font-size:16px;
+      cursor:pointer; padding:4px 6px; line-height:1;
+      transition:color 0.15s;
+    " onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#64748b'">
+      <i class="fa-solid fa-plug-circle-xmark"></i>
+    </button>
+
+    <!-- Settings -->
     <button onclick="openConfigModal(currentConfig || {})" aria-label="Connection settings" style="background:none;border:none;color:#64748b;font-size:16px;cursor:pointer;padding:4px 6px;line-height:1;transition:color 0.15s;" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#64748b'"><i class="fa-solid fa-gear"></i></button>
+
     <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
   </div>
 </div>
@@ -377,6 +401,43 @@ function resetConfig() {
 // ============================================================
 // MQTT
 // ============================================================
+
+// States: "disconnected" | "connecting" | "connected" | "reconnecting" | "error"
+function setConnStatus(state) {
+  const icon  = document.getElementById("connIcon");
+  const label = document.getElementById("connLabel");
+  const pill  = document.getElementById("connStatus");
+  const discBtn = document.getElementById("disconnectBtn");
+
+  const map = {
+    disconnected: { icon: "fa-plug",              iconColor: "#475569", label: "Disconnected", labelColor: "#64748b",  pillBorder: "#334155" },
+    connecting:   { icon: "fa-plug",              iconColor: "#f59e0b", label: "Connecting…",  labelColor: "#f59e0b",  pillBorder: "#78350f" },
+    reconnecting: { icon: "fa-plug",              iconColor: "#f59e0b", label: "Reconnecting…",labelColor: "#f59e0b",  pillBorder: "#78350f" },
+    connected:    { icon: "fa-plug-circle-check", iconColor: "#4ade80", label: "Connected",    labelColor: "#4ade80",  pillBorder: "#166534" },
+    error:        { icon: "fa-plug-circle-xmark", iconColor: "#f87171", label: "Error",        labelColor: "#f87171",  pillBorder: "#7f1d1d" },
+  };
+
+  const s = map[state] || map.disconnected;
+  icon.className  = `fa-solid ${s.icon}`;
+  icon.style.color  = s.iconColor;
+  label.innerText   = s.label;
+  label.style.color = s.labelColor;
+  pill.style.borderColor = s.pillBorder;
+  discBtn.style.display  = (state === "connected" || state === "reconnecting") ? "block" : "none";
+}
+
+function disconnectMQTT() {
+  if (client) {
+    client.end(true);
+    client = null;
+  }
+  Object.keys(devices).forEach(k   => delete devices[k]);
+  Object.keys(notified).forEach(k  => delete notified[k]);
+  Object.keys(openState).forEach(k => delete openState[k]);
+  setConnStatus("disconnected");
+  render();
+}
+
 function connectMQTT(config) {
   currentConfig = config;
 
@@ -387,6 +448,7 @@ function connectMQTT(config) {
   render();
 
   if (client) client.end(true);
+  setConnStatus("connecting");
 
   const newClient = mqtt.connect(config.url, {
     username: config.username,
@@ -398,23 +460,23 @@ function connectMQTT(config) {
     if (client !== newClient) return;
     console.log("✅ Connected");
     newClient.subscribe(TOPIC_FILTER);
-    document.getElementById("connStatus").innerText = "🟢 Connected";
+    setConnStatus("connected");
   });
 
   newClient.on("reconnect", () => {
     if (client !== newClient) return;
-    document.getElementById("connStatus").innerText = "🟡 Reconnecting...";
+    setConnStatus("reconnecting");
   });
 
   newClient.on("close", () => {
     if (client !== newClient) return;
-    document.getElementById("connStatus").innerText = "🔴 Disconnected";
+    setConnStatus("disconnected");
   });
 
   newClient.on("error", (err) => {
     if (client !== newClient) return;
     console.error("MQTT error:", err);
-    document.getElementById("connStatus").innerText = "🔴 Error";
+    setConnStatus("error");
   });
 
   newClient.on("message", (topic, message) => {
