@@ -237,30 +237,15 @@
   <h1>PaninoTL - Dashboard</h1>
   <div style="display:flex; gap:10px; align-items:center;">
 
-    <!-- Connection status pill -->
-    <div id="connStatus" style="
-      display:flex; align-items:center; gap:7px;
-      background:#1e293b; border:1px solid #334155;
-      border-radius:8px; padding:6px 11px;
-      font-size:13px; color:#64748b;
-    ">
-      <i id="connIcon" class="fa-solid fa-plug" style="font-size:13px; color:#475569;"></i>
-      <span id="connLabel">Disconnected</span>
-    </div>
-
-    <!-- Disconnect button (hidden when not connected) -->
-    <button id="disconnectBtn" onclick="disconnectMQTT()" aria-label="Disconnect" title="Disconnect" style="
-      display:none;
+    <!-- Connection -->
+    <button id="connectionBtn" onclick="handleConnectionClick()" aria-label="Connect to broker" title="Connect to broker" style="
       background:none; border:none;
-      color:#64748b; font-size:16px;
+      color:#f87171; font-size:18px;
       cursor:pointer; padding:4px 6px; line-height:1;
       transition:color 0.15s;
-    " onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#64748b'">
-      <i class="fa-solid fa-plug-circle-xmark"></i>
+    ">
+      <i id="connIcon" class="fa-solid fa-link-slash"></i>
     </button>
-
-    <!-- Settings -->
-    <button onclick="openConfigModal(currentConfig || {})" aria-label="Connection settings" style="background:none;border:none;color:#64748b;font-size:16px;cursor:pointer;padding:4px 6px;line-height:1;transition:color 0.15s;" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#64748b'"><i class="fa-solid fa-gear"></i></button>
 
     <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
   </div>
@@ -321,7 +306,7 @@
 
     <div class="cfg-actions">
       <button class="cfg-btn primary" onclick="saveConfig()">
-        <i class="fa-solid fa-plug" style="margin-right:5px;"></i>Connect
+        <i class="fa-solid fa-link" style="margin-right:5px;"></i>Connect
       </button>
       <button class="cfg-btn" onclick="closeConfigModal()">Cancel</button>
     </div>
@@ -331,10 +316,18 @@
 
 <script>
 // ============================================================
+// CUSTOMIZE THESE DEFAULTS
+// ============================================================
+// Edit this block for your broker and MQTT topic layout.
+const DEFAULT_BROKER_URL   = "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt";
+const DEFAULT_TOPIC_PREFIX = "panino";
+const DEFAULT_TOPIC_FILTER = "panino/+/state";
+
+// ============================================================
 // CONSTANTS
 // ============================================================
-const TOPIC_FILTER  = "panino/+/state";
-const TOPIC_PREFIX  = "panino";
+const TOPIC_PREFIX  = DEFAULT_TOPIC_PREFIX;
+const TOPIC_FILTER  = DEFAULT_TOPIC_FILTER;
 const GRACE_SECONDS = 120;
 
 // ============================================================
@@ -362,19 +355,12 @@ async function loadConfig() {
   if (saved) {
     try { return JSON.parse(saved); } catch { localStorage.removeItem("mqtt_config"); }
   }
-  try {
-    const res = await fetch("config.json");
-    if (!res.ok) throw new Error("no config.json");
-    const cfg = await res.json();
-    return { ...cfg, username: "", password: "" }; // force credential entry
-  } catch {
-    return null;
-  }
+  return { url: DEFAULT_BROKER_URL, username: "", password: "" };
 }
 
 function openConfigModal(prefill) {
   prefill = prefill || {};
-  document.getElementById("cfg_url").value  = prefill.url      || "";
+  document.getElementById("cfg_url").value  = prefill.url      || DEFAULT_BROKER_URL;
   document.getElementById("cfg_user").value = prefill.username || "";
   document.getElementById("cfg_pass").value = prefill.password || "";
   document.getElementById("configModal").style.display = "flex";
@@ -393,10 +379,6 @@ function saveConfig() {
   closeConfigModal();
   connectMQTT(config);
 }
-function resetConfig() {
-  localStorage.removeItem("mqtt_config");
-  location.reload();
-}
 
 // ============================================================
 // MQTT
@@ -405,25 +387,21 @@ function resetConfig() {
 // States: "disconnected" | "connecting" | "connected" | "reconnecting" | "error"
 function setConnStatus(state) {
   const icon  = document.getElementById("connIcon");
-  const label = document.getElementById("connLabel");
-  const pill  = document.getElementById("connStatus");
-  const discBtn = document.getElementById("disconnectBtn");
+  const btn   = document.getElementById("connectionBtn");
 
   const map = {
-    disconnected: { icon: "fa-plug",              iconColor: "#475569", label: "Disconnected", labelColor: "#64748b",  pillBorder: "#334155" },
-    connecting:   { icon: "fa-plug",              iconColor: "#f59e0b", label: "Connecting…",  labelColor: "#f59e0b",  pillBorder: "#78350f" },
-    reconnecting: { icon: "fa-plug",              iconColor: "#f59e0b", label: "Reconnecting…",labelColor: "#f59e0b",  pillBorder: "#78350f" },
-    connected:    { icon: "fa-plug-circle-check", iconColor: "#4ade80", label: "Connected",    labelColor: "#4ade80",  pillBorder: "#166534" },
-    error:        { icon: "fa-plug-circle-xmark", iconColor: "#f87171", label: "Error",        labelColor: "#f87171",  pillBorder: "#7f1d1d" },
+    disconnected: { icon: "fa-link-slash", color: "#f87171", title: "Connect to broker" },
+    connecting:   { icon: "fa-link",       color: "#f59e0b", title: "Connecting to broker" },
+    reconnecting: { icon: "fa-link",       color: "#f59e0b", title: "Reconnecting to broker" },
+    connected:    { icon: "fa-link",       color: "#4ade80", title: "Forget credentials and reconnect" },
+    error:        { icon: "fa-link-slash", color: "#f87171", title: "Reconnect to broker" },
   };
 
   const s = map[state] || map.disconnected;
-  icon.className  = `fa-solid ${s.icon}`;
-  icon.style.color  = s.iconColor;
-  label.innerText   = s.label;
-  label.style.color = s.labelColor;
-  pill.style.borderColor = s.pillBorder;
-  discBtn.style.display  = (state === "connected" || state === "reconnecting") ? "block" : "none";
+  icon.className = `fa-solid ${s.icon}`;
+  btn.style.color = s.color;
+  btn.title = s.title;
+  btn.setAttribute("aria-label", s.title);
 }
 
 function disconnectMQTT() {
@@ -434,8 +412,16 @@ function disconnectMQTT() {
   Object.keys(devices).forEach(k   => delete devices[k]);
   Object.keys(notified).forEach(k  => delete notified[k]);
   Object.keys(openState).forEach(k => delete openState[k]);
+  currentConfig = null;
   setConnStatus("disconnected");
   render();
+}
+
+function handleConnectionClick() {
+  const brokerUrl = (currentConfig && currentConfig.url) || DEFAULT_BROKER_URL;
+  localStorage.removeItem("mqtt_config");
+  disconnectMQTT();
+  openConfigModal({ url: brokerUrl, username: "", password: "" });
 }
 
 function connectMQTT(config) {
