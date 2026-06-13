@@ -142,6 +142,91 @@
       padding: 4px 8px;
       cursor: pointer;
     }
+
+    /* ── Config modal ── */
+    .cfg-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .cfg-field label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .cfg-field input {
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .cfg-field input:focus {
+      border-color: #38bdf8;
+    }
+    .cfg-field input::placeholder {
+      color: #475569;
+    }
+    .cfg-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .cfg-btn {
+      flex: 1;
+      padding: 9px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #94a3b8;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cfg-btn:hover {
+      background: #334155;
+      color: #e2e8f0;
+    }
+    .cfg-btn.primary {
+      background: #0369a1;
+      border-color: #0284c7;
+      color: #e0f2fe;
+    }
+    .cfg-btn.primary:hover {
+      background: #0284c7;
+      color: #fff;
+    }
+    .cfg-divider {
+      border: none;
+      border-top: 1px solid #1e293b;
+      margin: 16px 0 14px;
+    }
+    .cfg-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .cfg-title i {
+      font-size: 18px;
+      color: #38bdf8;
+    }
+    .cfg-title span {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 0.01em;
+    }
   </style>
 </head>
 
@@ -152,7 +237,7 @@
   <h1>PaninoTL - Dashboard</h1>
   <div style="display:flex; gap:10px; align-items:center;">
     <span id="connStatus">🔴 Disconnected</span>
-    <button onclick="openConfigModal(currentConfig || {})" aria-label="Connection settings">⚙</button>
+    <button onclick="openConfigModal(currentConfig || {})" aria-label="Connection settings" style="background:none;border:none;color:#64748b;font-size:16px;cursor:pointer;padding:4px 6px;line-height:1;transition:color 0.15s;" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#64748b'"><i class="fa-solid fa-gear"></i></button>
     <button id="toggleAllBtn" onclick="toggleAllPanels()">Expand all</button>
   </div>
 </div>
@@ -188,25 +273,35 @@
 
 <!-- ── Config modal ── -->
 <div id="configModal" class="modal-overlay" style="z-index:1001;">
-  <div class="modal-card" style="width:min(400px, 90vw); padding:16px;">
-    <h3>Connect to Broker</h3>
-    <div class="row">
-      <span>Broker URL:</span>
-      <input id="cfg_url" style="width:100%;">
+  <div class="modal-card" style="width:min(420px, calc(100vw - 32px));">
+
+    <div class="cfg-title">
+      <i class="fa-solid fa-tower-broadcast"></i>
+      <span>Broker Connection</span>
     </div>
-    <div class="row">
-      <span>Username:</span>
-      <input id="cfg_user" style="width:100%;">
+
+    <div class="cfg-field">
+      <label for="cfg_url">Broker URL</label>
+      <input id="cfg_url" type="url" placeholder="wss://broker.example.com:8884">
     </div>
-    <div class="row">
-      <span>Password:</span>
-      <input id="cfg_pass" type="password" style="width:100%;">
+
+    <div class="cfg-field">
+      <label for="cfg_user">Username</label>
+      <input id="cfg_user" type="text" placeholder="username" autocomplete="username">
     </div>
-    <div style="margin-top:12px; display:flex; justify-content:space-between;">
-      <button onclick="closeConfigModal()">Cancel</button>
-      <button onclick="resetConfig()">Reset</button>
-      <button onclick="saveConfig()">Connect</button>
+
+    <div class="cfg-field">
+      <label for="cfg_pass">Password</label>
+      <input id="cfg_pass" type="password" placeholder="••••••••" autocomplete="current-password">
     </div>
+
+    <div class="cfg-actions">
+      <button class="cfg-btn primary" onclick="saveConfig()">
+        <i class="fa-solid fa-plug" style="margin-right:5px;"></i>Connect
+      </button>
+      <button class="cfg-btn" onclick="closeConfigModal()">Cancel</button>
+    </div>
+
   </div>
 </div>
 
