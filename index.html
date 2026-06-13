@@ -11,7 +11,7 @@
 <body>
 
 <div class="topbar">
-  <h1>PaninoTL - Dashboard</h1>
+  <h1>PaninoTL</h1>
   <div class="topbar-actions">
 
     <button
@@ -52,8 +52,8 @@
   <div class="modal-card modal-card-sm">
 
     <div class="cfg-title">
-      <i class="fa-solid fa-tower-broadcast"></i>
-      <span>Broker Connection</span>
+      <i class="fa-solid fa-server"></i>
+      <span>MQTT Connection</span>
     </div>
 
     <form id="configForm" autocomplete="on" onsubmit="saveConfig(event)">
@@ -65,6 +65,19 @@
           type="url"
           placeholder="wss://broker.example.com:8884"
           autocomplete="url"
+          autocapitalize="none"
+          spellcheck="false"
+        >
+      </div>
+
+      <div class="cfg-field">
+        <label for="cfg_topic_prefix">Topic Prefix</label>
+        <input
+          id="cfg_topic_prefix"
+          name="topic_prefix"
+          type="text"
+          placeholder="panino"
+          autocomplete="off"
           autocapitalize="none"
           spellcheck="false"
         >
@@ -108,10 +121,7 @@
 // Customize these defaults for your broker and MQTT topic layout.
 const DEFAULT_BROKER_URL   = "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt";
 const DEFAULT_TOPIC_PREFIX = "panino";
-const DEFAULT_TOPIC_FILTER = "panino/+/state";
-
-const TOPIC_PREFIX  = DEFAULT_TOPIC_PREFIX;
-const TOPIC_FILTER  = DEFAULT_TOPIC_FILTER;
+const DEFAULT_TOPIC_FILTER = `${DEFAULT_TOPIC_PREFIX}/+/state`;
 const GRACE_SECONDS = 120;
 
 let client        = null;
@@ -131,18 +141,55 @@ function clearDashboardState() {
   Object.keys(openState).forEach(k => delete openState[k]);
 }
 
+function normalizeTopicPrefix(prefix) {
+  return String(prefix || "").trim().replace(/^\/+|\/+$/g, "");
+}
+
+function withConfigDefaults(config) {
+  config = config || {};
+  return {
+    ...config,
+    url: config.url || DEFAULT_BROKER_URL,
+    topicPrefix: normalizeTopicPrefix(config.topicPrefix) || DEFAULT_TOPIC_PREFIX
+  };
+}
+
+function topicPrefix(config = currentConfig) {
+  return normalizeTopicPrefix(config && config.topicPrefix) || DEFAULT_TOPIC_PREFIX;
+}
+
+function topicFilter(config = currentConfig) {
+  const prefix = topicPrefix(config);
+  return prefix === DEFAULT_TOPIC_PREFIX ? DEFAULT_TOPIC_FILTER : `${prefix}/+/state`;
+}
+
+function stateTopic(id, config = currentConfig) {
+  return `${topicPrefix(config)}/${id}/state`;
+}
+
+function deviceIdFromTopic(topic, config = currentConfig) {
+  const prefix = topicPrefix(config);
+  const start  = `${prefix}/`;
+  const end    = "/state";
+  if (!topic.startsWith(start) || !topic.endsWith(end)) return null;
+
+  const id = topic.slice(start.length, -end.length);
+  return id && !id.includes("/") ? id : null;
+}
+
 // Config and broker credentials
 async function loadConfig() {
   const saved = localStorage.getItem("mqtt_config");
   if (saved) {
-    try { return JSON.parse(saved); } catch { localStorage.removeItem("mqtt_config"); }
+    try { return withConfigDefaults(JSON.parse(saved)); } catch { localStorage.removeItem("mqtt_config"); }
   }
-  return { url: DEFAULT_BROKER_URL };
+  return withConfigDefaults({});
 }
 
 function openConfigModal(prefill) {
-  prefill = prefill || {};
+  prefill = withConfigDefaults(prefill || {});
   document.getElementById("cfg_url").value = prefill.url || DEFAULT_BROKER_URL;
+  document.getElementById("cfg_topic_prefix").value = prefill.topicPrefix || DEFAULT_TOPIC_PREFIX;
   if (Object.prototype.hasOwnProperty.call(prefill, "username")) {
     document.getElementById("cfg_user").value = prefill.username || "";
   }
@@ -167,10 +214,18 @@ function saveConfig(event) {
 
   const config = {
     url:      document.getElementById("cfg_url").value.trim(),
+    topicPrefix: normalizeTopicPrefix(document.getElementById("cfg_topic_prefix").value),
     username: document.getElementById("cfg_user").value.trim(),
     password: document.getElementById("cfg_pass").value
   };
-  if (!config.url || !config.username) { alert("Please enter broker URL and username"); return; }
+  if (!config.url || !config.topicPrefix || !config.username) {
+    alert("Please enter broker URL, topic prefix, and username");
+    return;
+  }
+  if (/[+#]/.test(config.topicPrefix)) {
+    alert("Topic prefix cannot contain MQTT wildcards (+ or #)");
+    return;
+  }
   localStorage.setItem("mqtt_config", JSON.stringify(config));
   connectMQTT(config);
   closeConfigModal(true);
@@ -217,12 +272,14 @@ function disconnectMQTT() {
 
 function handleConnectionClick() {
   const brokerUrl = (currentConfig && currentConfig.url) || DEFAULT_BROKER_URL;
+  const prefix = topicPrefix(currentConfig);
   localStorage.removeItem("mqtt_config");
   disconnectMQTT();
-  openConfigModal({ url: brokerUrl, username: "", password: "" });
+  openConfigModal({ url: brokerUrl, topicPrefix: prefix, username: "", password: "" });
 }
 
 function connectMQTT(config) {
+  config = withConfigDefaults(config);
   currentConfig = config;
 
   clearDashboardState();
@@ -240,7 +297,7 @@ function connectMQTT(config) {
   newClient.on("connect", () => {
     if (client !== newClient) return;
     console.log("✅ Connected");
-    newClient.subscribe(TOPIC_FILTER);
+    newClient.subscribe(topicFilter(config));
     setConnStatus("connected");
   });
 
@@ -264,15 +321,14 @@ function connectMQTT(config) {
     if (client !== newClient) return;
 
     try {
-      const parts = topic.split("/");
-      if (parts.length !== 3 || parts[0] !== TOPIC_PREFIX || parts[2] !== "state") return;
+      const id = deviceIdFromTopic(topic, config);
+      if (!id) return;
 
       // Empty retained payloads mean the broker cleared the device state.
       const raw = message.toString();
       if (!raw) return;
 
       const data = JSON.parse(raw);
-      const id   = parts[1];
       const s    = data.s || {};
       const c    = data.c || {};
       const g    = data.g || {};
@@ -314,7 +370,7 @@ function clearDeviceState(event, id) {
   if (!confirm(`Clear retained state for ${id}?`)) return;
 
   uiLocked = true;
-  const topic = `${TOPIC_PREFIX}/${id}/state`;
+  const topic = stateTopic(id);
 
   client.publish(topic, "", { retain: true }, (err) => {
     uiLocked = false;
