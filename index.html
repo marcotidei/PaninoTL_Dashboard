@@ -5,245 +5,22 @@
   <title>PaninoTL - Dashboard</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-
-  <style>
-    /* ── Base ── */
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 20px;
-      margin: 0;
-    }
-
-    /* ── Topbar ── */
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .topbar h1 { margin: 0; }
-
-    #toggleAllBtn {
-      background: #1e293b;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-    #toggleAllBtn:hover { background: #334155; }
-
-    /* ── Device cards ── */
-    .device {
-      background: #1e293b;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      overflow: hidden;
-      transition: 0.3s;
-    }
-
-    .error { border-left: 5px solid red; }
-    .warn  { border-left: 5px solid orange; }
-    .ok    { border-left: 5px solid limegreen; }
-    .idle  { border-left: 5px solid deepskyblue; }
-
-    /* ── Card header ── */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: nowrap;
-      padding: 12px 14px;
-      cursor: pointer;
-      gap: 12px;
-    }
-    .header span i { font-size: 16px; }
-
-    /* ── Card content ── */
-    .content {
-      padding: 12px;
-      border-top: 1px solid #334155;
-      display: none;
-    }
-    .open .content { display: block; }
-
-    /* ── Rows ── */
-    .row {
-      display: flex;
-      justify-content: space-between;
-      margin: 4px 0;
-      font-size: 14px;
-      gap: 12px;
-    }
-    .row span:last-child {
-      text-align: right;
-      word-break: break-word;
-    }
-
-    /* ── Section grid ── */
-    .sections {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    @media (min-width: 700px) {
-      .sections { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    .section {
-      display: flex;
-      gap: 16px;
-      background: #0b1220;
-      padding: 10px 10px 10px 12px;
-      border-radius: 8px;
-      align-items: flex-start;
-    }
-    .section-icon {
-      font-size: 48px;
-      width: 56px;
-      flex-shrink: 0;
-      text-align: center;
-      opacity: 0.8;
-    }
-    .section-icon i { font-size: inherit; }
-    .section-body { flex: 1; min-width: 0; }
-
-    /* ── Modals ── */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-card {
-      background: #0b1220;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .modal-close-btn {
-      background: #1e293b;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-
-    /* ── Config modal ── */
-    .cfg-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
-    .cfg-field label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-      color: #64748b;
-    }
-    .cfg-field input {
-      background: #0f172a;
-      color: #e2e8f0;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.15s;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .cfg-field input:focus {
-      border-color: #38bdf8;
-    }
-    .cfg-field input::placeholder {
-      color: #475569;
-    }
-    .cfg-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 20px;
-    }
-    .cfg-btn {
-      flex: 1;
-      padding: 9px 0;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #94a3b8;
-      transition: background 0.15s, color 0.15s;
-    }
-    .cfg-btn:hover {
-      background: #334155;
-      color: #e2e8f0;
-    }
-    .cfg-btn.primary {
-      background: #0369a1;
-      border-color: #0284c7;
-      color: #e0f2fe;
-    }
-    .cfg-btn.primary:hover {
-      background: #0284c7;
-      color: #fff;
-    }
-    .cfg-divider {
-      border: none;
-      border-top: 1px solid #1e293b;
-      margin: 16px 0 14px;
-    }
-    .cfg-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .cfg-title i {
-      font-size: 18px;
-      color: #38bdf8;
-    }
-    .cfg-title span {
-      font-size: 15px;
-      font-weight: 700;
-      color: #e2e8f0;
-      letter-spacing: 0.01em;
-    }
-  </style>
+  <link href="style.css" rel="stylesheet">
 </head>
 
 <body>
 
-<!-- ── Topbar ── -->
 <div class="topbar">
   <h1>PaninoTL - Dashboard</h1>
-  <div style="display:flex; gap:10px; align-items:center;">
+  <div class="topbar-actions">
 
-    <!-- Connection -->
-    <button id="connectionBtn" onclick="handleConnectionClick()" aria-label="Connect to broker" title="Connect to broker" style="
-      background:none; border:none;
-      color:#f87171; font-size:18px;
-      cursor:pointer; padding:4px 6px; line-height:1;
-      transition:color 0.15s;
-    ">
+    <button
+      id="connectionBtn"
+      class="connection-btn"
+      onclick="handleConnectionClick()"
+      aria-label="Connect to broker"
+      title="Connect to broker"
+    >
       <i id="connIcon" class="fa-solid fa-link-slash"></i>
     </button>
 
@@ -253,24 +30,15 @@
 
 <div id="devices"></div>
 
-<!-- ── Camera modal ── -->
 <div id="cameraModal" class="modal-overlay">
-  <div class="modal-card" style="width:min(420px, calc(100vw - 32px));">
+  <div class="modal-card modal-card-sm">
     <div class="modal-header">
       <b>Camera Information</b>
       <button class="modal-close-btn" onclick="closeCameraModal()">Close</button>
     </div>
-    <div style="margin:10px 0 14px 0;">
-      <div style="
-        background:#ffffff;
-        border-radius:12px;
-        padding:10px;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        box-shadow:0 4px 12px rgba(0,0,0,0.3);
-      ">
-        <img id="camImage" src="" style="width:100%; max-height:140px; object-fit:contain; display:none;">
+    <div class="camera-image-frame">
+      <div class="camera-image-shell">
+        <img id="camImage" class="camera-image" src="" alt="">
       </div>
     </div>
     <div class="row"><span>Model:</span><span id="camInfoModel">-</span></div>
@@ -280,95 +48,123 @@
   </div>
 </div>
 
-<!-- ── Config modal ── -->
-<div id="configModal" class="modal-overlay" style="z-index:1001;">
-  <div class="modal-card" style="width:min(420px, calc(100vw - 32px));">
+<div id="configModal" class="modal-overlay config-modal">
+  <div class="modal-card modal-card-sm">
 
     <div class="cfg-title">
       <i class="fa-solid fa-tower-broadcast"></i>
       <span>Broker Connection</span>
     </div>
 
-    <div class="cfg-field">
-      <label for="cfg_url">Broker URL</label>
-      <input id="cfg_url" type="url" placeholder="wss://broker.example.com:8884">
-    </div>
+    <form id="configForm" autocomplete="on" onsubmit="saveConfig(event)">
+      <div class="cfg-field">
+        <label for="cfg_url">Broker URL</label>
+        <input
+          id="cfg_url"
+          name="broker_url"
+          type="url"
+          placeholder="wss://broker.example.com:8884"
+          autocomplete="url"
+          autocapitalize="none"
+          spellcheck="false"
+        >
+      </div>
 
-    <div class="cfg-field">
-      <label for="cfg_user">Username</label>
-      <input id="cfg_user" type="text" placeholder="username" autocomplete="username">
-    </div>
+      <div class="cfg-field">
+        <label for="cfg_user">Username</label>
+        <input
+          id="cfg_user"
+          name="username"
+          type="text"
+          placeholder="username"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+        >
+      </div>
 
-    <div class="cfg-field">
-      <label for="cfg_pass">Password</label>
-      <input id="cfg_pass" type="password" placeholder="••••••••" autocomplete="current-password">
-    </div>
+      <div class="cfg-field">
+        <label for="cfg_pass">Password</label>
+        <input
+          id="cfg_pass"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        >
+      </div>
 
-    <div class="cfg-actions">
-      <button class="cfg-btn primary" onclick="saveConfig()">
-        <i class="fa-solid fa-link" style="margin-right:5px;"></i>Connect
-      </button>
-      <button class="cfg-btn" onclick="closeConfigModal()">Cancel</button>
-    </div>
+      <div class="cfg-actions">
+        <button class="cfg-btn primary" type="submit">
+          <i class="fa-solid fa-link cfg-btn-icon"></i>Connect
+        </button>
+      </div>
+    </form>
 
   </div>
 </div>
 
 <script>
-// ============================================================
-// CUSTOMIZE THESE DEFAULTS
-// ============================================================
-// Edit this block for your broker and MQTT topic layout.
+// Customize these defaults for your broker and MQTT topic layout.
 const DEFAULT_BROKER_URL   = "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt";
 const DEFAULT_TOPIC_PREFIX = "panino";
 const DEFAULT_TOPIC_FILTER = "panino/+/state";
 
-// ============================================================
-// CONSTANTS
-// ============================================================
 const TOPIC_PREFIX  = DEFAULT_TOPIC_PREFIX;
 const TOPIC_FILTER  = DEFAULT_TOPIC_FILTER;
 const GRACE_SECONDS = 120;
 
-// ============================================================
-// APPLICATION STATE
-// ============================================================
 let client        = null;
 let currentConfig = null;
+let connectionState = "disconnected";
 let expandAll     = false;
 let uiLocked      = false;
 
-// NOTE: These objects are mutated in-place (never reassigned)
-// because the MQTT message handler closes over the original
-// references. Reassigning would break the stale-client guard
-// inside connectMQTT — the old handler would write into the
-// new objects and corrupt state.
+// MQTT handlers close over these objects, so clear them in place.
 const devices   = {};
 const notified  = {};
 const openState = {};
 
-// ============================================================
-// CONFIG — persistence & broker connection
-// ============================================================
+function clearDashboardState() {
+  Object.keys(devices).forEach(k   => delete devices[k]);
+  Object.keys(notified).forEach(k  => delete notified[k]);
+  Object.keys(openState).forEach(k => delete openState[k]);
+}
+
+// Config and broker credentials
 async function loadConfig() {
   const saved = localStorage.getItem("mqtt_config");
   if (saved) {
     try { return JSON.parse(saved); } catch { localStorage.removeItem("mqtt_config"); }
   }
-  return { url: DEFAULT_BROKER_URL, username: "", password: "" };
+  return { url: DEFAULT_BROKER_URL };
 }
 
 function openConfigModal(prefill) {
   prefill = prefill || {};
-  document.getElementById("cfg_url").value  = prefill.url      || DEFAULT_BROKER_URL;
-  document.getElementById("cfg_user").value = prefill.username || "";
-  document.getElementById("cfg_pass").value = prefill.password || "";
+  document.getElementById("cfg_url").value = prefill.url || DEFAULT_BROKER_URL;
+  if (Object.prototype.hasOwnProperty.call(prefill, "username")) {
+    document.getElementById("cfg_user").value = prefill.username || "";
+  }
+  if (Object.prototype.hasOwnProperty.call(prefill, "password")) {
+    document.getElementById("cfg_pass").value = prefill.password || "";
+  }
   document.getElementById("configModal").style.display = "flex";
 }
-function closeConfigModal() {
+
+function loginRequired() {
+  return connectionState === "disconnected" || connectionState === "error";
+}
+
+function closeConfigModal(force = false) {
+  // Keep login visible when credentials are required.
+  if (!force && loginRequired()) return;
   document.getElementById("configModal").style.display = "none";
 }
-function saveConfig() {
+
+function saveConfig(event) {
+  if (event) event.preventDefault();
+
   const config = {
     url:      document.getElementById("cfg_url").value.trim(),
     username: document.getElementById("cfg_user").value.trim(),
@@ -376,16 +172,14 @@ function saveConfig() {
   };
   if (!config.url || !config.username) { alert("Please enter broker URL and username"); return; }
   localStorage.setItem("mqtt_config", JSON.stringify(config));
-  closeConfigModal();
   connectMQTT(config);
+  closeConfigModal(true);
 }
 
-// ============================================================
-// MQTT
-// ============================================================
-
-// States: "disconnected" | "connecting" | "connected" | "reconnecting" | "error"
+// MQTT connection
 function setConnStatus(state) {
+  connectionState = state;
+
   const icon  = document.getElementById("connIcon");
   const btn   = document.getElementById("connectionBtn");
 
@@ -402,6 +196,12 @@ function setConnStatus(state) {
   btn.style.color = s.color;
   btn.title = s.title;
   btn.setAttribute("aria-label", s.title);
+
+  if (loginRequired()) {
+    openConfigModal(currentConfig || { url: DEFAULT_BROKER_URL });
+  } else if (state === "connected") {
+    closeConfigModal(true);
+  }
 }
 
 function disconnectMQTT() {
@@ -409,9 +209,7 @@ function disconnectMQTT() {
     client.end(true);
     client = null;
   }
-  Object.keys(devices).forEach(k   => delete devices[k]);
-  Object.keys(notified).forEach(k  => delete notified[k]);
-  Object.keys(openState).forEach(k => delete openState[k]);
+  clearDashboardState();
   currentConfig = null;
   setConnStatus("disconnected");
   render();
@@ -427,10 +225,7 @@ function handleConnectionClick() {
 function connectMQTT(config) {
   currentConfig = config;
 
-  // Clear state objects in-place (see note at top of STATE section)
-  Object.keys(devices).forEach(k   => delete devices[k]);
-  Object.keys(notified).forEach(k  => delete notified[k]);
-  Object.keys(openState).forEach(k => delete openState[k]);
+  clearDashboardState();
   render();
 
   if (client) client.end(true);
@@ -472,8 +267,7 @@ function connectMQTT(config) {
       const parts = topic.split("/");
       if (parts.length !== 3 || parts[0] !== TOPIC_PREFIX || parts[2] !== "state") return;
 
-      // FIX #4: An empty payload means the retained message was cleared by the broker.
-      // JSON.parse("") throws — guard against it explicitly.
+      // Empty retained payloads mean the broker cleared the device state.
       const raw = message.toString();
       if (!raw) return;
 
@@ -533,9 +327,7 @@ function clearDeviceState(event, id) {
   });
 }
 
-// ============================================================
-// TIME HELPERS
-// ============================================================
+// Time helpers
 function parseTS(ts) {
   if (!ts || ts === "-") return null;
   const m = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
@@ -543,7 +335,6 @@ function parseTS(ts) {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]));
 }
 
-// FIX #14: accepts both Date objects and timestamp strings (was strings-only).
 function relativeTime(ts) {
   if (!ts) return "-";
   const t = (ts instanceof Date) ? ts : parseTS(ts);
@@ -552,7 +343,6 @@ function relativeTime(ts) {
   if (diff < 10)   return "now";
   if (diff < 60)   return diff + "s";
   if (diff < 3600) return Math.floor(diff / 60) + "m";
-  // FIX #11: show hours + minutes for anything over 1 hour instead of bare "Xh".
   const h = Math.floor(diff / 3600);
   const m = Math.floor((diff % 3600) / 60);
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
@@ -565,9 +355,7 @@ function formatDateTime(ts) {
   return t.toLocaleString();
 }
 
-// ============================================================
-// UNIT CONVERSION HELPERS
-// ============================================================
+// Unit conversion helpers
 function sdUsagePercent(d) {
   if (!d.sdTotalMB || d.sdTotalMB === 0) return 0;
   return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
@@ -589,9 +377,7 @@ function formatFreeSmart(mb) {
   return Math.round(mb) + " MB";
 }
 
-// ============================================================
-// SCHEDULE HELPERS
-// ============================================================
+// Schedule helpers
 function hhmmToSeconds(hhmm) {
   if (!hhmm) return 0;
   const [h, m] = hhmm.split(":").map(Number);
@@ -599,7 +385,7 @@ function hhmmToSeconds(hhmm) {
 }
 
 function dayIndexMon0(jsDay) {
-  return (jsDay + 6) % 7; // JS: Sun=0..Sat=6 → Mon=0..Sun=6
+  return (jsDay + 6) % 7;
 }
 
 function isDayActive(days, date) {
@@ -625,9 +411,7 @@ function isInsideWindow(d, date) {
   );
 }
 
-// NOTE: Steps by one minute and finds the next interval-aligned slot from midnight.
-// For intervals shorter than 60 s the returned time may be up to 59 s late.
-// In practice device intervals are always ≥ 60 s, so this is acceptable.
+// Device schedules are aligned to midnight; scan minute slots for the next valid one.
 function nextScheduledConnection(d, from = new Date()) {
   if (!d.config || !d.config.interval) return null;
   const intervalMs = d.config.interval * 1000;
@@ -646,9 +430,7 @@ function nextScheduledConnection(d, from = new Date()) {
   return null;
 }
 
-// ============================================================
-// HEALTH / STATUS LOGIC
-// ============================================================
+// Health and status logic
 function status(dev, id) {
   const now = new Date();
 
@@ -657,9 +439,7 @@ function status(dev, id) {
     return "idle";
   }
 
-  // Device inside schedule window but has never reported — stay idle rather
-  // than raising a false alarm; a brand-new or mis-configured device will show
-  // idle until its first successful transmission.
+  // Brand-new devices can be inside schedule before their first report.
   if (!dev.lastSeenDevice || !dev.config || !dev.config.interval) return "idle";
 
   const lastSeen = parseTS(dev.lastSeenDevice);
@@ -694,11 +474,8 @@ function isRecentError(d) {
   return err.getTime() > shot.getTime();
 }
 
-// FIX #7: Communication errors and JSON errors are now evaluated independently.
-// A comm delay/loss sets the alert banner; the returned object also carries
-// jsonError so the panel can show both when they co-occur.
+// Communication delay/loss wins the banner, but JSON errors are still shown too.
 function effectiveErrorInfo(d, id, statusLevel) {
-  // Communication-level alert
   let commAlert = null;
   if (statusLevel === "warn" && d.lastSeenDevice && d.config && d.config.interval) {
     const lastSeen = parseTS(d.lastSeenDevice);
@@ -724,12 +501,9 @@ function effectiveErrorInfo(d, id, statusLevel) {
     }
   }
 
-  // JSON-level error (independent of comm status)
   const hasJsonError    = !!(d.lastError && d.lastError !== "None");
   const recentJsonError = hasJsonError && isRecentError(d);
 
-  // Primary alert: comm takes priority for the banner (it's the more urgent signal);
-  // JSON error is passed through separately so callers can surface both.
   if (commAlert) {
     return {
       hasError:      true,
@@ -755,9 +529,7 @@ function effectiveErrorInfo(d, id, statusLevel) {
   };
 }
 
-// ============================================================
-// MAPPING HELPERS
-// ============================================================
+// Display mapping helpers
 function lensName(id) {
   switch (id) {
     case 101: return "Wide";
@@ -823,15 +595,12 @@ function renderDays(daysStr) {
   return labels.map((label, i) => {
     const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
     return active
-      ? `<span style="color:white;">${label}</span>`
-      : `<span style="color:#475569;">${label}</span>`;
+      ? `<span class="day-active">${label}</span>`
+      : `<span class="day-inactive">${label}</span>`;
   }).join(" ");
 }
 
-// ============================================================
-// PANEL OPEN/COLLAPSE
-// ============================================================
-// FIX #1: ID is read from data-id attribute, not from DOM text content.
+// Panel interactions
 function toggle(el) {
   const id = el.dataset.id;
   el.classList.toggle("open");
@@ -845,15 +614,11 @@ function toggleAllPanels() {
   render();
 }
 
-// ============================================================
-// CAMERA MODAL
-// ============================================================
+// Camera modal
 function openCameraModal(id) {
   const d = devices[id];
   if (!d) return;
 
-  // d.gopro is always an object (defaulted to {} in the message handler)
-  // so we only guard the inner property access.
   const g = d.gopro;
   document.getElementById("camInfoModel").innerText = goproModelName(g.m);
   document.getElementById("camInfoFw").innerText    = g.fw  || "-";
@@ -872,7 +637,6 @@ function closeCameraModal() {
   document.getElementById("cameraModal").style.display = "none";
 }
 
-// Close modals on backdrop click or Escape
 document.addEventListener("click", (e) => {
   const cameraModal = document.getElementById("cameraModal");
   const configModal = document.getElementById("configModal");
@@ -883,17 +647,11 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { closeCameraModal(); closeConfigModal(); }
 });
 
-// ============================================================
-// RENDER
-// ============================================================
-
-// FIX #13: Track the last-rendered snapshot so we can skip the
-// full DOM rebuild when nothing has changed, avoiding focus loss
-// and unnecessary flicker.
+// Render
+// Skip unchanged snapshots to avoid unnecessary DOM rebuilds and focus loss.
 let lastRenderSnapshot = "";
 
 function buildSnapshot() {
-  // Stringify the parts of state that affect the visual output.
   return JSON.stringify(
     Object.keys(devices).map(id => {
       const d = devices[id];
@@ -932,46 +690,33 @@ function render() {
     const s   = status(d, id);
     const err = effectiveErrorInfo(d, id, s);
 
-    // FIX #8: panelState escalates severity — it never downgrades.
-    // Map status + error color to a numeric severity, take the maximum.
+    // Device panels use the highest severity from communication and JSON status.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
     const errLevel   = err.hasError ? (err.color === "red" ? "error" : err.color === "orange" ? "warn" : s) : s;
     const panelState = [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
 
     const dev = document.createElement("div");
-    // FIX #1: store the id in data-id so toggle() can read it reliably.
     dev.className    = "device " + panelState;
     dev.dataset.id   = id;
 
-    // FIX #9: auto-expand only if the user hasn't manually interacted with
-    // this panel yet (openState not set). Once touched, honour their choice.
+    // Auto-open errors until the user manually chooses a panel state.
     const userHasInteracted = Object.prototype.hasOwnProperty.call(openState, id);
     const shouldOpen = userHasInteracted ? openState[id] : (expandAll || panelState === "error");
 
     if (shouldOpen) dev.classList.add("open");
 
-    // Build alert banner HTML (shows comm alert; secondary JSON error if both present)
     const alertBannerHtml = `
-      <div style="
-        padding:8px 10px;
-        border-radius:8px;
-        margin-bottom:10px;
-        font-size:12px;
-        display:flex;
-        gap:10px;
-        flex-wrap:wrap;
-        align-items:center;
+      <div class="alert-banner ${err.glow ? "glow" : ""}" style="
         border:1px solid ${err.hasError ? err.color : "#334155"};
         background:${err.hasError ? err.bg : "#020617"};
         color:${err.hasError ? err.color : "#e2e8f0"};
-        ${err.glow ? "box-shadow:0 0 8px red;" : ""}
       ">
         <b>${err.hasError ? "Alert:" : "No alerts"}</b>
         ${err.hasError ? `
           <span>${err.text}</span>
-          <span style="opacity:0.85;">${formatDateTime(err.time)}</span>
+          <span class="alert-time">${formatDateTime(err.time)}</span>
           ${err.jsonError ? `
-            <span style="color:orange; margin-left:8px;">Also: ${err.jsonError} @ ${formatDateTime(err.jsonErrorTime)}</span>
+            <span class="secondary-alert">Also: ${err.jsonError} @ ${formatDateTime(err.jsonErrorTime)}</span>
           ` : ""}
         ` : ""}
       </div>
@@ -980,7 +725,7 @@ function render() {
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
-        <span style="display:flex; align-items:center; gap:10px;">
+        <span class="header-metrics">
           ${panelState !== "ok" ? `
             <i class="fa-solid ${
               panelState === "error" ? "fa-circle-xmark" :
@@ -994,7 +739,7 @@ function render() {
             <span>${panelState.toUpperCase()}</span>
           ` : ""}
 
-          <i class="fa-solid fa-camera" style="color:#e2e8f0;"></i>
+          <i class="fa-solid fa-camera metric-icon"></i>
           <span>${d.sdPhotoCount}</span>
 
           <i class="fa-solid fa-circle-xmark"
@@ -1027,7 +772,6 @@ function render() {
 
         <div class="sections">
 
-          <!-- Health section -->
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
@@ -1049,7 +793,6 @@ function render() {
             </div>
           </div>
 
-          <!-- Schedule section -->
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
             <div class="section-body">
@@ -1059,21 +802,15 @@ function render() {
             </div>
           </div>
 
-          <!-- Camera / SD section -->
-          <div class="section" onclick="openCameraModal('${id}')" style="cursor:pointer;">
+          <div class="section section-clickable" onclick="openCameraModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
 
-              <!-- SD card bar -->
-              <div class="row" style="align-items:center;">
-                <div style="display:flex; align-items:center; width:100%; gap:8px;">
+              <div class="row sd-row">
+                <div class="sd-wrap">
                   <i class="fa-solid fa-sd-card"></i>
-                  <div style="
-                    flex:1; height:10px; background:#334155;
-                    border-radius:4px; overflow:hidden;
-                  ">
-                    <div style="
-                      height:100%;
+                  <div class="sd-track">
+                    <div class="sd-fill" style="
                       width:${sdUsagePercent(d)}%;
                       background:${
                         sdUsagePercent(d) < 70 ? "limegreen" :
@@ -1081,7 +818,7 @@ function render() {
                       };
                     "></div>
                   </div>
-                  <span style="min-width:90px; text-align:right; white-space:nowrap;">
+                  <span class="sd-summary">
                     ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
                   </span>
                 </div>
@@ -1102,17 +839,8 @@ function render() {
 
         </div>
 
-        <!-- Clear button -->
-        <div style="margin-top:12px; text-align:right;">
-          <button onclick="clearDeviceState(event, '${id}')" style="
-            background:#3b0d0d;
-            color:#fff;
-            border:1px solid #7f1d1d;
-            border-radius:6px;
-            padding:6px 10px;
-            cursor:pointer;
-            font-size:12px;
-          ">Clear Device</button>
+        <div class="clear-actions">
+          <button class="clear-device-btn" onclick="clearDeviceState(event, '${id}')">Clear Device</button>
         </div>
       </div>
     `;
@@ -1121,9 +849,7 @@ function render() {
   });
 }
 
-// ============================================================
-// BOOT
-// ============================================================
+// Boot
 render();
 
 setInterval(() => {
