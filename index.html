@@ -768,7 +768,7 @@ function buildSnapshot() {
 
 function render() {
   const snapshot = buildSnapshot();
-  if (snapshot === lastRenderSnapshot) return;
+  // if (snapshot === lastRenderSnapshot) return;
   lastRenderSnapshot = snapshot;
 
   const container = document.getElementById("devices");
