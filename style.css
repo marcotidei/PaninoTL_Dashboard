@@ -124,6 +124,7 @@ body {
 .row span:last-child {
   text-align: right;
   word-break: break-word;
+  min-width: 0;
 }
 
 .sections {
@@ -134,7 +135,7 @@ body {
 
 @media (min-width: 700px) {
   .sections {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -145,6 +146,7 @@ body {
   padding: 10px 10px 10px 12px;
   border-radius: 8px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .section-clickable {
@@ -418,6 +420,7 @@ body {
   width: 100%;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .sd-progress {
