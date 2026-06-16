@@ -652,10 +652,6 @@ function failureTextClass(count) {
   return (count || 0) > 0 ? "text-danger" : "text-default";
 }
 
-function failureIconClass(count) {
-  return (count || 0) > 0 ? "text-danger" : "text-muted";
-}
-
 function panelStateTextClass(level) {
   if (level === "error") return "text-danger";
   if (level === "warn") return "text-warning";
@@ -822,12 +818,12 @@ function render() {
             <span>${panelState.toUpperCase()}</span>
           ` : ""}
 
-          <i class="fa-solid fa-camera metric-icon"></i>
-          <span>${d.sdPhotoCount}</span>
-
-          <i class="fa-solid fa-circle-xmark ${failureIconClass(d.photosFailed)}"></i>
-          <span class="${failureTextClass(d.photosFailed)}">
-            ${d.photosFailed || 0}
+          <span class="photo-metric">
+            <i class="fa-solid fa-camera metric-icon"></i>
+            <span>${d.sdPhotoCount}</span>
+            ${(d.photosFailed || 0) > 0 ? `
+              <span class="photo-failures">(${d.photosFailed} failed)</span>
+            ` : ""}
           </span>
 
           <i class="fa-solid fa-wifi"

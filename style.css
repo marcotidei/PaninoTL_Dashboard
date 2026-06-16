@@ -386,6 +386,18 @@ body {
   color: #e2e8f0;
 }
 
+.photo-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.photo-failures {
+  color: red;
+  font-weight: 700;
+}
+
 .text-default {
   color: #e2e8f0;
 }
