@@ -336,6 +336,7 @@ function connectMQTT(config) {
       devices[id] = {
         id,
         batteryPct:    (typeof s.b  === "number") ? s.b  : 0,
+        rtcTempC:      (typeof s.rt === "number") ? s.rt : null,
         wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
         sdPhotoCount:  (typeof s.pc === "number") ? s.pc : 0,
         photosFailed:  (typeof s.pf === "number") ? s.pf : 0,
@@ -748,6 +749,7 @@ function buildSnapshot() {
         s,
         lastSeenDevice: d.lastSeenDevice,
         batteryPct:     d.batteryPct,
+        rtcTempC:       d.rtcTempC,
         wifiQuality:    d.wifiQuality,
         sdPhotoCount:   d.sdPhotoCount,
         photosFailed:   d.photosFailed,
@@ -858,6 +860,10 @@ function render() {
               <div class="row">
                 <span>Battery:</span>
                 <span class="${batteryClass(d.batteryPct)}">${d.batteryPct}%</span>
+              </div>
+              <div class="row">
+                <span>Temperature:</span>
+                <span>${d.rtcTempC == null ? "-" : d.rtcTempC.toFixed(2) + "°C"}</span>
               </div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
             </div>
