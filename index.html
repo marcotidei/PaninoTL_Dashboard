@@ -945,6 +945,12 @@ function render() {
                 <span>Temperature:</span>
                 <span>${formatTemperature(d.rtcTempC)}</span>
               </div>
+              <div class="row">
+                <span>Wi-Fi:</span>
+                <span class="${wifiQualityClass(d.wifiQuality)}">
+                  ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
+                </span>
+              </div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
             </div>
           </div>
