@@ -824,7 +824,7 @@ function render() {
 
           <span class="photo-metric">
             <i class="fa-solid fa-camera metric-icon"></i>
-            <span>${d.sdPhotoCount}</span>
+            <span>${d.photosSuccessful}</span>
             ${(d.photosFailed || 0) > 0 ? `
               <span class="photo-failures">(${d.photosFailed})</span>
             ` : ""}
@@ -853,10 +853,12 @@ function render() {
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
               <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+              <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
+              <div class="row"><span>Confirmed Photos:</span><span>${d.photosSuccessful}</span></div>
               <div class="row">
-                <span>Wi-Fi:</span>
-                <span class="${wifiQualityClass(d.wifiQuality)}">
-                  ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
+                <span>Failed Photos:</span>
+                <span class="${failureTextClass(d.photosFailed)}">
+                  ${d.photosFailed || 0}
                 </span>
               </div>
               <div class="row">
@@ -867,7 +869,12 @@ function render() {
                 <span>Temperature:</span>
                 <span>${d.rtcTempC == null ? "-" : d.rtcTempC.toFixed(2) + "°C"}</span>
               </div>
-              <div class="row"><span>Photos:</span><span>${d.photosSuccessful}</span></div>
+              <div class="row">
+                <span>Wi-Fi:</span>
+                <span class="${wifiQualityClass(d.wifiQuality)}">
+                  ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
+                </span>
+              </div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
             </div>
           </div>
@@ -877,14 +884,13 @@ function render() {
             <div class="section-body">
               <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-              <div class="row"><span>Interval:</span><span>${d.config.interval ? d.config.interval + "s" : "-"}</span></div>
+              <div class="row"><span>Every:</span><span>${d.config.interval ? d.config.interval + "s" : "-"}</span></div>
             </div>
           </div>
 
           <div class="section section-clickable" onclick="openCameraModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
-
               <div class="row sd-row">
                 <div class="sd-wrap">
                   <i class="fa-solid fa-sd-card"></i>
@@ -894,20 +900,11 @@ function render() {
                   </span>
                 </div>
               </div>
-
               <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
-              <div class="row">
-                <span>Failed Photos:</span>
-                <span class="${failureTextClass(d.photosFailed)}">
-                  ${d.photosFailed || 0}
-                </span>
-              </div>
-              <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
               <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
             </div>
           </div>
-
         </div>
 
         <div class="clear-actions">
