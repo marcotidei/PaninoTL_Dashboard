@@ -941,6 +941,10 @@ function render() {
                 <span>Battery:</span>
                 <span class="${batteryClass(d.batteryPct)}">${d.batteryPct}%</span>
               </div>
+              <div class="row">
+                <span>Temperature:</span>
+                <span>${formatTemperature(d.rtcTempC)}</span>
+              </div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
             </div>
           </div>
