@@ -768,6 +768,9 @@ function buildSnapshot() {
 
 function render() {
   const snapshot = buildSnapshot();
+  const isCommIssue = (s === "warn" || s === "error");
+  const isJsonError = err.hasError && !isCommIssue;
+
   // if (snapshot === lastRenderSnapshot) return;
   lastRenderSnapshot = snapshot;
 
@@ -814,12 +817,16 @@ function render() {
         <b>${id}</b>
         <span class="header-metrics">
           ${panelState !== "ok" ? `
-            <i class="fa-solid ${
-              panelState === "error" ? "fa-circle-xmark" :
-              panelState === "warn"  ? "fa-circle-exclamation" :
-              "fa-clock"
-            } ${panelStateTextClass(panelState)}"></i>
-            <span>${panelState.toUpperCase()}</span>
+            ${isCommIssue ? `
+              <i class="fa-solid fa-tower-broadcast ${panelStateTextClass(panelState)}"></i>
+              <span>${s === "warn" ? "DELAY" : "LOST"}</span>
+            ` : isJsonError ? `
+              <i class="fa-solid fa-circle-xmark text-danger"></i>
+              <span>ERROR</span>
+            ` : panelState !== "ok" ? `
+              <i class="fa-solid fa-clock text-muted"></i>
+              <span>IDLE</span>
+            ` : ""}
           ` : ""}
 
           <span class="photo-metric">
