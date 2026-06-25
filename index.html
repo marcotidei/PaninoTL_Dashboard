@@ -338,7 +338,8 @@ function connectMQTT(config) {
         batteryPct:    (typeof s.b  === "number") ? s.b  : 0,
         rtcTempC:      (typeof s.rt === "number") ? s.rt : null,
         wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
-        sdPhotoCount:  (typeof s.pc === "number") ? s.pc : 0,
+        photosSuccessful: (typeof s.pc === "number") ? s.pc : 0,
+        sdPhotoCount:     (typeof s.sdpc === "number") ? s.sdpc : 0,
         photosFailed:  (typeof s.pf === "number") ? s.pf : 0,
         sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
         sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
@@ -751,7 +752,8 @@ function buildSnapshot() {
         batteryPct:     d.batteryPct,
         rtcTempC:       d.rtcTempC,
         wifiQuality:    d.wifiQuality,
-        sdPhotoCount:   d.sdPhotoCount,
+        photosSuccessful: d.photosSuccessful,
+        sdPhotoCount:     d.sdPhotoCount,
         photosFailed:   d.photosFailed,
         sdFreeMB:       d.sdFreeMB,
         sdTotalMB:      d.sdTotalMB,
@@ -865,6 +867,7 @@ function render() {
                 <span>Temperature:</span>
                 <span>${d.rtcTempC == null ? "-" : d.rtcTempC.toFixed(2) + "°C"}</span>
               </div>
+              <div class="row"><span>Photos:</span><span>${d.photosSuccessful}</span></div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
             </div>
           </div>
@@ -892,7 +895,7 @@ function render() {
                 </div>
               </div>
 
-              <div class="row"><span>Photos:</span><span>${d.sdPhotoCount}</span></div>
+              <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
               <div class="row">
                 <span>Failed Photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
