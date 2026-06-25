@@ -768,8 +768,6 @@ function buildSnapshot() {
 
 function render() {
   const snapshot = buildSnapshot();
-  const isCommIssue = (s === "warn" || s === "error");
-  const isJsonError = err.hasError && !isCommIssue;
 
   // if (snapshot === lastRenderSnapshot) return;
   lastRenderSnapshot = snapshot;
@@ -783,6 +781,9 @@ function render() {
 
     const s   = status(d, id);
     const err = effectiveErrorInfo(d, id, s);
+
+    const isCommIssue = (s === "warn" || s === "error");
+    const isJsonError = err.hasError && !isCommIssue;
 
     // Device panels use the highest severity from communication and JSON status.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
