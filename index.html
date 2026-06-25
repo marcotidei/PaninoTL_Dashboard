@@ -820,7 +820,7 @@ function render() {
           ${panelState !== "ok" ? `
             ${isCommIssue ? `
               <i class="fa-solid fa-tower-broadcast ${panelStateTextClass(panelState)}"></i>
-              <span>${s === "warn" ? "DELAY" : "LOST"}</span>
+              <span class="${panelStateTextClass(panelState)}">${s === "warn" ? "DELAY" : "LOST"}</span>
             ` : isJsonError ? `
               <i class="fa-solid fa-circle-xmark text-danger"></i>
               <span>ERROR</span>
@@ -860,8 +860,9 @@ function render() {
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
-
-              <div class="row"><span>Last Photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
+              <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+              <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
+              <div class="row"><span>Last photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
               <div class="row"><span>Confirmed Photos:</span><span>${d.photosSuccessful}</span></div>
               <div class="row">
                 <span>Failed Photos:</span>
@@ -869,8 +870,6 @@ function render() {
                   ${d.photosFailed || 0}
                 </span>
               </div>
-              <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
-              <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
               <div class="row">
                 <span>Battery:</span>
                 <span class="${batteryClass(d.batteryPct)}">${d.batteryPct}%</span>
