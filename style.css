@@ -242,6 +242,20 @@ body {
   display: none;
 }
 
+.firmware-icon-frame {
+  min-height: 96px;
+  margin: 10px 0 14px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.firmware-icon {
+  font-size: 56px;
+  color: #38bdf8;
+  opacity: 0.9;
+}
+
 .cfg-field {
   display: flex;
   flex-direction: column;

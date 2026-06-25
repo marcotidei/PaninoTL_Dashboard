@@ -48,6 +48,22 @@
   </div>
 </div>
 
+<div id="firmwareModal" class="modal-overlay">
+  <div class="modal-card modal-card-sm">
+    <div class="modal-header">
+      <b>Firmware Information</b>
+      <button class="modal-close-btn" onclick="closeFirmwareModal()">Close</button>
+    </div>
+    <div class="firmware-icon-frame">
+      <i class="fa-solid fa-microchip firmware-icon"></i>
+    </div>
+    <div class="row"><span>Device:</span><span id="fwInfoDevice">-</span></div>
+    <div class="row"><span>FW datetime:</span><span id="fwInfoDatetime">-</span></div>
+    <div class="row"><span>FW ID:</span><span id="fwInfoId">-</span></div>
+    <div class="row"><span>Dirty build:</span><span id="fwInfoDirty">-</span></div>
+  </div>
+</div>
+
 <div id="configModal" class="modal-overlay config-modal">
   <div class="modal-card modal-card-sm">
 
@@ -127,6 +143,7 @@ const GRACE_SECONDS = 120;
 let client        = null;
 let currentConfig = null;
 let connectionState = "disconnected";
+let manualDisconnect = false;
 let expandAll     = false;
 let uiLocked      = false;
 
@@ -260,6 +277,7 @@ function setConnStatus(state) {
 }
 
 function disconnectMQTT() {
+  manualDisconnect = true;
   if (client) {
     client.end(true);
     client = null;
@@ -281,24 +299,43 @@ function handleConnectionClick() {
 function connectMQTT(config) {
   config = withConfigDefaults(config);
   currentConfig = config;
+  manualDisconnect = false;
 
   clearDashboardState();
   render();
 
-  if (client) client.end(true);
+  if (client) {
+    manualDisconnect = true;
+    client.end(true);
+    manualDisconnect = false;
+  }
   setConnStatus("connecting");
 
   const newClient = mqtt.connect(config.url, {
     username: config.username,
-    password: config.password
+    password: config.password,
+    clean: true,
+    connectTimeout: 10000,
+    reconnectPeriod: 5000,
+    keepalive: 30,
+    resubscribe: true
   });
   client = newClient;
 
   newClient.on("connect", () => {
     if (client !== newClient) return;
     console.log("✅ Connected");
-    newClient.subscribe(topicFilter(config));
-    setConnStatus("connected");
+    const filter = topicFilter(config);
+    newClient.subscribe(filter, (err) => {
+      if (client !== newClient) return;
+      if (err) {
+        console.error("MQTT subscribe failed:", filter, err);
+        setConnStatus("error");
+        return;
+      }
+      console.log("✅ Subscribed", filter);
+      setConnStatus("connected");
+    });
   });
 
   newClient.on("reconnect", () => {
@@ -308,7 +345,7 @@ function connectMQTT(config) {
 
   newClient.on("close", () => {
     if (client !== newClient) return;
-    setConnStatus("disconnected");
+    setConnStatus(manualDisconnect ? "disconnected" : "reconnecting");
   });
 
   newClient.on("error", (err) => {
@@ -332,6 +369,7 @@ function connectMQTT(config) {
       const s    = data.s || {};
       const c    = data.c || {};
       const g    = data.g || {};
+      const f    = data.f || {};
 
       devices[id] = {
         id,
@@ -356,6 +394,7 @@ function connectMQTT(config) {
           output:   c.o
         },
         gopro:         g,
+        firmware:      f,
         lastSeenDevice: s.t
       };
 
@@ -726,14 +765,35 @@ function closeCameraModal() {
   document.getElementById("cameraModal").classList.remove("is-visible");
 }
 
+// Firmware modal
+function openFirmwareModal(id) {
+  const d = devices[id];
+  if (!d) return;
+
+  const f = d.firmware || {};
+  document.getElementById("fwInfoDevice").innerText   = id;
+  document.getElementById("fwInfoDatetime").innerText = f.dt || "-";
+  document.getElementById("fwInfoId").innerText       = f.id || "-";
+  document.getElementById("fwInfoDirty").innerText    =
+    (typeof f.dirty === "boolean") ? (f.dirty ? "Yes" : "No") : "-";
+
+  document.getElementById("firmwareModal").classList.add("is-visible");
+}
+
+function closeFirmwareModal() {
+  document.getElementById("firmwareModal").classList.remove("is-visible");
+}
+
 document.addEventListener("click", (e) => {
   const cameraModal = document.getElementById("cameraModal");
+  const firmwareModal = document.getElementById("firmwareModal");
   const configModal = document.getElementById("configModal");
   if (cameraModal.classList.contains("is-visible") && e.target === cameraModal) closeCameraModal();
+  if (firmwareModal.classList.contains("is-visible") && e.target === firmwareModal) closeFirmwareModal();
   if (configModal.classList.contains("is-visible") && e.target === configModal) closeConfigModal();
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { closeCameraModal(); closeConfigModal(); }
+  if (e.key === "Escape") { closeCameraModal(); closeFirmwareModal(); closeConfigModal(); }
 });
 
 // Render
@@ -760,6 +820,7 @@ function buildSnapshot() {
         lastShotOk:     d.lastShotOk,
         lastError:      d.lastError,
         lastErrorTime:  d.lastErrorTime,
+        firmware:       d.firmware,
         open:           !!openState[id]
       };
     })
@@ -857,7 +918,7 @@ function render() {
 
         <div class="sections">
 
-          <div class="section">
+          <div class="section section-clickable" onclick="openFirmwareModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
               <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
