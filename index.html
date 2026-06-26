@@ -500,17 +500,18 @@ function isInsideWindow(d, date) {
   if (!d.config || !d.config.days) return false;
   const startSec = hhmmToSeconds(d.config.start);
   const endSec   = hhmmToSeconds(d.config.end);
+  const endLimitSec = endSec + 60;
   const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
   const wraps    = startSec >= endSec;
 
   if (!wraps) {
-    return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endSec;
+    return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endLimitSec;
   }
   const prev = new Date(date);
   prev.setDate(prev.getDate() - 1);
   return (
     (isDayActive(d.config.days, date) && curSec >= startSec) ||
-    (isDayActive(d.config.days, prev) && curSec < endSec)
+    (isDayActive(d.config.days, prev) && curSec < endLimitSec)
   );
 }
 
