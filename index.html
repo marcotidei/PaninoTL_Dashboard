@@ -613,8 +613,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          commAlert.time,
       level:         commAlert.level,
       glow:          commAlert.glow,
-      jsonError:     hasJsonError ? d.lastError : null,
-      jsonErrorTime: hasJsonError ? d.lastErrorTime : null
+      jsonError:     recentJsonError ? d.lastError : null,
+      jsonErrorTime: recentJsonError ? d.lastErrorTime : null
     };
   }
 
@@ -851,7 +851,7 @@ function render() {
     const err = effectiveErrorInfo(d, id, s);
 
     const isCommIssue = (s === "warn" || s === "error");
-    const isJsonError = err.hasError && !isCommIssue;
+    const isJsonError = err.hasError && !isCommIssue && (err.level === "error" || err.level === "warn");
 
     // Device panels use the highest severity from communication and JSON status.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
@@ -870,7 +870,7 @@ function render() {
 
     const alertBannerHtml = `
       <div class="alert-banner ${alertClass(err)} ${err.glow ? "glow" : ""}">
-        <b>${err.hasError ? "Alert:" : "No alerts"}</b>
+        <b>${err.hasError ? (err.level === "neutral" ? "Last error:" : "Alert:") : "No alerts"}</b>
         ${err.hasError ? `
           <span>${err.text}</span>
           <span class="alert-time">${formatDateTime(err.time)}</span>
