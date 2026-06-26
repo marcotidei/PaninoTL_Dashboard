@@ -458,6 +458,10 @@ function sdUsagePercent(d) {
   return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
 }
 
+function hasSdTotal(d) {
+  return typeof d.sdTotalMB === "number" && d.sdTotalMB > 0;
+}
+
 function formatTotalGB(mb) {
   if (!mb || mb <= 0) return "-";
   return Math.round(mb / 1024) + " GB";
@@ -714,6 +718,7 @@ function alertClass(err) {
 }
 
 function sdLevelClass(d) {
+  if (!hasSdTotal(d)) return "";
   const pct = sdUsagePercent(d);
   if (pct < 70) return "sd-ok";
   if (pct < 90) return "sd-warn";
@@ -968,15 +973,19 @@ function render() {
           <div class="section section-clickable" onclick="openCameraModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
-              <div class="row sd-row">
-                <div class="sd-wrap">
-                  <i class="fa-solid fa-sd-card"></i>
-                  <progress class="sd-progress ${sdLevelClass(d)}" value="${sdUsagePercent(d)}" max="100"></progress>
-                  <span class="sd-summary">
-                    ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
-                  </span>
+              ${hasSdTotal(d) ? `
+                <div class="row sd-row">
+                  <div class="sd-wrap">
+                    <i class="fa-solid fa-sd-card"></i>
+                    <progress class="sd-progress ${sdLevelClass(d)}" value="${sdUsagePercent(d)}" max="100"></progress>
+                    <span class="sd-summary">
+                      ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ` : `
+                <div class="row"><span>SD Free Space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
+              `}
               <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
               <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
