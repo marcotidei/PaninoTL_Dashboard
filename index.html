@@ -887,6 +887,16 @@ function render() {
       </div>
     `;
 
+    const commStatusHtml = isCommIssue ? `
+      <span class="${panelStateTextClass(panelState)}">${s === "warn" ? "DELAY" : "LOST"}</span>
+    ` : isJsonError ? `
+      <span class="text-danger">ERROR</span>
+    ` : panelState !== "ok" ? `
+      <span class="text-muted">IDLE</span>
+    ` : `
+      <span class="text-default">OK</span>
+    `;
+
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
@@ -926,6 +936,43 @@ function render() {
         </span>
       </div>
 
+      <div class="collapsed-summary" onclick="toggle(this.parentElement)">
+        <div class="mini-stat">
+          <span class="mini-label">Photos</span>
+          <span class="mini-value">
+            ${d.photosSuccessful}
+            ${(d.photosFailed || 0) > 0 ? `
+              <span class="photo-failures">(${d.photosFailed})</span>
+            ` : ""}
+          </span>
+        </div>
+
+        <div class="mini-stat">
+          <span class="mini-label">Comm</span>
+          <span class="mini-value">${commStatusHtml}</span>
+        </div>
+
+        <div class="mini-stat">
+          <span class="mini-label">Wi-Fi</span>
+          <span class="mini-value ${wifiQualityClass(d.wifiQuality)}">${d.wifiQuality ?? 0}%</span>
+        </div>
+
+        <div class="mini-stat">
+          <span class="mini-label">Battery</span>
+          <span class="mini-value ${batteryClass(d.batteryPct)}">${d.batteryPct}%</span>
+        </div>
+
+        <div class="mini-stat mini-stat-wide">
+          <span class="mini-label">Last photo</span>
+          <span class="mini-value">${formatDateTime(d.lastShotOk)}</span>
+        </div>
+
+        <div class="mini-stat mini-stat-wide">
+          <span class="mini-label">Last seen</span>
+          <span class="mini-value">${formatDateTime(d.lastSeenDevice)}</span>
+        </div>
+      </div>
+
       <div class="content">
         ${alertBannerHtml}
 
@@ -934,7 +981,7 @@ function render() {
           <div class="section section-clickable" onclick="openFirmwareModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
-              <div class="row"><span>Last Comm.:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+              <div class="row"><span>Last seen:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
               <div class="row"><span>Last photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
               <div class="row"><span>Confirmed Photos:</span><span>${d.photosSuccessful}</span></div>
@@ -958,7 +1005,6 @@ function render() {
                   ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
                 </span>
               </div>
-              <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
             </div>
           </div>
 
