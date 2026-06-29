@@ -106,8 +106,9 @@ body {
 .collapsed-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  padding: 0 12px 12px;
+  column-gap: 18px;
+  row-gap: 6px;
+  padding: 0 14px 12px;
   cursor: pointer;
 }
 
@@ -115,46 +116,38 @@ body {
   display: none;
 }
 
-.mini-stat {
+.summary-item {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
   min-width: 0;
-  background: #0b1220;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 8px 9px;
+  color: #94a3b8;
+  font-size: 13px;
 }
 
-.mini-stat-wide {
-  grid-column: 1 / -1;
-}
-
-.mini-label,
-.mini-value {
-  display: block;
-  min-width: 0;
-}
-
-.mini-label {
+.summary-label {
   color: #64748b;
-  font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.mini-value {
-  margin-top: 4px;
+.summary-value {
   color: #e2e8f0;
-  font-size: 14px;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (min-width: 700px) {
+@media (max-width: 560px) {
   .collapsed-summary {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
-  .mini-stat-wide {
-    grid-column: auto;
+  .summary-value {
+    white-space: normal;
   }
 }
 

@@ -887,16 +887,6 @@ function render() {
       </div>
     `;
 
-    const commStatusHtml = isCommIssue ? `
-      <span class="${panelStateTextClass(panelState)}">${s === "warn" ? "DELAY" : "LOST"}</span>
-    ` : isJsonError ? `
-      <span class="text-danger">ERROR</span>
-    ` : panelState !== "ok" ? `
-      <span class="text-muted">IDLE</span>
-    ` : `
-      <span class="text-default">OK</span>
-    `;
-
     dev.innerHTML = `
       <div class="header" onclick="toggle(this.parentElement)">
         <b>${id}</b>
@@ -937,39 +927,14 @@ function render() {
       </div>
 
       <div class="collapsed-summary" onclick="toggle(this.parentElement)">
-        <div class="mini-stat">
-          <span class="mini-label">Photos</span>
-          <span class="mini-value">
-            ${d.photosSuccessful}
-            ${(d.photosFailed || 0) > 0 ? `
-              <span class="photo-failures">(${d.photosFailed})</span>
-            ` : ""}
-          </span>
+        <div class="summary-item">
+          <span class="summary-label">Last photo</span>
+          <span class="summary-value">${formatDateTime(d.lastShotOk)}</span>
         </div>
 
-        <div class="mini-stat">
-          <span class="mini-label">Comm</span>
-          <span class="mini-value">${commStatusHtml}</span>
-        </div>
-
-        <div class="mini-stat">
-          <span class="mini-label">Wi-Fi</span>
-          <span class="mini-value ${wifiQualityClass(d.wifiQuality)}">${d.wifiQuality ?? 0}%</span>
-        </div>
-
-        <div class="mini-stat">
-          <span class="mini-label">Battery</span>
-          <span class="mini-value ${batteryClass(d.batteryPct)}">${d.batteryPct}%</span>
-        </div>
-
-        <div class="mini-stat mini-stat-wide">
-          <span class="mini-label">Last photo</span>
-          <span class="mini-value">${formatDateTime(d.lastShotOk)}</span>
-        </div>
-
-        <div class="mini-stat mini-stat-wide">
-          <span class="mini-label">Last seen</span>
-          <span class="mini-value">${formatDateTime(d.lastSeenDevice)}</span>
+        <div class="summary-item">
+          <span class="summary-label">Last seen</span>
+          <span class="summary-value">${formatDateTime(d.lastSeenDevice)}</span>
         </div>
       </div>
 
