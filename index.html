@@ -446,6 +446,23 @@ function relativeTime(ts) {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function elapsedAgo(ts) {
+  if (!ts) return "-";
+  const t = (ts instanceof Date) ? ts : parseTS(ts);
+  if (!t || isNaN(t)) return "-";
+
+  const diff = Math.max(0, Math.floor((Date.now() - t.getTime()) / 1000));
+  if (diff < 10) return "now";
+  if (diff < 60) return `${diff} secs ago`;
+
+  const minutes = Math.floor(diff / 60);
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? "min" : "mins"} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  const remMinutes = minutes % 60;
+  return `${hours}:${String(remMinutes).padStart(2, "0")} ${hours === 1 ? "hour" : "hours"} ago`;
+}
+
 function formatDateTime(ts) {
   if (!ts || ts === "-") return "-";
   const t = (ts instanceof Date) ? ts : parseTS(ts);
@@ -927,14 +944,15 @@ function render() {
 
       <div class="collapsed-summary" onclick="toggle(this.parentElement)">
         <div class="summary-item">
+          <span class="summary-label">Last seen</span>
+          <span class="summary-value">${elapsedAgo(d.lastSeenDevice)}</span>
+        </div>
+        <div class="summary-item">
           <span class="summary-label">Last photo</span>
           <span class="summary-value">${formatDateTime(d.lastShotOk)}</span>
         </div>
 
-        <div class="summary-item">
-          <span class="summary-label">Last seen</span>
-          <span class="summary-value">${formatDateTime(d.lastSeenDevice)}</span>
-        </div>
+
       </div>
 
       <div class="content">
@@ -945,7 +963,7 @@ function render() {
           <div class="section section-clickable" onclick="openFirmwareModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
-              <div class="row"><span>Last seen:</span><span>${relativeTime(d.lastSeenDevice)}</span></div>
+              <div class="row"><span>Last seen:</span><span>${elapsedAgo(d.lastSeenDevice)}</span></div>
               <div class="row"><span>Next Comm.:</span><span>${formatDateTime(nextScheduledConnection(d))}</span></div>
               <div class="row"><span>Last photo:</span><span>${formatDateTime(d.lastShotOk)}</span></div>
               <div class="row"><span>Confirmed Photos:</span><span>${d.photosSuccessful}</span></div>
