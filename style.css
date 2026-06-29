@@ -141,6 +141,23 @@ body {
   text-overflow: ellipsis;
 }
 
+.summary-schedule {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-width: 0;
+  border-top: 1px solid #334155;
+  padding-top: 8px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.summary-days {
+  white-space: nowrap;
+}
+
 @media (max-width: 560px) {
   .collapsed-summary {
     grid-template-columns: 1fr;
