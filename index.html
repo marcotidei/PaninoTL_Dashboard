@@ -515,7 +515,7 @@ function formatIntervalMinutes(seconds) {
 }
 
 function formatUploadSummary(config) {
-  if (!config || config.uploadEnabled !== true) return "Upload off";
+  if (!config || config.uploadEnabled !== true) return "Disabled";
 
   const time = config.uploadTime || "-";
   const timeout = Number(config.uploadTimeout);
@@ -972,13 +972,6 @@ function render() {
         <div class="summary-item">
           <span class="summary-label">Last photo</span>
           <span class="summary-value">${formatDateTime(d.lastShotOk)}</span>
-        </div>
-
-        <div class="summary-schedule">
-          <span class="summary-days">${renderDays(d.config.days)}</span>
-          <span>${d.config.start} → ${d.config.end}</span>
-          <span>${formatIntervalMinutes(d.config.interval)}</span>
-          <span class="summary-upload">${formatUploadSummary(d.config)}</span>
         </div>
       </div>
 
