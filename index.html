@@ -912,9 +912,8 @@ function render() {
             ` : ""}
           </span>
 
-          <i class="fa-solid fa-wifi"
-            title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"
-            class="${wifiQualityClass(d.wifiQuality)}"></i>
+          <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"
+            title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"></i>
 
           <i class="fa-solid ${
             d.batteryPct >= 90 ? "fa-battery-full" :
