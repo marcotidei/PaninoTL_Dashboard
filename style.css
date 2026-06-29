@@ -143,19 +143,31 @@ body {
 
 .summary-schedule {
   grid-column: 1 / -1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 35fr 35fr 30fr;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 14px;
+  gap: 10px;
   min-width: 0;
   border-top: 1px solid #334155;
-  padding-top: 8px;
+  margin-top: 2px;
+  padding-top: 10px;
   color: #94a3b8;
   font-size: 13px;
 }
 
-.summary-days {
+.summary-schedule span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.summary-schedule span:nth-child(2) {
+  text-align: center;
+}
+
+.summary-schedule span:nth-child(3) {
+  text-align: right;
 }
 
 @media (max-width: 560px) {
@@ -164,6 +176,17 @@ body {
   }
 
   .summary-value {
+    white-space: normal;
+  }
+
+  .summary-schedule {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-schedule span,
+  .summary-schedule span:nth-child(2),
+  .summary-schedule span:nth-child(3) {
+    text-align: left;
     white-space: normal;
   }
 }
