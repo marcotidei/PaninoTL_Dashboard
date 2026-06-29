@@ -973,6 +973,12 @@ function render() {
           <span class="summary-label">Last photo</span>
           <span class="summary-value">${formatDateTime(d.lastShotOk)}</span>
         </div>
+
+        <div class="summary-schedule">
+          <span class="summary-days">${renderDays(d.config.days)}</span>
+          <span>${d.config.start} → ${d.config.end}</span>
+          <span>${formatIntervalMinutes(d.config.interval)}</span>
+        </div>
       </div>
 
       <div class="content">
