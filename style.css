@@ -170,6 +170,11 @@ body {
   text-align: right;
 }
 
+.summary-upload {
+  grid-column: 1 / -1;
+  color: #cbd5e1;
+}
+
 @media (max-width: 560px) {
   .summary-value {
     white-space: normal;
@@ -184,6 +189,10 @@ body {
   .summary-schedule span:nth-child(2),
   .summary-schedule span:nth-child(3) {
     white-space: nowrap;
+  }
+
+  .summary-upload {
+    text-align: left;
   }
 }
 

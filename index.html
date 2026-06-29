@@ -392,7 +392,10 @@ function connectMQTT(config) {
           start:    c.s,
           end:      c.e,
           lens:     c.l,
-          output:   c.o
+          output:   c.o,
+          uploadEnabled: c.ue,
+          uploadTime:    c.u,
+          uploadTimeout: c.uto
         },
         gopro:         g,
         firmware:      f,
@@ -509,6 +512,16 @@ function formatIntervalMinutes(seconds) {
   const minutes = value / 60;
   const display = Number.isInteger(minutes) ? minutes : Number(minutes.toFixed(1));
   return `${display} ${display === 1 ? "min" : "mins"}`;
+}
+
+function formatUploadSummary(config) {
+  if (!config || config.uploadEnabled !== true) return "Upload off";
+
+  const time = config.uploadTime || "-";
+  const timeout = Number(config.uploadTimeout);
+  if (!timeout || Number.isNaN(timeout)) return `Upload ${time}`;
+
+  return `Upload ${time} / ${timeout} ${timeout === 1 ? "min" : "mins"}`;
 }
 
 // Schedule helpers
@@ -965,6 +978,7 @@ function render() {
           <span class="summary-days">${renderDays(d.config.days)}</span>
           <span>${d.config.start} → ${d.config.end}</span>
           <span>${formatIntervalMinutes(d.config.interval)}</span>
+          <span class="summary-upload">${formatUploadSummary(d.config)}</span>
         </div>
       </div>
 
@@ -1009,6 +1023,7 @@ function render() {
               <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row"><span>Time Window:</span><span>${d.config.start} → ${d.config.end}</span></div>
               <div class="row"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
+              <div class="row"><span>Upload:</span><span>${formatUploadSummary(d.config)}</span></div>
             </div>
           </div>
 
