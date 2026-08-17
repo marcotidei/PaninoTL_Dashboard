@@ -1,0 +1,1036 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 20px;
+  margin: 0;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  row-gap: 10px;
+  margin-bottom: 20px;
+}
+
+.topbar h1 {
+  margin: 0;
+}
+
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  row-gap: 8px;
+  align-items: center;
+}
+
+.connection-btn {
+  background: none;
+  border: none;
+  color: #e2e8f0;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.conn-connected {
+  color: #4ade80;
+}
+
+.conn-connecting {
+  color: #f59e0b;
+}
+
+.conn-disconnected,
+.conn-error {
+  color: #f87171;
+}
+
+/* Shared by the Thumbnail / Time / View settings controls -- the highlight's
+   own width is 1/N of the track (N = option count via --options), so
+   translateX(index * 100%) always lands it exactly on that segment
+   regardless of the track's actual pixel width or how many options it has. */
+.segmented-control {
+  position: relative;
+  display: inline-flex;
+  width: max-content;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.segmented-highlight {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--options, 2));
+  border-radius: 999px;
+  background: #38bdf8;
+  transform: translateX(calc(var(--active-index, 0) * 100%));
+  transition: transform 0.15s ease;
+}
+
+.segmented-option {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 6px 14px;
+  white-space: nowrap;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.segmented-option.is-active {
+  color: #0b1220;
+}
+
+@media (max-width: 520px) {
+  .segmented-option {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Collapsed panels sit side by side like the .sections cards, as long as
+   each column stays wide enough for the summary text to avoid truncating.
+   An expanded panel spans the full row so its content isn't squeezed.
+   min(420px, 100%) caps the column at the container's own width -- plain
+   420px is a hard floor that grid tracks respect even when the viewport
+   (e.g. a phone) is narrower, which is what was pushing the whole page
+   wider than the screen. */
+#devices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.device {
+  background: #1e293b;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: 0.3s;
+  min-width: 0;
+}
+
+.device.dragging {
+  opacity: 0.62;
+  transform: scale(0.995);
+  box-shadow:
+    inset 0 0 0 2px #94a3b8,
+    0 10px 28px rgba(0, 0, 0, 0.35);
+  filter: grayscale(0.35);
+}
+
+.device.open {
+  grid-column: 1 / -1;
+}
+
+.error {
+  border-left: 5px solid red;
+}
+
+.warn {
+  border-left: 5px solid orange;
+}
+
+.ok {
+  border-left: 5px solid limegreen;
+}
+
+.idle {
+  border-left: 5px solid deepskyblue;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
+  padding: 12px 14px;
+  cursor: pointer;
+  gap: 12px;
+}
+
+.header span i {
+  font-size: 16px;
+}
+
+.device-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.device-title b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drag-handle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: grab;
+  padding: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: #f8fafc;
+}
+
+.drag-handle i {
+  font-size: 14px;
+}
+
+body.is-reordering {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.header-metrics {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.collapsed-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 6px;
+  padding: 0 14px 12px;
+  cursor: pointer;
+}
+
+/* With a capture thumbnail the compact view becomes two columns: the image on
+   the left under the device name, the Last seen / Last photo text beside it.
+   The schedule strip still spans the full width underneath.
+
+   The two rows live in their own stack rather than as direct grid children.
+   As siblings of the image they were forced apart, because the image spanned
+   both rows and its height became their combined minimum. */
+.collapsed-summary.has-thumb {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+}
+
+.collapsed-summary.has-thumb.stack-under-thumb {
+  grid-template-columns: 1fr;
+}
+
+.summary-stack {
+  grid-column: 1 / -1;
+  display: grid;
+  row-gap: 2px;
+  align-content: center;
+  min-width: 0;
+}
+
+.collapsed-summary.has-thumb .summary-stack {
+  grid-column: 2;
+  align-content: start;
+}
+
+.collapsed-summary.has-thumb.stack-under-thumb .summary-stack {
+  grid-column: 1;
+}
+
+.collapsed-summary.has-thumb.stack-under-thumb .summary-value {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* .capture-thumb-wrap carries placement, size, and clipping; the <img> inside
+   just fills it. Sizing lives on the wrapper (not the <img>) so the
+   thumb-size selector and the low-res badge overlay both have one stable
+   element to target regardless of which size is active. */
+.capture-thumb-wrap {
+  position: relative;
+  display: block;
+  border-radius: 6px;
+  background: #111;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.capture-thumb-wrap.kind-compact {
+  grid-column: 1;
+  align-self: start;
+  width: 176px;
+  height: 132px;
+}
+
+.collapsed-summary.has-thumb.stack-under-thumb .capture-thumb-wrap.kind-compact {
+  justify-self: center;
+}
+
+.compact-alert {
+  grid-column: 1 / -1;
+  /* row-gap (6px) below already adds space to the next row; top it up to
+     14px so it matches the summary's side padding and the header gap above. */
+  margin-bottom: 8px;
+}
+
+.compact-alert .alert-banner {
+  margin-bottom: 0;
+}
+
+/* Thumbnail size selector (top bar). "m" matches the longstanding default,
+   so a first-time visitor with nothing in localStorage sees no change. */
+body.thumb-size-s .capture-thumb-wrap.kind-compact { width: 88px;  height: 66px; }
+body.thumb-size-m .capture-thumb-wrap.kind-compact { width: 176px; height: 132px; }
+body.thumb-size-l .capture-thumb-wrap.kind-compact { width: 264px; height: 198px; }
+
+/* In compact Large mode, let the thumbnail expand to the card width. */
+body.thumb-size-l .collapsed-summary.has-thumb {
+  grid-template-columns: 1fr;
+}
+
+body.thumb-size-l .collapsed-summary.has-thumb .summary-stack {
+  grid-column: 1;
+}
+
+body.thumb-size-l .capture-thumb-wrap.kind-compact {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  justify-self: stretch;
+}
+
+.summary-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.open .collapsed-summary {
+  display: none;
+}
+
+.summary-item {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.summary-label {
+  color: #64748b;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.summary-value {
+  color: #e2e8f0;
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collapsed-summary:not(.has-thumb) .summary-value {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.summary-schedule {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 35fr 35fr 30fr;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border-top: 1px solid #334155;
+  margin-top: 2px;
+  padding-top: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.summary-schedule span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-schedule span:nth-child(2) {
+  text-align: center;
+}
+
+.summary-schedule span:nth-child(3) {
+  text-align: right;
+}
+
+.summary-upload {
+  grid-column: 1 / -1;
+  color: #cbd5e1;
+}
+
+@media (max-width: 560px) {
+  .summary-schedule {
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .summary-schedule span,
+  .summary-schedule span:nth-child(2),
+  .summary-schedule span:nth-child(3) {
+    white-space: nowrap;
+  }
+
+  .summary-upload {
+    text-align: left;
+  }
+}
+
+.content {
+  padding: 12px;
+  border-top: 1px solid #334155;
+  display: none;
+}
+
+.open .content {
+  display: block;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+  font-size: 14px;
+  gap: 12px;
+}
+
+.row span:last-child {
+  text-align: right;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 380px) {
+  .sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section {
+  display: flex;
+  gap: 16px;
+  background: #0b1220;
+  padding: 10px 10px 10px 12px;
+  border-radius: 8px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.section-clickable {
+  cursor: pointer;
+}
+
+.section-icon {
+  font-size: 48px;
+  width: 56px;
+  flex-shrink: 0;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.section-icon i {
+  font-size: inherit;
+}
+
+.section-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.capture-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+
+.capture-tool-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.capture-tool-btn:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.modal-overlay.is-visible {
+  display: flex;
+}
+
+.config-modal {
+  z-index: 1001;
+}
+
+.modal-card {
+  background: #0b1220;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  /* Without this, modal-card-sm's width is content-only and its own padding
+     + border add on top of that -- eating into the calc(100vw - 32px) gap
+     and leaving the modal flush against the screen edges on small phones. */
+  box-sizing: border-box;
+}
+
+.modal-card-sm {
+  width: min(420px, calc(100vw - 32px));
+}
+
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+
+.modal-close-btn {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.image-info-uploaded {
+  border: 1px solid #334155;
+  background: #111b2f;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.image-info-uploaded-label {
+  font-size: 11px;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.image-info-uploaded-value {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.image-info-divider {
+  height: 1px;
+  background: #334155;
+  margin: 2px 0 10px;
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #334155;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settings-label {
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.settings-row-stacked {
+  display: block;
+}
+
+.settings-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-hint {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.camera-image-frame {
+  margin: 10px 0 14px 0;
+}
+
+.camera-image-shell {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.camera-image {
+  width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+  display: block;
+}
+
+.camera-image[hidden] {
+  display: none;
+}
+
+.firmware-icon-frame {
+  min-height: 96px;
+  margin: 10px 0 14px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.firmware-icon {
+  font-size: 56px;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.cfg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.cfg-field label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.cfg-field input {
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cfg-field input:focus {
+  border-color: #38bdf8;
+}
+
+.cfg-field input::placeholder {
+  color: #475569;
+}
+
+.cfg-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.cfg-btn {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #94a3b8;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cfg-btn:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.cfg-btn.primary {
+  background: #0369a1;
+  border-color: #0284c7;
+  color: #e0f2fe;
+}
+
+.cfg-btn.primary:hover {
+  background: #0284c7;
+  color: #fff;
+}
+
+.cfg-btn-icon {
+  margin-right: 5px;
+}
+
+.cfg-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cfg-title i {
+  font-size: 18px;
+  color: #38bdf8;
+}
+
+.cfg-title span {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.01em;
+}
+
+.alert-banner {
+  border: 1px solid #334155;
+  background: #020617;
+  color: #e2e8f0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  display: flex;
+  /* Row gap (between wrapped lines) kept tighter than column gap (between
+     items on the same line) -- one shared 10px value made wrapped lines
+     (e.g. the "Also:" line) look far more separated than normal text
+     line-spacing. */
+  gap: 4px 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.alert-banner > * {
+  /* Flex items default to min-width: auto, which uses their unwrapped text
+     width as a floor and is what was forcing the whole panel (and page) wide
+     on narrow screens -- this lets the text wrap instead. */
+  min-width: 0;
+}
+
+.alert-warn {
+  border-color: orange;
+  background: #3a2500;
+  color: orange;
+}
+
+.alert-error {
+  border-color: red;
+  background: #550000;
+  color: red;
+}
+
+.alert-neutral {
+  border-color: #aaa;
+  background: #222;
+  color: #aaa;
+}
+
+.alert-banner.glow {
+  box-shadow: 0 0 8px red;
+}
+
+.alert-time {
+  opacity: 0.85;
+}
+
+.secondary-alert {
+  color: orange;
+  /* No flex-basis override -- plain flex-wrap already keeps it on the same
+     line as the main message when there's room, and drops it to its own
+     line (flush left, like the main line) only when there isn't. */
+  margin-left: 0;
+}
+
+.metric-icon {
+  color: #e2e8f0;
+}
+
+.photo-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.photo-failures {
+  color: red;
+  font-weight: 700;
+}
+
+.text-default {
+  color: #e2e8f0;
+}
+
+.text-muted {
+  color: #64748b;
+}
+
+.text-warning {
+  color: orange;
+}
+
+.text-danger {
+  color: red;
+}
+
+.day-active {
+  color: #fff;
+}
+
+.day-inactive {
+  color: #475569;
+}
+
+.sd-row {
+  align-items: center;
+}
+
+.sd-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sd-progress {
+  flex: 1;
+  min-width: 0;
+  height: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: #334155;
+  border-radius: 4px;
+}
+
+.sd-progress::-webkit-progress-bar {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.sd-progress::-webkit-progress-value {
+  border-radius: 4px;
+}
+
+.sd-progress::-moz-progress-bar {
+  border-radius: 4px;
+}
+
+.sd-ok::-webkit-progress-value {
+  background: limegreen;
+}
+
+.sd-ok::-moz-progress-bar {
+  background: limegreen;
+}
+
+.sd-warn::-webkit-progress-value {
+  background: orange;
+}
+
+.sd-warn::-moz-progress-bar {
+  background: orange;
+}
+
+.sd-error::-webkit-progress-value {
+  background: red;
+}
+
+.sd-error::-moz-progress-bar {
+  background: red;
+}
+
+.sd-summary {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.clear-actions {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.clear-device-btn {
+  background: #3b0d0d;
+  color: #fff;
+  border: 1px solid #7f1d1d;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Last capture, expanded card: show the whole frame. height:auto plus contain
+   keeps the full image visible at its own aspect ratio instead of cropping it
+   to a fixed band the way the compact thumbnail does. */
+.capture-thumb-wrap.kind-expanded {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.capture-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.capture-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #7f1d1d;
+  background: #1f1115;
+  color: #fecaca;
+  text-align: center;
+  cursor: default;
+}
+
+.capture-placeholder i {
+  color: #f87171;
+  font-size: 22px;
+}
+
+.capture-placeholder span {
+  max-width: 90%;
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.capture-placeholder.kind-expanded {
+  min-height: 180px;
+}
+
+
+/* Small corner tag on the capture image when the JPEG's own SOF marker
+   reports a resolution far below a real photo -- see readJpegMeta(). Absent
+   entirely once a full-resolution image is confirmed, so its absence itself
+   is the "this is the real thing" signal. */
+.thumb-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Placeholder the persistent capture wrapper is moved into on each render.
+   display:contents keeps the slot itself out of layout, so the wrapper stays
+   a direct grid/flow child and the .kind-compact / .kind-expanded rules
+   apply unchanged. */
+.capture-slot {
+  display: contents;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px 28px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.app-footer span + span::before {
+  content: "|";
+  margin-right: 8px;
+  color: #334155;
+}
