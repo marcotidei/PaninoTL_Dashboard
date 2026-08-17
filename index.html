@@ -41,7 +41,7 @@
 
 <footer class="app-footer">
   <span>PaninoTL Dashboard</span>
-  <span>v1.0.0</span>
+  <span>v1.0.1</span>
 </footer>
 
 <div id="cameraModal" class="modal-overlay">
@@ -289,11 +289,11 @@ function primeAudioFromGesture() {
   if (soundMode !== "on") return;
   const ctx = ensureAudioReady();
   if (!shutterAudio && typeof Audio !== "undefined") {
-    shutterAudio = new Audio("shutter.wav");
+    shutterAudio = new Audio("audio/shutter.wav");
     shutterAudio.preload = "auto";
   }
   if (!errorAudio && typeof Audio !== "undefined") {
-    errorAudio = new Audio("error.wav");
+    errorAudio = new Audio("audio/error.wav");
     errorAudio.preload = "auto";
   }
 
@@ -799,6 +799,27 @@ function connectMQTT(config) {
       const confirmedPhotosIncreased = photoSoundPrimed[id]
         && typeof prev.photosSuccessful === "number"
         && photosSuccessful > prev.photosSuccessful;
+      const photosFailed = (typeof s.pf === "number") ? s.pf : 0;
+      const lastCaptureFail = s.cf;
+      const lastError = decodeCode(LAST_ERR_TEXT, s.err, "None");
+      const lastErrorTime = s.et;
+      const issueCode = Object.prototype.hasOwnProperty.call(s, "iss")
+                         ? decodeCode(ISSUE_CODE_TEXT, s.iss, "None")
+                         : null;
+      const failedPhotosIncreased = errorSoundState[id]
+        && typeof prev.photosFailed === "number"
+        && photosFailed > prev.photosFailed;
+      const newDeviceError = errorSoundState[id]
+        && lastError !== "None"
+        && (
+          lastError !== prev.lastError
+          || String(lastErrorTime || "") !== String(prev.lastErrorTime || "")
+          || String(lastCaptureFail || "") !== String(prev.lastCaptureFail || "")
+        );
+      const newStandingIssue = errorSoundState[id]
+        && issueCode
+        && issueCode !== "None"
+        && issueCode !== prev.issueCode;
 
       devices[id] = {
         id,
@@ -807,21 +828,19 @@ function connectMQTT(config) {
         wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
         photosSuccessful,
         sdPhotoCount:     (typeof s.sdpc === "number") ? s.sdpc : 0,
-        photosFailed:  (typeof s.pf === "number") ? s.pf : 0,
+        photosFailed,
         sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
         sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
         lastShotOk:    s.ok,
-        lastCaptureFail: s.cf,
-        lastError:     decodeCode(LAST_ERR_TEXT, s.err, "None"),
-        lastErrorTime: s.et,
+        lastCaptureFail,
+        lastError,
+        lastErrorTime,
         // A *standing* condition needing user action (e.g. camera media
         // subsystem wedged, needs a factory reset) -- unlike lastError, this
         // isn't tied to a specific failed shot and doesn't clear just
         // because a later shot succeeded. Old firmware does not publish "iss";
         // keep that as null so the dashboard shows no standing-issue state.
-        issueCode:     Object.prototype.hasOwnProperty.call(s, "iss")
-                         ? decodeCode(ISSUE_CODE_TEXT, s.iss, "None")
-                         : null,
+        issueCode,
         // Dropbox share link the device resolved for its own last_capture.jpg.
         // Some packets may omit it; keep the last known link, but only reload
         // the image when this packet actually carries a non-empty image link.
@@ -852,8 +871,8 @@ function connectMQTT(config) {
       }
       if (confirmedPhotosIncreased) playImageSuccessSound();
       photoSoundPrimed[id] = true;
-
-      maybePlayErrorSound(id, devices[id]);
+      if (failedPhotosIncreased || newDeviceError || newStandingIssue) playErrorSound();
+      errorSoundState[id] = true;
       notified[id] = false;
     } catch (e) {
       console.error("MQTT parse error:", e);
@@ -1239,38 +1258,6 @@ function isRecentError(d) {
   const shot = parseTS(d.lastShotOk);
   if (!shot || isNaN(shot)) return true;
   return err.getTime() > shot.getTime();
-}
-
-function errorSoundKey(err) {
-  if (!err || !err.hasError || err.level === "neutral") return "";
-  return [
-    err.level || "",
-    err.text || "",
-    err.time ? String(err.time) : "",
-    err.jsonError || "",
-    err.jsonErrorTime || ""
-  ].join("|");
-}
-
-function maybePlayErrorSound(id, d) {
-  const level = statusLevel(d);
-  const err = effectiveErrorInfo(d, id, level);
-  const key = errorSoundKey(err);
-
-  if (!errorSoundState[id]) {
-    errorSoundState[id] = key || "ok";
-    return;
-  }
-
-  if (!key) {
-    errorSoundState[id] = "ok";
-    return;
-  }
-
-  if (errorSoundState[id] !== key) {
-    playErrorSound();
-    errorSoundState[id] = key;
-  }
 }
 
 // A standing issue (e.g. camera needs a factory reset) wins the banner over
