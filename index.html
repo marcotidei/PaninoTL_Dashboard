@@ -427,7 +427,7 @@ let uiLocked      = false;
 const devices   = {};
 const notified  = {};
 const openState = {};
-const imageSoundPrimed = {};
+const photoSoundPrimed = {};
 const errorSoundState = {};
 const DEVICE_ORDER_STORAGE_KEY = "deviceOrder";
 let deviceOrder = loadDeviceOrder();
@@ -436,7 +436,7 @@ function clearDashboardState() {
   Object.keys(devices).forEach(k   => delete devices[k]);
   Object.keys(notified).forEach(k  => delete notified[k]);
   Object.keys(openState).forEach(k => delete openState[k]);
-  Object.keys(imageSoundPrimed).forEach(k => delete imageSoundPrimed[k]);
+  Object.keys(photoSoundPrimed).forEach(k => delete photoSoundPrimed[k]);
   Object.keys(errorSoundState).forEach(k => delete errorSoundState[k]);
 }
 
@@ -795,13 +795,17 @@ function connectMQTT(config) {
       const imagePacketSeq = imageRevisionChanged
         ? ((prev.imagePacketSeq || 0) + 1)
         : (prev.imagePacketSeq || 0);
+      const photosSuccessful = (typeof s.pc === "number") ? s.pc : 0;
+      const confirmedPhotosIncreased = photoSoundPrimed[id]
+        && typeof prev.photosSuccessful === "number"
+        && photosSuccessful > prev.photosSuccessful;
 
       devices[id] = {
         id,
         batteryPct:    (typeof s.b  === "number") ? s.b  : 0,
         rtcTempC:      (typeof s.rt === "number") ? s.rt : null,
         wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
-        photosSuccessful: (typeof s.pc === "number") ? s.pc : 0,
+        photosSuccessful,
         sdPhotoCount:     (typeof s.sdpc === "number") ? s.sdpc : 0,
         photosFailed:  (typeof s.pf === "number") ? s.pf : 0,
         sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
@@ -845,11 +849,9 @@ function connectMQTT(config) {
 
       if (imageRevisionChanged) {
         scheduleAutoImageRefresh(id);
-        if (uploadEnabled(devices[id].config)) {
-          if (imageSoundPrimed[id]) playImageSuccessSound();
-          imageSoundPrimed[id] = true;
-        }
       }
+      if (confirmedPhotosIncreased) playImageSuccessSound();
+      photoSoundPrimed[id] = true;
 
       maybePlayErrorSound(id, devices[id]);
       notified[id] = false;
@@ -879,7 +881,7 @@ function clearDeviceState(event, id) {
     if (autoRefreshTimers[id]) clearTimeout(autoRefreshTimers[id]);
     delete autoRefreshTimers[id];
     delete manualRefreshToken[id];
-    delete imageSoundPrimed[id];
+    delete photoSoundPrimed[id];
     delete errorSoundState[id];
     render();
   });

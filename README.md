@@ -51,7 +51,7 @@ The image info modal uses the device-reported capture time as the main timestamp
 
 The dashboard can play sounds for:
 
-- successful image reports
+- confirmed photo-count increases
 - new active alerts
 
 Sounds can be turned off in Display Settings. On iPhone/iPad, tap the dashboard once after opening it so Safari allows audio playback.
