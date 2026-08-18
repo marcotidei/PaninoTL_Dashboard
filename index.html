@@ -258,7 +258,9 @@ const LAST_ERR_TEXT = [
   "Pre-shot read failed",
   "Shutter failed",
   "Shot not confirmed",
-  "Media fetch failed"
+  "Media fetch failed",
+  "Panino SD failed",
+  "Upload failed"
 ];
 
 function decodeCode(table, code, missingValue = "Unknown") {
@@ -823,7 +825,7 @@ function connectMQTT(config) {
 
       devices[id] = {
         id,
-        batteryPct:    (typeof s.b  === "number") ? s.b  : 0,
+        batteryPct:    (typeof s.b  === "number") ? s.b : -1,
         rtcTempC:      (typeof s.rt === "number") ? s.rt : null,
         wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
         photosSuccessful,
@@ -1403,9 +1405,23 @@ function wifiQualityClass(q) {
 }
 
 function batteryClass(pct) {
+  if (pct == null || pct < 0) return "text-muted";
   if (pct >= 40) return "text-default";
   if (pct >= 15) return "text-warning";
   return "text-danger";
+}
+
+function batteryIconClass(pct) {
+  if (pct == null || pct < 0) return "fa-battery-empty";
+  if (pct >= 90) return "fa-battery-full";
+  if (pct >= 65) return "fa-battery-three-quarters";
+  if (pct >= 40) return "fa-battery-half";
+  if (pct >= 15) return "fa-battery-quarter";
+  return "fa-battery-empty";
+}
+
+function batteryLabel(pct) {
+  return (pct == null || pct < 0) ? "External/unmonitored power" : `${pct}%`;
 }
 
 function failureTextClass(count) {
@@ -2417,13 +2433,8 @@ function render() {
           <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"
             title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"></i>
 
-          <i class="fa-solid ${
-            d.batteryPct >= 90 ? "fa-battery-full" :
-            d.batteryPct >= 65 ? "fa-battery-three-quarters" :
-            d.batteryPct >= 40 ? "fa-battery-half" :
-            d.batteryPct >= 15 ? "fa-battery-quarter" :
-            "fa-battery-empty"
-          } ${batteryClass(d.batteryPct)}" title="Battery ${d.batteryPct}%"></i>
+          <i class="fa-solid ${batteryIconClass(d.batteryPct)} ${batteryClass(d.batteryPct)}"
+            title="Battery ${batteryLabel(d.batteryPct)}"></i>
         </span>
       </div>
 
@@ -2492,7 +2503,7 @@ function render() {
               </div>
               <div class="row">
                 <span>Battery:</span>
-                <span class="${batteryClass(d.batteryPct)}">${d.batteryPct}%</span>
+                <span class="${batteryClass(d.batteryPct)}">${batteryLabel(d.batteryPct)}</span>
               </div>
               <div class="row">
                 <span>Temperature:</span>
