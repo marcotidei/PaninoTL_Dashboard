@@ -1405,14 +1405,14 @@ function wifiQualityClass(q) {
 }
 
 function batteryClass(pct) {
-  if (pct == null || pct < 0) return "text-muted";
+  if (pct == null || pct < 0) return "text-default";
   if (pct >= 40) return "text-default";
   if (pct >= 15) return "text-warning";
   return "text-danger";
 }
 
 function batteryIconClass(pct) {
-  if (pct == null || pct < 0) return "fa-battery-empty";
+  if (pct == null || pct < 0) return "fa-plug-circle-bolt";
   if (pct >= 90) return "fa-battery-full";
   if (pct >= 65) return "fa-battery-three-quarters";
   if (pct >= 40) return "fa-battery-half";
@@ -1421,7 +1421,7 @@ function batteryIconClass(pct) {
 }
 
 function batteryLabel(pct) {
-  return (pct == null || pct < 0) ? "External/unmonitored power" : `${pct}%`;
+  return (pct == null || pct < 0) ? "Not monitored" : `${pct}%`;
 }
 
 function failureTextClass(count) {
