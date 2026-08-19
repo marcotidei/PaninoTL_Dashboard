@@ -838,7 +838,7 @@ function connectMQTT(config) {
         lastError,
         lastErrorTime,
         // A *standing* condition needing user action (e.g. camera media
-        // subsystem wedged, needs a factory reset) -- unlike lastError, this
+        // subsystem wedged, needs a long power-button hold) -- unlike lastError, this
         // isn't tied to a specific failed shot and doesn't clear just
         // because a later shot succeeded. Old firmware does not publish "iss";
         // keep that as null so the dashboard shows no standing-issue state.
@@ -1262,7 +1262,7 @@ function isRecentError(d) {
   return err.getTime() > shot.getTime();
 }
 
-// A standing issue (e.g. camera needs a factory reset) wins the banner over
+// A standing issue (e.g. camera needs manual recovery) wins the banner over
 // everything else: it needs physical user action and won't clear on its own
 // the way a comm delay or a single failed shot might. Communication
 // delay/loss is next, then JSON errors are still shown too as a secondary line.
