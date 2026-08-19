@@ -41,7 +41,7 @@
 
 <footer class="app-footer">
   <span>PaninoTL Dashboard</span>
-  <span>v1.0.1</span>
+  <span>v1.0.2</span>
 </footer>
 
 <div id="cameraModal" class="modal-overlay">
@@ -240,10 +240,10 @@ const GRACE_SECONDS = 120;
 const ISSUE_CODE_TEXT = [
   "None",
   "Camera not found",
-  "Camera not connected",
+  "Camera found but unable to connect",
   "Shooting failure",
-  "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera",
-  "Camera media wedged - factory reset the camera to clear (you will need to reconfigure its settings afterward)"
+  "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera to allow PaninoTL to get the image",
+  "Unable to get the image from camera. The camera has correctly captured it but the image showed here is not the last captured."
 ];
 
 // Must stay in sync with LastErrorReason (PaninoTL/include/app_defs.h).
