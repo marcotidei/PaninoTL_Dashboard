@@ -1272,8 +1272,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       hasError:      true,
       text:          d.issueCode,
       time:          null,
-      level:         "error",
-      glow:          true,
+      level:         "warn",
+      glow:          false,
       jsonError:     null,
       jsonErrorTime: null
     };
@@ -1426,12 +1426,6 @@ function batteryLabel(pct) {
 
 function failureTextClass(count) {
   return (count || 0) > 0 ? "text-danger" : "text-default";
-}
-
-function panelStateTextClass(level) {
-  if (level === "error") return "text-danger";
-  if (level === "warn") return "text-warning";
-  return "text-muted";
 }
 
 function alertClass(err) {
@@ -2365,13 +2359,28 @@ function render() {
     const s   = status(d, id);
     const err = effectiveErrorInfo(d, id, s);
 
-    const isCommIssue = (s === "warn" || s === "error");
-    const isJsonError = err.hasError && !isCommIssue && (err.level === "error" || err.level === "warn");
-
     // Device panels use the highest severity from communication and JSON status.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
     const errLevel   = err.hasError && (err.level === "error" || err.level === "warn") ? err.level : s;
     const panelState = [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
+    const statusIconHtml = (() => {
+      if (err.hasError && err.level === "warn") {
+        return `<i class="fa-solid fa-circle-exclamation text-warning"></i>`;
+      }
+      if (err.hasError && err.level === "error") {
+        return `<i class="fa-solid fa-circle-xmark text-danger"></i>`;
+      }
+      if (panelState === "warn") {
+        return `<i class="fa-solid fa-circle-exclamation text-warning"></i>`;
+      }
+      if (panelState === "error") {
+        return `<i class="fa-solid fa-circle-xmark text-danger"></i>`;
+      }
+      if (panelState !== "ok") {
+        return `<i class="fa-solid fa-clock text-muted"></i>`;
+      }
+      return "";
+    })();
 
     const dev = document.createElement("div");
     dev.className    = "device " + panelState;
@@ -2388,14 +2397,13 @@ function render() {
 
     const alertBannerHtml = `
       <div class="alert-banner ${alertClass(err)} ${err.glow ? "glow" : ""}">
-        <b>${err.hasError ? (err.level === "neutral" ? "Last error:" : "Alert:") : "No alerts"}</b>
         ${err.hasError ? `
           <span>${err.text}</span>
           ${err.time ? `<span class="alert-time">${formatDateTime(err.time, d.tz)}</span>` : ""}
           ${err.jsonError ? `
-            <span class="secondary-alert">Also: ${err.jsonError} @ ${formatDateTime(err.jsonErrorTime, d.tz)}</span>
+            <span class="secondary-alert">${err.jsonError} @ ${formatDateTime(err.jsonErrorTime, d.tz)}</span>
           ` : ""}
-        ` : ""}
+        ` : "<span>No alerts</span>"}
       </div>
     `;
 
@@ -2409,18 +2417,7 @@ function render() {
           <b class="device-name">${id}</b>
         </span>
         <span class="header-metrics">
-          ${panelState !== "ok" ? `
-            ${isCommIssue ? `
-              <i class="fa-solid fa-tower-broadcast ${panelStateTextClass(panelState)}"></i>
-              <span class="${panelStateTextClass(panelState)}">${s === "warn" ? "DELAY" : "LOST"}</span>
-            ` : isJsonError ? `
-              <i class="fa-solid fa-circle-xmark text-danger"></i>
-              <span>ERROR</span>
-            ` : panelState !== "ok" ? `
-              <i class="fa-solid fa-clock text-muted"></i>
-              <span>IDLE</span>
-            ` : ""}
-          ` : ""}
+          ${statusIconHtml}
 
           <span class="photo-metric">
             <i class="fa-solid fa-camera metric-icon"></i>
