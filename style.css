@@ -577,9 +577,13 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .device-command-card {
-  width: min(640px, calc(100vw - 32px));
+  width: min(560px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow: auto;
+  background: #111;
+  color: #eee;
+  border-color: #2c2c2e;
+  border-radius: 12px;
 }
 
 
@@ -670,10 +674,10 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .device-command-tab {
-  border: 1px solid #334155;
+  border: 1px solid #3a3a3c;
   border-radius: 8px;
-  background: #111b2f;
-  color: #94a3b8;
+  background: #2c2c2e;
+  color: #b8b8bf;
   padding: 9px 10px;
   font-size: 13px;
   font-weight: 700;
@@ -681,55 +685,124 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .device-command-tab.is-active {
-  background: #0284c7;
-  border-color: #38bdf8;
-  color: #f0f9ff;
+  background: #0a84ff;
+  border-color: #0a84ff;
+  color: #fff;
 }
 
 .device-command-panel {
-  border-top: 1px solid #334155;
-  padding-top: 14px;
+  border-top: 1px solid #2c2c2e;
+  padding-top: 4px;
 }
 
-.device-command-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.fw-settings-title,
+.device-command-preview-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #888;
 }
 
-.device-command-field {
+.fw-settings-title {
+  margin: 14px 0 8px;
+}
+
+.fw-settings-card {
+  background: #1c1c1e;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.fw-settings-row,
+.fw-settings-days-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 0.95rem;
+  color: #eee;
+}
+
+.fw-settings-card > :not(:last-child) {
+  border-bottom: 1px solid #2c2c2e;
+}
+
+.fw-settings-days-row {
+  display: block;
+}
+
+.fw-settings-row-label {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+.fw-settings-days {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.fw-day {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0;
+  border-bottom: none;
+  color: #888;
+  font-size: 0.75rem;
+  min-width: 36px;
+}
+
+.fw-day input {
+  width: 22px;
+  height: 22px;
+  accent-color: #0a84ff;
+  cursor: pointer;
+}
+
+.fw-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
-.device-command-field span,
-.device-command-preview-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #64748b;
-}
-
-.device-command-field input,
-.device-command-field select {
-  width: 100%;
-  box-sizing: border-box;
-  background: #0f172a;
-  color: #e2e8f0;
-  border: 1px solid #334155;
+.fw-settings-row input,
+.fw-settings-row select {
+  background: #2c2c2e;
+  color: #fff;
+  border: none;
   border-radius: 8px;
-  padding: 9px 10px;
-  font: inherit;
-  min-width: 0;
+  padding: 6px 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 170px;
+  text-align: center;
 }
 
-.device-command-field input:focus,
-.device-command-field select:focus {
-  border-color: #38bdf8;
+.fw-settings-row input[type="number"],
+.fw-settings-row input[type="time"] {
+  width: 140px;
+}
+
+.fw-settings-row .fw-select-sm {
+  width: 80px;
+}
+
+.fw-settings-row .fw-select-md {
+  width: 90px;
+}
+
+.fw-settings-row input:focus,
+.fw-settings-row select:focus {
   outline: none;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.35);
 }
 
 .device-command-actions {
@@ -771,10 +844,10 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 .device-command-preview {
   margin: 7px 0 0;
   padding: 10px;
-  border: 1px solid #334155;
+  border: 1px solid #2c2c2e;
   border-radius: 8px;
-  background: #020617;
-  color: #bae6fd;
+  background: #1c1c1e;
+  color: #b8e7ff;
   overflow: auto;
   font-size: 12px;
   line-height: 1.45;
@@ -795,9 +868,22 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 @media (max-width: 560px) {
-  .device-command-grid,
   .device-command-actions {
     grid-template-columns: 1fr;
+  }
+
+  .fw-settings-row {
+    align-items: flex-start;
+  }
+
+  .fw-settings-row input,
+  .fw-settings-row select {
+    width: min(170px, 52vw);
+  }
+
+  .fw-input-group {
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 

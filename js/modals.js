@@ -30,6 +30,7 @@ let deviceCommandDeviceId = null;
 let deviceCommandTab = "settings";
 let deviceCommandAction = "syncTimeNow";
 let deviceCommandRequestId = null;
+let deviceCommandIntervalsReady = false;
 
 function escapeAttr(value) {
   return String(value ?? "")
@@ -52,6 +53,93 @@ function sameCommandValue(a, b) {
   return String(a) === String(b);
 }
 
+function populateDeviceCommandIntervalSelects() {
+  if (deviceCommandIntervalsReady) return;
+  const hours = document.getElementById("cmd_intervalHours");
+  const minutes = document.getElementById("cmd_intervalMinutes");
+
+  hours.appendChild(new Option("-", ""));
+  minutes.appendChild(new Option("-", ""));
+
+  for (let i = 0; i <= 24; i++) {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `${i} h`;
+    hours.appendChild(opt);
+  }
+
+  for (let i = 0; i <= 59; i++) {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `${i} min`;
+    minutes.appendChild(opt);
+  }
+
+  deviceCommandIntervalsReady = true;
+}
+
+function clampIntervalSec(seconds) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(86400, Math.max(60, Math.round(n)));
+}
+
+function setIntervalControls(seconds) {
+  const total = clampIntervalSec(seconds);
+  if (total === null) {
+    document.getElementById("cmd_intervalHours").value = "";
+    document.getElementById("cmd_intervalMinutes").value = "";
+    return;
+  }
+  document.getElementById("cmd_intervalHours").value = String(Math.floor(total / 3600));
+  document.getElementById("cmd_intervalMinutes").value = String(Math.floor((total % 3600) / 60));
+}
+
+function readIntervalSec() {
+  const h = readNumberInput("cmd_intervalHours");
+  const m = readNumberInput("cmd_intervalMinutes");
+  if (h === null || m === null) return null;
+  return clampIntervalSec((h * 3600) + (m * 60));
+}
+
+function scheduleDaysMaskFromValue(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value & 0x7f;
+  const str = String(value ?? "").trim();
+  if (/^\d+$/.test(str)) return Number(str) & 0x7f;
+  let mask = 0;
+  for (let i = 0; i < 7; i++) {
+    if (str[i] && str[i] !== "-") mask |= (1 << i);
+  }
+  return mask;
+}
+
+function setScheduleDayControls(value) {
+  const mask = scheduleDaysMaskFromValue(value);
+  document.querySelectorAll("#deviceCommandSettingsPanel [data-day-index]").forEach(input => {
+    input.checked = !!(mask & (1 << Number(input.dataset.dayIndex)));
+  });
+}
+
+function readScheduleDaysMask() {
+  let mask = 0;
+  document.querySelectorAll("#deviceCommandSettingsPanel [data-day-index]").forEach(input => {
+    if (input.checked) mask |= (1 << Number(input.dataset.dayIndex));
+  });
+  return mask;
+}
+
+function setSelectValueWithFallback(id, value, label) {
+  const select = document.getElementById(id);
+  const stringValue = value === null || value === undefined ? "" : String(value);
+  if (stringValue && !Array.from(select.options).some(opt => opt.value === stringValue)) {
+    const opt = document.createElement("option");
+    opt.value = stringValue;
+    opt.textContent = `${label} (${stringValue})`;
+    select.prepend(opt);
+  }
+  select.value = stringValue;
+}
+
 function openDeviceCommandModal(event) {
   event.stopPropagation();
   const id = event.currentTarget.dataset.deviceId;
@@ -64,14 +152,16 @@ function openDeviceCommandModal(event) {
   deviceCommandRequestId = newDeviceCommandId(id);
   document.getElementById("deviceCommandTitle").innerText = id;
 
+  populateDeviceCommandIntervalSelects();
+
   const c = d.config || {};
-  document.getElementById("cmd_intervalSec").value = c.interval ?? "";
-  document.getElementById("cmd_scheduleDays").value = c.days || "";
+  setIntervalControls(c.interval);
+  setScheduleDayControls(c.days);
   document.getElementById("cmd_scheduleStart").value = c.start || "";
   document.getElementById("cmd_scheduleEnd").value = c.end || "";
-  document.getElementById("cmd_photoLens").value = c.lens ?? "";
-  document.getElementById("cmd_photoOutput").value = c.output ?? "";
-  document.getElementById("cmd_dropboxUpload").value = String(c.uploadMode ?? 0);
+  setSelectValueWithFallback("cmd_photoLens", c.lens, "Current lens");
+  setSelectValueWithFallback("cmd_photoOutput", c.output, "Current output");
+  setSelectValueWithFallback("cmd_dropboxUpload", c.uploadMode, "Current upload mode");
   document.getElementById("cmd_uploadTimeoutMin").value = c.uploadTimeout ?? "";
 
   setDeviceCommandTab("settings");
@@ -116,11 +206,11 @@ function buildDeviceSettingsPatch(id) {
   const c = d.config || {};
   const patch = {};
 
-  const intervalSec = readNumberInput("cmd_intervalSec");
-  if (intervalSec !== null && !sameCommandValue(intervalSec, c.interval)) patch.intervalSec = intervalSec;
+  const intervalSec = readIntervalSec();
+  if (intervalSec !== null && !sameCommandValue(intervalSec, clampIntervalSec(c.interval))) patch.intervalSec = intervalSec;
 
-  const scheduleDays = document.getElementById("cmd_scheduleDays").value.trim();
-  if (scheduleDays && !sameCommandValue(scheduleDays, c.days)) patch.scheduleDays = scheduleDays;
+  const scheduleDays = readScheduleDaysMask();
+  if (!sameCommandValue(scheduleDays, scheduleDaysMaskFromValue(c.days))) patch.scheduleDays = scheduleDays;
 
   const scheduleStart = document.getElementById("cmd_scheduleStart").value;
   if (scheduleStart && !sameCommandValue(scheduleStart, c.start)) patch.scheduleStart = scheduleStart;
