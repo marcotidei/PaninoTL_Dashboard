@@ -1190,7 +1190,20 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 
 .clear-actions {
   margin-top: 12px;
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.clear-actions .device-command-btn {
+  width: 38px;
+  height: auto;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-color: #334155;
+  background: #1e293b;
+  border-radius: 6px;
 }
 
 .clear-device-btn {

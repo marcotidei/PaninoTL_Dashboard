@@ -123,11 +123,6 @@ function render() {
           <b class="device-name">${id}</b>
         </span>
         <span class="header-metrics">
-          <button type="button" class="device-command-btn" data-device-id="${escapeAttr(id)}"
-            onclick="openDeviceCommandModal(event)" title="Device settings and commands"
-            aria-label="Device settings and commands for ${escapeAttr(id)}">
-            <i class="fa-solid fa-gear"></i>
-          </button>
           ${statusIconHtml}
 
           <span class="photo-metric">
@@ -260,6 +255,11 @@ function render() {
         </div>
 
         <div class="clear-actions">
+          <button type="button" class="device-command-btn" data-device-id="${escapeAttr(id)}"
+            onclick="openDeviceCommandModal(event)" title="Device settings and commands"
+            aria-label="Device settings and commands for ${escapeAttr(id)}">
+            <i class="fa-solid fa-gear"></i>
+          </button>
           <button class="clear-device-btn" onclick="clearDeviceState(event, '${id}')">Clear Device</button>
         </div>
       </div>
