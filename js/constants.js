@@ -1,0 +1,79 @@
+// Customize these defaults for your broker and MQTT topic layout.
+const DEFAULT_BROKER_URL   = "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt";
+const DEFAULT_TOPIC_PREFIX = "panino";
+const DEFAULT_TOPIC_FILTER = `${DEFAULT_TOPIC_PREFIX}/+/state`;
+const GRACE_SECONDS = 120;
+
+// Must stay in sync with ISSUE_* (PaninoTL/include/board_config.h) -- the
+// firmware sends the numeric code only, to keep the retained packet small.
+const ISSUE_CODE_TEXT = [
+  "None",
+  "Camera not found",
+  "Camera found but unable to connect",
+  "Shooting failure",
+  "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera to allow PaninoTL to get the image",
+  "Unable to get the image from camera. The camera has correctly captured it but the image showed here is not the last captured."
+];
+
+// Must stay in sync with LastErrorReason (PaninoTL/include/app_defs.h).
+const LAST_ERR_TEXT = [
+  "None",
+  "Camera not found",
+  "Connect failed",
+  "Pairing failed",
+  "BLE not ready",
+  "Camera not ready",
+  "Camera settings failed",
+  "Pre-shot read failed",
+  "Shutter failed",
+  "Shot not confirmed",
+  "Media fetch failed",
+  "Panino SD failed",
+  "Upload failed"
+];
+
+// New compact health-code registry. During migration, devices that publish "h"
+// use this table; older retained packets keep using LAST_ERR_TEXT/ISSUE_CODE_TEXT.
+const HEALTH_CODE_TEXT = {
+  0:    "None",
+  2001: "Camera not found",
+  2002: "Connect failed",
+  2003: "Pairing failed",
+  2004: "BLE not ready",
+  2005: "Camera not ready",
+  2006: "Camera settings failed",
+  3001: "Pre-shot read failed",
+  3002: "Shutter failed",
+  3003: "Shot not confirmed",
+  3004: "Media fetch failed",
+  4001: "Panino SD failed",
+  5001: "Upload failed",
+  6001: "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera",
+  6002: "Camera media wedged - hold the GoPro power button for 20s, then retry; factory reset if it persists",
+  9001: "Shooting failure"
+};
+
+function decodeCode(table, code, missingValue = "Unknown") {
+  if (typeof code === "number") return (table[code] !== undefined) ? table[code] : "Unknown";
+  // Older firmware sent the string directly; show it as-is instead of "Unknown".
+  if (typeof code === "string") return code;
+  return missingValue;
+}
+
+function decodeHealthCode(code, missingValue = "Unknown") {
+  if (typeof code === "number") return HEALTH_CODE_TEXT[code] || "Unknown";
+  if (typeof code === "string" && code.trim() !== "") {
+    const numeric = Number(code);
+    if (!Number.isNaN(numeric)) return HEALTH_CODE_TEXT[numeric] || "Unknown";
+    return code;
+  }
+  return missingValue;
+}
+
+function normalizeHealthSeverity(severity) {
+  const n = Number(severity);
+  if (n >= 3) return "error";
+  if (n >= 2) return "warn";
+  if (n >= 1) return "neutral";
+  return "ok";
+}
