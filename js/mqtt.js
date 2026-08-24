@@ -221,7 +221,8 @@ function connectMQTT(config) {
       const packetHasImageUrl = Object.prototype.hasOwnProperty.call(s, "img");
       const imageUrl = packetHasImageUrl ? (s.img || "") : (prev.imageUrl || "");
       const imageLinkReceived = !!(packetHasImageUrl && s.img);
-      const imageRevision = imageUrl ? [imageUrl, s.ok || prev.lastShotOk || ""].join("|") : "";
+      const lastUploadOk = s.up || prev.lastUploadOk || "";
+      const imageRevision = imageUrl ? [imageUrl, lastUploadOk || s.ok || prev.lastShotOk || ""].join("|") : "";
       const imageRevisionChanged = imageLinkReceived && imageRevision && imageRevision !== prev.imageRevision;
       const imagePacketSeq = imageRevisionChanged
         ? ((prev.imagePacketSeq || 0) + 1)
@@ -243,6 +244,7 @@ function connectMQTT(config) {
       const legacyIssueCode = Object.prototype.hasOwnProperty.call(s, "iss")
                               ? decodeCode(ISSUE_CODE_TEXT, s.iss, "None")
                               : null;
+      const issueTime = s.it && s.it !== "-" ? s.it : null;
       const lastError = hasHealth && !healthSticky ? healthText : legacyLastError;
       const lastErrorTime = hasHealth && !healthSticky ? healthTime : legacyLastErrorTime;
       const issueCode = hasHealth && healthSticky
@@ -274,6 +276,7 @@ function connectMQTT(config) {
         sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
         sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
         lastShotOk:    s.ok,
+        lastUploadOk,
         lastCaptureFail,
         lastError,
         lastErrorTime,
@@ -288,6 +291,7 @@ function connectMQTT(config) {
         // because a later shot succeeded. Old firmware does not publish "iss";
         // keep that as null so the dashboard shows no standing-issue state.
         issueCode,
+        issueTime,
         // Dropbox share link the device resolved for its own last_capture.jpg.
         // Some packets may omit it; keep the last known link, but only reload
         // the image when this packet actually carries a non-empty image link.

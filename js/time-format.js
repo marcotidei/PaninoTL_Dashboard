@@ -373,7 +373,7 @@ function effectiveErrorInfo(d, id, statusLevel) {
     return {
       hasError:      true,
       text:          d.issueCode,
-      time:          null,
+      time:          d.issueTime,
       level:         "warn",
       glow:          false,
       jsonError:     null,
@@ -417,8 +417,20 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          commAlert.time,
       level:         commAlert.level,
       glow:          commAlert.glow,
-      jsonError:     missingImageLink ? "UPLOAD ENABLED BUT IMAGE LINK MISSING" : secondaryJsonError,
-      jsonErrorTime: missingImageLink ? null : secondaryJsonErrorTime
+      jsonError:     secondaryJsonError || (missingImageLink ? "UPLOAD ENABLED BUT IMAGE LINK MISSING" : null),
+      jsonErrorTime: secondaryJsonError ? secondaryJsonErrorTime : null
+    };
+  }
+
+  if (recentJsonError) {
+    return {
+      hasError:      true,
+      text:          d.lastError,
+      time:          d.lastErrorTime,
+      level:         "error",
+      glow:          true,
+      jsonError:     missingImageLink ? "UPLOAD ENABLED BUT IMAGE LINK MISSING" : null,
+      jsonErrorTime: null
     };
   }
 

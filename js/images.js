@@ -158,7 +158,14 @@ async function refreshStableCaptureImage(id) {
   });
 }
 
-function captureImgWrap(id, kind, src, isLowRes) {
+function imageMarkedNotCurrent(id) {
+  const d = devices[id];
+  const issue = String((d && d.issueCode) || "").toLowerCase();
+  const health = String((d && d.healthText) || "").toLowerCase();
+  return issue.includes("media") || issue.includes("displayed image may be old") || health.includes("media wedged");
+}
+
+function captureImgWrap(id, kind, src, isLowRes, notCurrent) {
   const key = id + "|" + kind;
   let entry = captureImgNodes[key];
   if (!entry) {
@@ -171,8 +178,7 @@ function captureImgWrap(id, kind, src, isLowRes) {
 
     const badge = document.createElement("span");
     badge.className = "thumb-badge";
-    badge.textContent = "Preview"; //Lable over the Image
-    badge.title = "This is a small camera-generated preview, not the full-resolution photo.";
+    badge.textContent = "Preview";
     badge.hidden = true;
 
     wrap.appendChild(img);
@@ -213,7 +219,11 @@ function captureImgWrap(id, kind, src, isLowRes) {
       if (entry.img.dataset.captureSrc === src) entry.img.setAttribute("src", url);
     });
   }
-  entry.badge.hidden = !isLowRes;
+  entry.badge.textContent = notCurrent ? "Not current" : "Preview";
+  entry.badge.title = notCurrent
+    ? "The camera captured newer photos, but the displayed image was not updated."
+    : "This is a small camera-generated preview, not the full-resolution photo.";
+  entry.badge.hidden = !(notCurrent || isLowRes);
   return entry.wrap;
 }
 
@@ -222,9 +232,10 @@ function mountCaptureImages(cardEl, id) {
   if (!src) return;
   const meta = imageMeta[id];
   const isLowRes = !!(meta && meta.src === src && meta.width > 0 && meta.width < LOW_RES_WIDTH_THRESHOLD);
+  const notCurrent = imageMarkedNotCurrent(id);
   cardEl.querySelectorAll(".capture-slot").forEach((slot) => {
     const kind = slot.dataset.kind;
-    const wrap = captureImgWrap(id, kind, src, isLowRes);
+    const wrap = captureImgWrap(id, kind, src, isLowRes, notCurrent);
     slot.appendChild(wrap);
   });
 }
@@ -504,8 +515,8 @@ async function openImageInfoModal(event, id) {
   imageLink.href = directImageUrl(captureUrlFor(id));
   document.getElementById("imageInfoCamera").innerText = model || "-";
   document.getElementById("imageInfoUploaded").innerText =
-    d.lastShotOk && d.lastShotOk !== "-"
-      ? `${formatDateTime(d.lastShotOk, d.tz)} - ${elapsedAgoDetailed(d.lastShotOk)}`
+    d.lastUploadOk && d.lastUploadOk !== "-"
+      ? `${formatDateTime(d.lastUploadOk, d.tz)} - ${elapsedAgoDetailed(d.lastUploadOk)}`
       : "Unknown";
   document.getElementById("imageInfoResolution").innerText = "Loading...";
   document.getElementById("imageInfoSize").innerText = "Loading...";
