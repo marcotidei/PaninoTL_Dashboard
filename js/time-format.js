@@ -356,7 +356,8 @@ function runtimeErrorLevel(d, errorText) {
   const text = String(errorText || "");
   const uploadRelated =
     text === "Upload failed" ||
-    text === "Dropbox image link unavailable";
+    text === "Dropbox image link unavailable" ||
+    text === "Unable to retrieve image from camera";
   if (uploadRelated && Number(d && d.config && d.config.uploadMode) === 1) {
     return "warn";
   }
@@ -382,12 +383,13 @@ function effectiveErrorInfo(d, id, statusLevel) {
 
   if (d.issueCode && d.issueCode !== "None") {
     if (d.lastError === "Unable to retrieve image from camera" && isRecentError(d)) {
+      const level = runtimeErrorLevel(d, d.lastError);
       return {
         hasError:      true,
         text:          d.lastError,
         time:          d.lastErrorTime,
-        level:         "error",
-        glow:          true,
+        level,
+        glow:          level === "error",
         jsonError:     null,
         jsonErrorTime: null
       };

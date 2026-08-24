@@ -285,8 +285,7 @@ function sendDeviceCommand() {
   }
   try {
     publishDeviceCommand(id, command);
-    deviceCommandRequestId = newDeviceCommandId(id);
-    renderDeviceCommandPreview();
+    closeDeviceCommandModal();
   } catch (err) {
     alert(err && err.message ? err.message : "Command publish failed");
   }

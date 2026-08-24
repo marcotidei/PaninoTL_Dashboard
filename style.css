@@ -871,26 +871,42 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .device-command-send:not(:disabled) {
+  background: #0369a1;
+  border-color: #0284c7;
+  color: #e0f2fe;
   opacity: 1;
   cursor: pointer;
 }
 
+.device-command-send:not(:disabled):hover {
+  background: #0284c7;
+  color: #fff;
+}
+
 .command-status {
-  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
   font-size: 12px;
-  line-height: 1;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .command-status.pending {
   color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
 }
 
 .command-status.ok {
-  color: #22c55e;
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.12);
 }
 
 .command-status.error {
   color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
 }
 
 @media (max-width: 560px) {
@@ -1220,6 +1236,13 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.command-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .clear-actions .device-command-btn {

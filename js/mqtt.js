@@ -163,6 +163,12 @@ function publishDeviceCommand(id, command) {
   console.log("📤 Published command", topic, command);
 }
 
+function clearRetainedDeviceCommand(id) {
+  if (!client || !client.connected || !id) return;
+  client.publish(commandTopic(id), "", { qos: 0, retain: true });
+  console.log("🧹 Cleared retained command", commandTopic(id));
+}
+
 function handleConnectionClick() {
   primeAudioFromGesture();
   const brokerUrl = (currentConfig && currentConfig.url) || DEFAULT_BROKER_URL;
@@ -256,6 +262,7 @@ function connectMQTT(config) {
         const pending = pendingCommands[ackId];
         if (pending && ack.id === pending.id) {
           delete pendingCommands[ackId];
+          clearRetainedDeviceCommand(ackId);
         }
         devices[ackId] = {
           ...(devices[ackId] || { id: ackId }),
@@ -374,6 +381,7 @@ function connectMQTT(config) {
         },
         gopro:         g,
         firmware:      f,
+        commandAck:    prev.commandAck || null,
         lastCommDevice: s.t,
         // IANA zone name (new firmware only). Presence implies the "s" block
         // timestamps are ISO8601 UTC; absence means legacy wall-clock strings.
