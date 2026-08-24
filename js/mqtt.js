@@ -24,6 +24,10 @@ function stateTopic(id, config = currentConfig) {
   return `${topicPrefix(config)}/${id}/state`;
 }
 
+function commandTopic(id, config = currentConfig) {
+  return `${topicPrefix(config)}/${id}/cmd`;
+}
+
 function deviceIdFromTopic(topic, config = currentConfig, end = "/state") {
   const prefix = topicPrefix(config);
   const start  = `${prefix}/`;
@@ -117,6 +121,10 @@ function setConnStatus(state) {
   } else if (state === "connected") {
     closeConfigModal(true);
   }
+
+  if (typeof renderDeviceCommandPreview === "function") {
+    renderDeviceCommandPreview();
+  }
 }
 
 function disconnectMQTT() {
@@ -129,6 +137,19 @@ function disconnectMQTT() {
   currentConfig = null;
   setConnStatus("disconnected");
   render();
+}
+
+function publishDeviceCommand(id, command) {
+  if (!client || !client.connected) {
+    throw new Error("Dashboard is not connected to MQTT");
+  }
+  if (!id || !command) {
+    throw new Error("Missing command");
+  }
+  const topic = commandTopic(id);
+  const payload = JSON.stringify(command);
+  client.publish(topic, payload, { qos: 0, retain: true });
+  console.log("📤 Published command", topic, command);
 }
 
 function handleConnectionClick() {

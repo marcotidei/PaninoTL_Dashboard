@@ -263,6 +263,33 @@ function renderDeviceCommandPreview() {
   const preview = document.getElementById("deviceCommandPreview");
   if (!preview) return;
   preview.textContent = JSON.stringify(buildDeviceCommandPreview(), null, 2);
+
+  const send = document.getElementById("deviceCommandSend");
+  if (!send) return;
+  const command = buildDeviceCommandPreview();
+  const hasChanges = command.type === "action" || Object.keys(command.config || {}).length > 0;
+  const mqttReady = !!(client && client.connected);
+  send.disabled = !mqttReady || !deviceCommandDeviceId || !hasChanges;
+  send.title = send.disabled
+    ? (hasChanges ? "Connect to MQTT before sending" : "No setting changes to send")
+    : "Publish retained MQTT command";
+}
+
+function sendDeviceCommand() {
+  const id = deviceCommandDeviceId;
+  const command = buildDeviceCommandPreview();
+  if (!id) return;
+  if (command.type === "set" && Object.keys(command.config || {}).length === 0) {
+    alert("No setting changes to send");
+    return;
+  }
+  try {
+    publishDeviceCommand(id, command);
+    deviceCommandRequestId = newDeviceCommandId(id);
+    renderDeviceCommandPreview();
+  } catch (err) {
+    alert(err && err.message ? err.message : "Command publish failed");
+  }
 }
 
 document.addEventListener("click", (e) => {

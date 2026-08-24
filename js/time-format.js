@@ -352,6 +352,17 @@ function isRecentError(d) {
   return err.getTime() > shot.getTime();
 }
 
+function runtimeErrorLevel(d, errorText) {
+  const text = String(errorText || "");
+  const uploadRelated =
+    text === "Upload failed" ||
+    text === "Dropbox image link unavailable";
+  if (uploadRelated && Number(d && d.config && d.config.uploadMode) === 1) {
+    return "warn";
+  }
+  return "error";
+}
+
 // A standing issue (e.g. camera needs manual recovery) wins the banner over
 // everything else: it needs physical user action and won't clear on its own
 // the way a comm delay or a single failed shot might. Communication
@@ -418,6 +429,7 @@ function effectiveErrorInfo(d, id, statusLevel) {
 
   const hasJsonError    = !!(d.lastError && d.lastError !== "None");
   const recentJsonError = hasJsonError && isRecentError(d);
+  const recentJsonLevel = runtimeErrorLevel(d, d.lastError);
   const secondaryJsonError = recentJsonError ? d.lastError : null;
   const secondaryJsonErrorTime = recentJsonError ? d.lastErrorTime : null;
 
@@ -438,8 +450,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       hasError:      true,
       text:          d.lastError,
       time:          d.lastErrorTime,
-      level:         "error",
-      glow:          true,
+      level:         recentJsonLevel,
+      glow:          recentJsonLevel === "error",
       jsonError:     null,
       jsonErrorTime: null
     };
@@ -449,8 +461,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
     hasError:      hasJsonError,
     text:          hasJsonError ? d.lastError : "No errors",
     time:          hasJsonError ? d.lastErrorTime : "-",
-    level:         hasJsonError ? (recentJsonError ? "error" : "neutral") : "ok",
-    glow:          recentJsonError,
+    level:         hasJsonError ? (recentJsonError ? recentJsonLevel : "neutral") : "ok",
+    glow:          recentJsonError && recentJsonLevel === "error",
     jsonError:     null,
     jsonErrorTime: null
   };
