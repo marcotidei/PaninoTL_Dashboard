@@ -162,7 +162,7 @@ function imageMarkedNotCurrent(id) {
   const d = devices[id];
   const issue = String((d && d.issueCode) || "").toLowerCase();
   const health = String((d && d.healthText) || "").toLowerCase();
-  return issue.includes("media") || issue.includes("displayed image may be old") || health.includes("media wedged");
+  return issue.includes("retrieve image") || issue.includes("media") || health.includes("media wedged");
 }
 
 function captureImgWrap(id, kind, src, isLowRes, notCurrent) {

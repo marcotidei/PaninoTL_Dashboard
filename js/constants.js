@@ -12,7 +12,7 @@ const ISSUE_CODE_TEXT = [
   "Camera found but unable to connect",
   "Shooting failure",
   "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera to allow PaninoTL to get the image",
-  "Camera media unavailable - displayed image may be old"
+  "Unable to retrieve image from camera"
 ];
 
 // Must stay in sync with LastErrorReason (PaninoTL/include/app_defs.h).
@@ -27,10 +27,11 @@ const LAST_ERR_TEXT = [
   "Pre-shot read failed",
   "Shutter failed",
   "Shot not confirmed",
-  "Media fetch failed",
+  "Unable to retrieve image from camera",
   "Panino SD failed",
   "Upload failed",
-  "Dropbox authorization not configured"
+  "Dropbox authorization not configured",
+  "Dropbox image link unavailable"
 ];
 
 // New compact health-code registry. During migration, devices that publish "h"
@@ -46,10 +47,11 @@ const HEALTH_CODE_TEXT = {
   3001: "Pre-shot read failed",
   3002: "Shutter failed",
   3003: "Shot not confirmed",
-  3004: "Media fetch failed",
+  3004: "Unable to retrieve image from camera",
   4001: "Panino SD failed",
   5001: "Upload failed",
   5002: "Dropbox authorization not configured",
+  5003: "Dropbox image link unavailable",
   6001: "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera",
   6002: "Camera media wedged - hold the GoPro power button for 20s, then retry; factory reset if it persists",
   9001: "Shooting failure"

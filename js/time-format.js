@@ -370,6 +370,18 @@ function effectiveErrorInfo(d, id, statusLevel) {
   }
 
   if (d.issueCode && d.issueCode !== "None") {
+    if (d.lastError === "Unable to retrieve image from camera" && isRecentError(d)) {
+      return {
+        hasError:      true,
+        text:          d.lastError,
+        time:          d.lastErrorTime,
+        level:         "error",
+        glow:          true,
+        jsonError:     null,
+        jsonErrorTime: null
+      };
+    }
+
     return {
       hasError:      true,
       text:          d.issueCode,
@@ -404,7 +416,6 @@ function effectiveErrorInfo(d, id, statusLevel) {
     }
   }
 
-  const missingImageLink = uploadMissingImageLink(d);
   const hasJsonError    = !!(d.lastError && d.lastError !== "None");
   const recentJsonError = hasJsonError && isRecentError(d);
   const secondaryJsonError = recentJsonError ? d.lastError : null;
@@ -417,8 +428,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          commAlert.time,
       level:         commAlert.level,
       glow:          commAlert.glow,
-      jsonError:     secondaryJsonError || (missingImageLink ? "UPLOAD ENABLED BUT IMAGE LINK MISSING" : null),
-      jsonErrorTime: secondaryJsonError ? secondaryJsonErrorTime : null
+      jsonError:     secondaryJsonError,
+      jsonErrorTime: secondaryJsonErrorTime
     };
   }
 
@@ -429,20 +440,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          d.lastErrorTime,
       level:         "error",
       glow:          true,
-      jsonError:     missingImageLink ? "UPLOAD ENABLED BUT IMAGE LINK MISSING" : null,
+      jsonError:     null,
       jsonErrorTime: null
-    };
-  }
-
-  if (missingImageLink) {
-    return {
-      hasError:      true,
-      text:          "UPLOAD ENABLED BUT IMAGE LINK MISSING",
-      time:          null,
-      level:         "error",
-      glow:          true,
-      jsonError:     secondaryJsonError,
-      jsonErrorTime: secondaryJsonErrorTime
     };
   }
 
