@@ -11,6 +11,7 @@ const notified  = {};
 const openState = {};
 const photoSoundPrimed = {};
 const errorSoundState = {};
+const pendingCommands = {};
 const DEVICE_ORDER_STORAGE_KEY = "deviceOrder";
 let deviceOrder = loadDeviceOrder();
 
@@ -20,6 +21,7 @@ function clearDashboardState() {
   Object.keys(openState).forEach(k => delete openState[k]);
   Object.keys(photoSoundPrimed).forEach(k => delete photoSoundPrimed[k]);
   Object.keys(errorSoundState).forEach(k => delete errorSoundState[k]);
+  Object.keys(pendingCommands).forEach(k => delete pendingCommands[k]);
 }
 
 function loadDeviceOrder() {

@@ -863,8 +863,34 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 .device-command-send {
   flex: 0 0 auto;
   min-width: 132px;
+}
+
+.device-command-send:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.device-command-send:not(:disabled) {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.command-status {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.command-status.pending {
+  color: #fbbf24;
+}
+
+.command-status.ok {
+  color: #22c55e;
+}
+
+.command-status.error {
+  color: #f87171;
 }
 
 @media (max-width: 560px) {

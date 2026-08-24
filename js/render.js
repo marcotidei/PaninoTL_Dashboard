@@ -38,6 +38,8 @@ function buildSnapshot() {
           healthTime:     d.healthTime,
           healthSticky:   d.healthSticky,
           firmware:       d.firmware,
+          commandPending: !!pendingCommands[id],
+          commandAck:     d.commandAck,
           open:           !!openState[id]
         };
       })
@@ -89,6 +91,8 @@ function render() {
       }
       return "";
     })();
+    const pendingCommand = pendingCommands[id];
+    const commandAck = d.commandAck || null;
 
     const dev = document.createElement("div");
     dev.className    = "device " + panelState;
@@ -260,8 +264,14 @@ function render() {
           <button type="button" class="device-command-btn" data-device-id="${escapeAttr(id)}"
             onclick="openDeviceCommandModal(event)" title="Device settings and commands"
             aria-label="Device settings and commands for ${escapeAttr(id)}">
-            <i class="fa-solid fa-gear"></i>
+            <i class="fa-solid ${pendingCommand ? "fa-hourglass-half" : "fa-gear"}"></i>
           </button>
+          ${pendingCommand ? `<span class="command-status pending">Command pending</span>` : ""}
+          ${!pendingCommand && commandAck ? `
+            <span class="command-status ${commandAck.applied ? "ok" : "error"}">
+              ${commandAck.applied ? "Command applied" : "Command rejected"}
+            </span>
+          ` : ""}
           <button class="clear-device-btn" onclick="clearDeviceState(event, '${id}')">Clear Device</button>
         </div>
       </div>

@@ -20,6 +20,10 @@ function topicFilter(config = currentConfig) {
   return prefix === DEFAULT_TOPIC_PREFIX ? DEFAULT_TOPIC_FILTER : `${prefix}/+/state`;
 }
 
+function ackTopicFilter(config = currentConfig) {
+  return `${topicPrefix(config)}/+/ack`;
+}
+
 function stateTopic(id, config = currentConfig) {
   return `${topicPrefix(config)}/${id}/state`;
 }
@@ -149,6 +153,13 @@ function publishDeviceCommand(id, command) {
   const topic = commandTopic(id);
   const payload = JSON.stringify(command);
   client.publish(topic, payload, { qos: 0, retain: true });
+  pendingCommands[id] = {
+    id: command.id,
+    type: command.type,
+    sentAt: new Date().toISOString(),
+    command
+  };
+  render();
   console.log("📤 Published command", topic, command);
 }
 
@@ -199,7 +210,17 @@ function connectMQTT(config) {
         return;
       }
       console.log("✅ Subscribed", filter);
-      setConnStatus("connected");
+      const ackFilter = ackTopicFilter(config);
+      newClient.subscribe(ackFilter, (ackErr) => {
+        if (client !== newClient) return;
+        if (ackErr) {
+          console.error("MQTT ack subscribe failed:", ackFilter, ackErr);
+          setConnStatus("error");
+          return;
+        }
+        console.log("✅ Subscribed", ackFilter);
+        setConnStatus("connected");
+      });
     });
   });
 
@@ -223,6 +244,27 @@ function connectMQTT(config) {
     if (client !== newClient) return;
 
     try {
+      const ackId = deviceIdFromTopic(topic, config, "/ack");
+      if (ackId) {
+        const rawAck = message.toString();
+        if (!rawAck) {
+          delete pendingCommands[ackId];
+          render();
+          return;
+        }
+        const ack = JSON.parse(rawAck);
+        const pending = pendingCommands[ackId];
+        if (pending && ack.id === pending.id) {
+          delete pendingCommands[ackId];
+        }
+        devices[ackId] = {
+          ...(devices[ackId] || { id: ackId }),
+          commandAck: ack
+        };
+        render();
+        return;
+      }
+
       const id = deviceIdFromTopic(topic, config);
       if (!id) return;
 
