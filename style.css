@@ -233,6 +233,11 @@ body {
   font-size: 14px;
 }
 
+.pending-command-icon {
+  color: #facc15;
+  font-size: 13px;
+}
+
 body.is-reordering {
   user-select: none;
   -webkit-user-select: none;

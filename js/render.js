@@ -298,6 +298,9 @@ function render() {
           <b class="device-name">${id}</b>
         </span>
         <span class="header-metrics">
+          ${pendingCommand ? `
+            <i class="fa-solid fa-hourglass-half pending-command-icon" title="Pending command"></i>
+          ` : ""}
           ${statusIconHtml}
 
           <span class="photo-metric">
@@ -436,7 +439,7 @@ function render() {
             <button type="button" class="device-command-btn" data-device-id="${escapeAttr(id)}"
               onclick="openDeviceCommandModal(event)" title="Device settings and commands"
               aria-label="Device settings and commands for ${escapeAttr(id)}">
-              <i class="fa-solid ${pendingCommand ? "fa-hourglass-half" : "fa-gear"}"></i>
+              <i class="fa-solid fa-gear"></i>
             </button>
             ${!pendingCommand && commandAck && commandAck.applied === false ? `
               <span class="command-status error" title="${escapeAttr(commandAck.error || "Command rejected")}">
