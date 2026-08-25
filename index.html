@@ -181,28 +181,28 @@
         <div class="fw-settings-days-row">
           <div class="fw-settings-row-label">Active days</div>
           <div class="fw-settings-days" aria-label="Active days">
-            <label class="fw-day"><input type="checkbox" data-day-index="0" onchange="renderDeviceCommandPreview()"><span>Mon</span></label>
-            <label class="fw-day"><input type="checkbox" data-day-index="1" onchange="renderDeviceCommandPreview()"><span>Tue</span></label>
-            <label class="fw-day"><input type="checkbox" data-day-index="2" onchange="renderDeviceCommandPreview()"><span>Wed</span></label>
-            <label class="fw-day"><input type="checkbox" data-day-index="3" onchange="renderDeviceCommandPreview()"><span>Thu</span></label>
-            <label class="fw-day"><input type="checkbox" data-day-index="4" onchange="renderDeviceCommandPreview()"><span>Fri</span></label>
-            <label class="fw-day"><input type="checkbox" data-day-index="5" onchange="renderDeviceCommandPreview()"><span>Sat</span></label>
-            <label class="fw-day"><input type="checkbox" data-day-index="6" onchange="renderDeviceCommandPreview()"><span>Sun</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="0" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Mon</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="1" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Tue</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="2" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Wed</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="3" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Thu</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="4" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Fri</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="5" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Sat</span></label>
+            <label class="fw-day"><input type="checkbox" data-day-index="6" onchange="markDeviceCommandFieldChanged('scheduleDays')"><span>Sun</span></label>
           </div>
         </div>
 
-        <label class="fw-settings-row">Start<input id="cmd_scheduleStart" type="time" oninput="renderDeviceCommandPreview()"></label>
-        <label class="fw-settings-row">End<input id="cmd_scheduleEnd" type="time" oninput="renderDeviceCommandPreview()"></label>
+        <label class="fw-settings-row">Start<input id="cmd_scheduleStart" type="time" oninput="markDeviceCommandFieldChanged('scheduleStart')"></label>
+        <label class="fw-settings-row">End<input id="cmd_scheduleEnd" type="time" oninput="markDeviceCommandFieldChanged('scheduleEnd')"></label>
         <label class="fw-settings-row">
           Every
           <span class="fw-input-group">
-            <select id="cmd_intervalHours" class="fw-select-sm" onchange="renderDeviceCommandPreview()"></select>
-            <select id="cmd_intervalMinutes" class="fw-select-md" onchange="renderDeviceCommandPreview()"></select>
+            <select id="cmd_intervalHours" class="fw-select-sm" onchange="markDeviceCommandFieldChanged('intervalSec')"></select>
+            <select id="cmd_intervalMinutes" class="fw-select-md" onchange="markDeviceCommandFieldChanged('intervalSec')"></select>
           </span>
         </label>
         <label class="fw-settings-row">
           Lens
-          <select id="cmd_photoLens" onchange="renderDeviceCommandPreview()">
+          <select id="cmd_photoLens" onchange="markDeviceCommandFieldChanged('photoLens')">
             <option value="101">Wide (GP10-12)</option>
             <option value="102">Linear (GP10-12)</option>
             <option value="19">Narrow (GP10)</option>
@@ -212,7 +212,7 @@
         </label>
         <label class="fw-settings-row">
           Photo Output
-          <select id="cmd_photoOutput" onchange="renderDeviceCommandPreview()">
+          <select id="cmd_photoOutput" onchange="markDeviceCommandFieldChanged('photoOutput')">
             <option value="0">Standard</option>
             <option value="1">Raw</option>
             <option value="2">HDR</option>
@@ -221,7 +221,7 @@
         </label>
         <label class="fw-settings-row">
           Upload Last Image
-          <select id="cmd_dropboxUpload" onchange="renderDeviceCommandPreview()">
+          <select id="cmd_dropboxUpload" onchange="markDeviceCommandFieldChanged('dropboxUpload')">
             <option value="0">Disabled</option>
             <option value="1">Thumbnail</option>
             <option value="2">Full Resolution</option>
@@ -233,14 +233,14 @@
       <div class="fw-settings-card">
         <label class="fw-settings-row">
           GoPro Power Control
-          <select id="cmd_powerMode" onchange="renderDeviceCommandPreview()">
+          <select id="cmd_powerMode" onchange="markDeviceCommandFieldChanged('powerMode')">
             <option value="0">Always On</option>
             <option value="1">Power Save</option>
           </select>
         </label>
         <label class="fw-settings-row">
           Battery Monitor
-          <select id="cmd_batteryMonitorEnabled" onchange="renderDeviceCommandPreview()">
+          <select id="cmd_batteryMonitorEnabled" onchange="markDeviceCommandFieldChanged('batteryMonitorEnabled')">
             <option value="0">Disabled</option>
             <option value="1">Enabled</option>
           </select>
@@ -251,11 +251,11 @@
       <div class="fw-settings-card">
         <label class="fw-settings-row">
           Keep Alive / Heartbeat (min)
-          <input id="cmd_maxSleepMin" type="number" min="1" max="1440" step="1" inputmode="numeric" oninput="renderDeviceCommandPreview()">
+          <input id="cmd_maxSleepMin" type="number" min="1" max="1440" step="1" inputmode="numeric" oninput="markDeviceCommandFieldChanged('maxSleepSec')">
         </label>
         <label class="fw-settings-row">
           Internet Clock Sync
-          <select id="cmd_ntpSyncMode" onchange="renderDeviceCommandPreview()">
+          <select id="cmd_ntpSyncMode" onchange="markDeviceCommandFieldChanged('ntpSyncMode')">
             <option value="0">Disabled</option>
             <option value="1">Always</option>
             <option value="2">Daily</option>
@@ -265,7 +265,7 @@
         </label>
         <label class="fw-settings-row">
           Upload Timeout (min)
-          <input id="cmd_uploadTimeoutMin" type="number" min="1" max="30" step="1" inputmode="numeric" oninput="renderDeviceCommandPreview()">
+          <input id="cmd_uploadTimeoutMin" type="number" min="1" max="30" step="1" inputmode="numeric" oninput="markDeviceCommandFieldChanged('uploadTimeoutMin')">
         </label>
       </div>
     </div>

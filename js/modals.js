@@ -31,6 +31,7 @@ let deviceCommandTab = "settings";
 let deviceCommandAction = "syncTimeNow";
 let deviceCommandRequestId = null;
 let deviceCommandIntervalsReady = false;
+let deviceCommandDirtyFields = new Set();
 
 function escapeAttr(value) {
   return String(value ?? "")
@@ -51,6 +52,33 @@ function sameCommandValue(a, b) {
   if (a === null || a === undefined || a === "") return b === null || b === undefined || b === "";
   if (b === null || b === undefined || b === "") return false;
   return String(a) === String(b);
+}
+
+function markDeviceCommandFieldChanged(field) {
+  if (field) deviceCommandDirtyFields.add(field);
+  renderDeviceCommandPreview();
+}
+
+function deviceCommandPendingDirtyFields(config) {
+  const fields = new Set();
+  if (!config) return fields;
+
+  if (modalCommandConfigHas(config, "intervalSec")) fields.add("intervalSec");
+  if (modalCommandConfigHas(config, "scheduleDays")) fields.add("scheduleDays");
+  if (modalCommandConfigHas(config, "scheduleStart")) fields.add("scheduleStart");
+  if (modalCommandConfigHas(config, "scheduleEnd")) fields.add("scheduleEnd");
+  if (modalCommandConfigHas(config, "photoLens")) fields.add("photoLens");
+  if (modalCommandConfigHas(config, "photoOutput")) fields.add("photoOutput");
+  if (modalCommandConfigHas(config, "powerMode")) fields.add("powerMode");
+  if (modalCommandConfigHas(config, "batteryMonitorEnabled")) fields.add("batteryMonitorEnabled");
+  if (modalCommandConfigHas(config, "maxSleepSec")) fields.add("maxSleepSec");
+  if (modalCommandConfigHas(config, "ntpSyncMode")) fields.add("ntpSyncMode");
+  if (modalCommandConfigHas(config, "dropboxUploadEnabled") || modalCommandConfigHas(config, "dropboxUploadMode")) {
+    fields.add("dropboxUpload");
+  }
+  if (modalCommandConfigHas(config, "uploadTimeoutMin")) fields.add("uploadTimeoutMin");
+
+  return fields;
 }
 
 function populateDeviceCommandIntervalSelects() {
@@ -209,6 +237,9 @@ function openDeviceCommandModal(event) {
   deviceCommandTab = pending && pending.type === "action" ? "actions" : "settings";
   deviceCommandAction = pending && pending.type === "action" ? pending.action : "syncTimeNow";
   deviceCommandRequestId = pending ? pending.id : newDeviceCommandId(id);
+  deviceCommandDirtyFields = pending && pending.type === "set"
+    ? deviceCommandPendingDirtyFields(pending.config)
+    : new Set();
   document.getElementById("deviceCommandTitle").innerText = id;
 
   populateDeviceCommandIntervalSelects();
@@ -239,6 +270,7 @@ function closeDeviceCommandModal() {
   document.getElementById("deviceCommandModal").classList.remove("is-visible");
   deviceCommandDeviceId = null;
   deviceCommandRequestId = null;
+  deviceCommandDirtyFields = new Set();
 }
 
 function setDeviceCommandTab(tab) {
@@ -272,49 +304,73 @@ function buildDeviceSettingsPatch(id) {
   const c = d.config || {};
   const patch = {};
 
-  const intervalSec = readIntervalSec();
-  if (intervalSec !== null && !sameCommandValue(intervalSec, clampIntervalSec(c.interval))) patch.intervalSec = intervalSec;
-
-  const scheduleDays = readScheduleDaysMask();
-  if (!sameCommandValue(scheduleDays, scheduleDaysMaskFromValue(c.days))) patch.scheduleDays = scheduleDays;
-
-  const scheduleStart = document.getElementById("cmd_scheduleStart").value;
-  if (scheduleStart && !sameCommandValue(scheduleStart, c.start)) patch.scheduleStart = scheduleStart;
-
-  const scheduleEnd = document.getElementById("cmd_scheduleEnd").value;
-  if (scheduleEnd && !sameCommandValue(scheduleEnd, c.end)) patch.scheduleEnd = scheduleEnd;
-
-  const photoLens = readNumberInput("cmd_photoLens");
-  if (photoLens !== null && !sameCommandValue(photoLens, c.lens)) patch.photoLens = photoLens;
-
-  const photoOutput = readNumberInput("cmd_photoOutput");
-  if (photoOutput !== null && !sameCommandValue(photoOutput, c.output)) patch.photoOutput = photoOutput;
-
-  const powerMode = readNumberInput("cmd_powerMode");
-  if (powerMode !== null && !sameCommandValue(powerMode, c.powerMode)) patch.powerMode = powerMode;
-
-  const batteryMonitorEnabled = readNumberInput("cmd_batteryMonitorEnabled");
-  if (batteryMonitorEnabled !== null && !sameCommandValue(batteryMonitorEnabled, c.batteryMonitorEnabled)) {
-    patch.batteryMonitorEnabled = batteryMonitorEnabled === 1;
+  if (deviceCommandDirtyFields.has("intervalSec")) {
+    const intervalSec = readIntervalSec();
+    if (intervalSec !== null && !sameCommandValue(intervalSec, clampIntervalSec(c.interval))) patch.intervalSec = intervalSec;
   }
 
-  const maxSleepSec = readMaxSleepSec();
-  if (maxSleepSec !== null && !sameCommandValue(maxSleepSec, clampMaxSleepSec(c.maxSleepSec))) {
-    patch.maxSleepSec = maxSleepSec;
+  if (deviceCommandDirtyFields.has("scheduleDays")) {
+    const scheduleDays = readScheduleDaysMask();
+    if (!sameCommandValue(scheduleDays, scheduleDaysMaskFromValue(c.days))) patch.scheduleDays = scheduleDays;
   }
 
-  const ntpSyncMode = readNumberInput("cmd_ntpSyncMode");
-  if (ntpSyncMode !== null && !sameCommandValue(ntpSyncMode, c.ntpSyncMode)) patch.ntpSyncMode = ntpSyncMode;
-
-  const uploadMode = Number(document.getElementById("cmd_dropboxUpload").value);
-  if (Number.isFinite(uploadMode) && !sameCommandValue(uploadMode, c.uploadMode)) {
-    patch.dropboxUploadEnabled = uploadMode > 0;
-    patch.dropboxUploadMode = uploadMode === 2 ? 1 : 0;
+  if (deviceCommandDirtyFields.has("scheduleStart")) {
+    const scheduleStart = document.getElementById("cmd_scheduleStart").value;
+    if (scheduleStart && !sameCommandValue(scheduleStart, c.start)) patch.scheduleStart = scheduleStart;
   }
 
-  const uploadTimeoutMin = readNumberInput("cmd_uploadTimeoutMin");
-  if (uploadTimeoutMin !== null && !sameCommandValue(uploadTimeoutMin, c.uploadTimeout)) {
-    patch.uploadTimeoutMin = uploadTimeoutMin;
+  if (deviceCommandDirtyFields.has("scheduleEnd")) {
+    const scheduleEnd = document.getElementById("cmd_scheduleEnd").value;
+    if (scheduleEnd && !sameCommandValue(scheduleEnd, c.end)) patch.scheduleEnd = scheduleEnd;
+  }
+
+  if (deviceCommandDirtyFields.has("photoLens")) {
+    const photoLens = readNumberInput("cmd_photoLens");
+    if (photoLens !== null && !sameCommandValue(photoLens, c.lens)) patch.photoLens = photoLens;
+  }
+
+  if (deviceCommandDirtyFields.has("photoOutput")) {
+    const photoOutput = readNumberInput("cmd_photoOutput");
+    if (photoOutput !== null && !sameCommandValue(photoOutput, c.output)) patch.photoOutput = photoOutput;
+  }
+
+  if (deviceCommandDirtyFields.has("powerMode")) {
+    const powerMode = readNumberInput("cmd_powerMode");
+    if (powerMode !== null && !sameCommandValue(powerMode, c.powerMode)) patch.powerMode = powerMode;
+  }
+
+  if (deviceCommandDirtyFields.has("batteryMonitorEnabled")) {
+    const batteryMonitorEnabled = readNumberInput("cmd_batteryMonitorEnabled");
+    if (batteryMonitorEnabled !== null && !sameCommandValue(batteryMonitorEnabled, c.batteryMonitorEnabled)) {
+      patch.batteryMonitorEnabled = batteryMonitorEnabled === 1;
+    }
+  }
+
+  if (deviceCommandDirtyFields.has("maxSleepSec")) {
+    const maxSleepSec = readMaxSleepSec();
+    if (maxSleepSec !== null && !sameCommandValue(maxSleepSec, clampMaxSleepSec(c.maxSleepSec))) {
+      patch.maxSleepSec = maxSleepSec;
+    }
+  }
+
+  if (deviceCommandDirtyFields.has("ntpSyncMode")) {
+    const ntpSyncMode = readNumberInput("cmd_ntpSyncMode");
+    if (ntpSyncMode !== null && !sameCommandValue(ntpSyncMode, c.ntpSyncMode)) patch.ntpSyncMode = ntpSyncMode;
+  }
+
+  if (deviceCommandDirtyFields.has("dropboxUpload")) {
+    const uploadMode = Number(document.getElementById("cmd_dropboxUpload").value);
+    if (Number.isFinite(uploadMode) && !sameCommandValue(uploadMode, c.uploadMode)) {
+      patch.dropboxUploadEnabled = uploadMode > 0;
+      patch.dropboxUploadMode = uploadMode === 2 ? 1 : 0;
+    }
+  }
+
+  if (deviceCommandDirtyFields.has("uploadTimeoutMin")) {
+    const uploadTimeoutMin = readNumberInput("cmd_uploadTimeoutMin");
+    if (uploadTimeoutMin !== null && !sameCommandValue(uploadTimeoutMin, c.uploadTimeout)) {
+      patch.uploadTimeoutMin = uploadTimeoutMin;
+    }
   }
 
   return patch;
