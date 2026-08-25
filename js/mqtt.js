@@ -232,6 +232,9 @@ function applyAcceptedSettingsCommand(id, pending) {
     const value = Number(config.powerMode);
     if (Number.isFinite(value)) next.powerMode = value;
   }
+  if (commandConfigHas(config, "batteryMonitorEnabled")) {
+    next.batteryMonitorEnabled = config.batteryMonitorEnabled ? 1 : 0;
+  }
   if (commandConfigHas(config, "maxSleepSec")) {
     const value = Number(config.maxSleepSec);
     if (Number.isFinite(value)) next.maxSleepSec = value;
@@ -501,6 +504,7 @@ function connectMQTT(config) {
           lens:     c.l,
           output:   c.o,
           powerMode: c.p ?? 0,
+          batteryMonitorEnabled: c.bm ?? 1,
           maxSleepSec: c.k ?? 3600,
           ntpSyncMode: c.ntp ?? 0,
           // Tri-state: 0=Disabled, 1=Thumbnail, 2=Full Res.

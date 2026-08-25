@@ -229,7 +229,7 @@
         </label>
       </div>
 
-      <h2 class="fw-settings-title">Connectivity</h2>
+      <h2 class="fw-settings-title">Power</h2>
       <div class="fw-settings-card">
         <label class="fw-settings-row">
           GoPro Power Control
@@ -238,6 +238,17 @@
             <option value="1">Power Save</option>
           </select>
         </label>
+        <label class="fw-settings-row">
+          Battery Monitor
+          <select id="cmd_batteryMonitorEnabled" onchange="renderDeviceCommandPreview()">
+            <option value="0">Disabled</option>
+            <option value="1">Enabled</option>
+          </select>
+        </label>
+      </div>
+
+      <h2 class="fw-settings-title">Connectivity</h2>
+      <div class="fw-settings-card">
         <label class="fw-settings-row">
           Keep Alive / Heartbeat (min)
           <input id="cmd_maxSleepMin" type="number" min="1" max="1440" step="1" inputmode="numeric" oninput="renderDeviceCommandPreview()">

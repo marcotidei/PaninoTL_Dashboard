@@ -187,6 +187,7 @@ function deviceCommandBaseConfigWithPending(id) {
   if (modalCommandConfigHas(patch, "photoLens")) base.lens = Number(patch.photoLens);
   if (modalCommandConfigHas(patch, "photoOutput")) base.output = Number(patch.photoOutput);
   if (modalCommandConfigHas(patch, "powerMode")) base.powerMode = Number(patch.powerMode);
+  if (modalCommandConfigHas(patch, "batteryMonitorEnabled")) base.batteryMonitorEnabled = patch.batteryMonitorEnabled ? 1 : 0;
   if (modalCommandConfigHas(patch, "maxSleepSec")) base.maxSleepSec = Number(patch.maxSleepSec);
   if (modalCommandConfigHas(patch, "ntpSyncMode")) base.ntpSyncMode = Number(patch.ntpSyncMode);
   if (modalCommandConfigHas(patch, "dropboxUploadEnabled") || modalCommandConfigHas(patch, "dropboxUploadMode")) {
@@ -221,6 +222,7 @@ function openDeviceCommandModal(event) {
   setSelectValueWithFallback("cmd_photoOutput", c.output, "Current output");
   setSelectValueWithFallback("cmd_dropboxUpload", c.uploadMode, "Current upload mode");
   setSelectValueWithFallback("cmd_powerMode", c.powerMode, "0");
+  setSelectValueWithFallback("cmd_batteryMonitorEnabled", c.batteryMonitorEnabled, "1");
   document.getElementById("cmd_maxSleepMin").value =
     Number.isFinite(Number(c.maxSleepSec)) ? Math.max(1, Math.round(Number(c.maxSleepSec) / 60)) : "";
   setSelectValueWithFallback("cmd_ntpSyncMode", c.ntpSyncMode, "0");
@@ -290,6 +292,11 @@ function buildDeviceSettingsPatch(id) {
 
   const powerMode = readNumberInput("cmd_powerMode");
   if (powerMode !== null && !sameCommandValue(powerMode, c.powerMode)) patch.powerMode = powerMode;
+
+  const batteryMonitorEnabled = readNumberInput("cmd_batteryMonitorEnabled");
+  if (batteryMonitorEnabled !== null && !sameCommandValue(batteryMonitorEnabled, c.batteryMonitorEnabled)) {
+    patch.batteryMonitorEnabled = batteryMonitorEnabled === 1;
+  }
 
   const maxSleepSec = readMaxSleepSec();
   if (maxSleepSec !== null && !sameCommandValue(maxSleepSec, clampMaxSleepSec(c.maxSleepSec))) {

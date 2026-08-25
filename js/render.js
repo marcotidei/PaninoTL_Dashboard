@@ -83,6 +83,10 @@ function formatNtpSyncMode(value) {
   }
 }
 
+function formatEnabled(value) {
+  return Number(value) === 0 || value === false ? "Disabled" : "Enabled";
+}
+
 function formatMaxSleep(value) {
   const seconds = Number(value);
   if (!Number.isFinite(seconds)) return "-";
@@ -154,6 +158,14 @@ function pendingSettingsChanges(d, pendingCommand) {
       label: "GoPro Power",
       current: formatPowerMode(c.powerMode),
       next: formatPowerMode(config.powerMode)
+    });
+  }
+
+  if (hasOwnValue(config, "batteryMonitorEnabled")) {
+    changes.push({
+      label: "Battery Monitor",
+      current: formatEnabled(c.batteryMonitorEnabled),
+      next: formatEnabled(config.batteryMonitorEnabled)
     });
   }
 
@@ -342,7 +354,7 @@ function render() {
     const pendingScheduleWindowClass = pendingSettingClass(pendingCommand, ["scheduleStart", "scheduleEnd"]);
     const pendingIntervalClass = pendingSettingClass(pendingCommand, ["intervalSec"]);
     const pendingUploadClass = pendingSettingClass(pendingCommand, ["dropboxUploadEnabled", "dropboxUploadMode", "uploadTimeoutMin"]);
-    const pendingPowerClass = pendingSettingClass(pendingCommand, ["powerMode", "maxSleepSec", "ntpSyncMode"]);
+    const pendingPowerClass = pendingSettingClass(pendingCommand, ["powerMode", "batteryMonitorEnabled", "maxSleepSec", "ntpSyncMode"]);
     const pendingLensClass = pendingSettingClass(pendingCommand, ["photoLens"]);
     const pendingOutputClass = pendingSettingClass(pendingCommand, ["photoOutput"]);
 
@@ -488,7 +500,8 @@ function render() {
               <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
               <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
-              <div class="row ${pendingPowerClass}"><span>Power/Keepalive:</span><span>${formatPowerMode(d.config.powerMode)} / ${formatMaxSleep(d.config.maxSleepSec)}</span></div>
+              <div class="row ${pendingPowerClass}"><span>Power:</span><span>${formatPowerMode(d.config.powerMode)} / Battery ${formatEnabled(d.config.batteryMonitorEnabled)}</span></div>
+              <div class="row ${pendingPowerClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingPowerClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
               <div class="row ${pendingUploadClass}"><span>Upload/Timeout:</span><span>${formatUploadSummary(d.config)}</span></div>
             </div>
