@@ -69,6 +69,27 @@ function formatTimeoutMin(value) {
   return `${n} ${n === 1 ? "min" : "mins"}`;
 }
 
+function formatPowerMode(value) {
+  return Number(value) === 1 ? "Power Save" : "Always On";
+}
+
+function formatNtpSyncMode(value) {
+  switch (Number(value)) {
+    case 1: return "Always";
+    case 2: return "Daily";
+    case 3: return "Weekly";
+    case 4: return "Monthly";
+    default: return "Disabled";
+  }
+}
+
+function formatMaxSleep(value) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) return "-";
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return `${minutes} ${minutes === 1 ? "min" : "mins"}`;
+}
+
 function pendingChangeValueHtml(value) {
   return value && value.html ? value.html : escapeHtml(value);
 }
@@ -125,6 +146,30 @@ function pendingSettingsChanges(d, pendingCommand) {
       label: "Format",
       current: photoOutputName(c.output),
       next: photoOutputName(Number(config.photoOutput))
+    });
+  }
+
+  if (hasOwnValue(config, "powerMode")) {
+    changes.push({
+      label: "GoPro Power",
+      current: formatPowerMode(c.powerMode),
+      next: formatPowerMode(config.powerMode)
+    });
+  }
+
+  if (hasOwnValue(config, "maxSleepSec")) {
+    changes.push({
+      label: "Keep Alive",
+      current: formatMaxSleep(c.maxSleepSec),
+      next: formatMaxSleep(config.maxSleepSec)
+    });
+  }
+
+  if (hasOwnValue(config, "ntpSyncMode")) {
+    changes.push({
+      label: "Clock Sync",
+      current: formatNtpSyncMode(c.ntpSyncMode),
+      next: formatNtpSyncMode(config.ntpSyncMode)
     });
   }
 
@@ -297,6 +342,7 @@ function render() {
     const pendingScheduleWindowClass = pendingSettingClass(pendingCommand, ["scheduleStart", "scheduleEnd"]);
     const pendingIntervalClass = pendingSettingClass(pendingCommand, ["intervalSec"]);
     const pendingUploadClass = pendingSettingClass(pendingCommand, ["dropboxUploadEnabled", "dropboxUploadMode", "uploadTimeoutMin"]);
+    const pendingPowerClass = pendingSettingClass(pendingCommand, ["powerMode", "maxSleepSec", "ntpSyncMode"]);
     const pendingLensClass = pendingSettingClass(pendingCommand, ["photoLens"]);
     const pendingOutputClass = pendingSettingClass(pendingCommand, ["photoOutput"]);
 
@@ -442,6 +488,8 @@ function render() {
               <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
               <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
+              <div class="row ${pendingPowerClass}"><span>Power/Keepalive:</span><span>${formatPowerMode(d.config.powerMode)} / ${formatMaxSleep(d.config.maxSleepSec)}</span></div>
+              <div class="row ${pendingPowerClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
               <div class="row ${pendingUploadClass}"><span>Upload/Timeout:</span><span>${formatUploadSummary(d.config)}</span></div>
             </div>
           </div>

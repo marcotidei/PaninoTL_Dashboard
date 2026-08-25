@@ -102,6 +102,18 @@ function readIntervalSec() {
   return clampIntervalSec((h * 3600) + (m * 60));
 }
 
+function clampMaxSleepSec(seconds) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(86400, Math.max(60, Math.round(n)));
+}
+
+function readMaxSleepSec() {
+  const minutes = readNumberInput("cmd_maxSleepMin");
+  if (minutes === null) return null;
+  return clampMaxSleepSec(minutes * 60);
+}
+
 function scheduleDaysMaskFromValue(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value & 0x7f;
   const str = String(value ?? "").trim();
@@ -174,6 +186,9 @@ function deviceCommandBaseConfigWithPending(id) {
   if (modalCommandConfigHas(patch, "scheduleEnd")) base.end = String(patch.scheduleEnd);
   if (modalCommandConfigHas(patch, "photoLens")) base.lens = Number(patch.photoLens);
   if (modalCommandConfigHas(patch, "photoOutput")) base.output = Number(patch.photoOutput);
+  if (modalCommandConfigHas(patch, "powerMode")) base.powerMode = Number(patch.powerMode);
+  if (modalCommandConfigHas(patch, "maxSleepSec")) base.maxSleepSec = Number(patch.maxSleepSec);
+  if (modalCommandConfigHas(patch, "ntpSyncMode")) base.ntpSyncMode = Number(patch.ntpSyncMode);
   if (modalCommandConfigHas(patch, "dropboxUploadEnabled") || modalCommandConfigHas(patch, "dropboxUploadMode")) {
     base.uploadMode = modalUploadModeFromCommandConfig(patch, base.uploadMode);
   }
@@ -205,6 +220,10 @@ function openDeviceCommandModal(event) {
   setSelectValueWithFallback("cmd_photoLens", c.lens, "Current lens");
   setSelectValueWithFallback("cmd_photoOutput", c.output, "Current output");
   setSelectValueWithFallback("cmd_dropboxUpload", c.uploadMode, "Current upload mode");
+  setSelectValueWithFallback("cmd_powerMode", c.powerMode, "0");
+  document.getElementById("cmd_maxSleepMin").value =
+    Number.isFinite(Number(c.maxSleepSec)) ? Math.max(1, Math.round(Number(c.maxSleepSec) / 60)) : "";
+  setSelectValueWithFallback("cmd_ntpSyncMode", c.ntpSyncMode, "0");
   document.getElementById("cmd_uploadTimeoutMin").value = c.uploadTimeout ?? "";
 
   setDeviceCommandTab(deviceCommandTab);
@@ -268,6 +287,17 @@ function buildDeviceSettingsPatch(id) {
 
   const photoOutput = readNumberInput("cmd_photoOutput");
   if (photoOutput !== null && !sameCommandValue(photoOutput, c.output)) patch.photoOutput = photoOutput;
+
+  const powerMode = readNumberInput("cmd_powerMode");
+  if (powerMode !== null && !sameCommandValue(powerMode, c.powerMode)) patch.powerMode = powerMode;
+
+  const maxSleepSec = readMaxSleepSec();
+  if (maxSleepSec !== null && !sameCommandValue(maxSleepSec, clampMaxSleepSec(c.maxSleepSec))) {
+    patch.maxSleepSec = maxSleepSec;
+  }
+
+  const ntpSyncMode = readNumberInput("cmd_ntpSyncMode");
+  if (ntpSyncMode !== null && !sameCommandValue(ntpSyncMode, c.ntpSyncMode)) patch.ntpSyncMode = ntpSyncMode;
 
   const uploadMode = Number(document.getElementById("cmd_dropboxUpload").value);
   if (Number.isFinite(uploadMode) && !sameCommandValue(uploadMode, c.uploadMode)) {

@@ -232,6 +232,27 @@
       <h2 class="fw-settings-title">Connectivity</h2>
       <div class="fw-settings-card">
         <label class="fw-settings-row">
+          GoPro Power Control
+          <select id="cmd_powerMode" onchange="renderDeviceCommandPreview()">
+            <option value="0">Always On</option>
+            <option value="1">Power Save</option>
+          </select>
+        </label>
+        <label class="fw-settings-row">
+          Keep Alive / Heartbeat (min)
+          <input id="cmd_maxSleepMin" type="number" min="1" max="1440" step="1" inputmode="numeric" oninput="renderDeviceCommandPreview()">
+        </label>
+        <label class="fw-settings-row">
+          Internet Clock Sync
+          <select id="cmd_ntpSyncMode" onchange="renderDeviceCommandPreview()">
+            <option value="0">Disabled</option>
+            <option value="1">Always</option>
+            <option value="2">Daily</option>
+            <option value="3">Weekly</option>
+            <option value="4">Monthly</option>
+          </select>
+        </label>
+        <label class="fw-settings-row">
           Upload Timeout (min)
           <input id="cmd_uploadTimeoutMin" type="number" min="1" max="30" step="1" inputmode="numeric" oninput="renderDeviceCommandPreview()">
         </label>

@@ -53,10 +53,10 @@ function updateSoundToggleUI() {
 // Thumbnail display size: purely a rendering preference (how big the capture
 // images are drawn), independent of the actual image resolution fetched.
 // Persisted the same way as tzMode above, so a phone user who prefers Large
-// keeps seeing Large after closing the tab. "m" is the longstanding default.
+// keeps seeing Large after closing the tab. First-time visitors default to Small.
 const THUMB_SIZES = ["s", "m", "l"];
-let thumbSize = localStorage.getItem("thumbSize") || "m";
-if (THUMB_SIZES.indexOf(thumbSize) === -1) thumbSize = "m";
+let thumbSize = localStorage.getItem("thumbSize") || "s";
+if (THUMB_SIZES.indexOf(thumbSize) === -1) thumbSize = "s";
 
 function setThumbSize(size) {
   if (THUMB_SIZES.indexOf(size) === -1 || size === thumbSize) return;

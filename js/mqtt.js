@@ -228,6 +228,18 @@ function applyAcceptedSettingsCommand(id, pending) {
     const value = Number(config.photoOutput);
     if (Number.isFinite(value)) next.output = value;
   }
+  if (commandConfigHas(config, "powerMode")) {
+    const value = Number(config.powerMode);
+    if (Number.isFinite(value)) next.powerMode = value;
+  }
+  if (commandConfigHas(config, "maxSleepSec")) {
+    const value = Number(config.maxSleepSec);
+    if (Number.isFinite(value)) next.maxSleepSec = value;
+  }
+  if (commandConfigHas(config, "ntpSyncMode")) {
+    const value = Number(config.ntpSyncMode);
+    if (Number.isFinite(value)) next.ntpSyncMode = value;
+  }
   if (commandConfigHas(config, "dropboxUploadEnabled") || commandConfigHas(config, "dropboxUploadMode")) {
     next.uploadMode = uploadModeFromCommandConfig(config, next.uploadMode);
   }
@@ -488,6 +500,9 @@ function connectMQTT(config) {
           end:      c.e,
           lens:     c.l,
           output:   c.o,
+          powerMode: c.p ?? 0,
+          maxSleepSec: c.k ?? 3600,
+          ntpSyncMode: c.ntp ?? 0,
           // Tri-state: 0=Disabled, 1=Thumbnail, 2=Full Res.
           uploadMode: c.u,
           uploadTimeout: c.uto

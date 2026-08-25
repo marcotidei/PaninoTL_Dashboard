@@ -336,8 +336,8 @@ body.is-reordering {
   margin-bottom: 0;
 }
 
-/* Thumbnail size selector (top bar). "m" matches the longstanding default,
-   so a first-time visitor with nothing in localStorage sees no change. */
+/* Thumbnail size selector (top bar). First-time visitors default to Small;
+   localStorage preserves explicit user choices. */
 body.thumb-size-s .capture-thumb-wrap.kind-compact { width: 88px;  height: 66px; }
 body.thumb-size-m .capture-thumb-wrap.kind-compact { width: 176px; height: 132px; }
 body.thumb-size-l .capture-thumb-wrap.kind-compact { width: 264px; height: 198px; }
