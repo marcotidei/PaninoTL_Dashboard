@@ -24,6 +24,10 @@ function ackTopicFilter(config = currentConfig) {
   return `${topicPrefix(config)}/+/ack`;
 }
 
+function commandTopicFilter(config = currentConfig) {
+  return `${topicPrefix(config)}/+/cmd`;
+}
+
 function stateTopic(id, config = currentConfig) {
   return `${topicPrefix(config)}/${id}/state`;
 }
@@ -163,6 +167,22 @@ function publishDeviceCommand(id, command) {
   console.log("📤 Published command", topic, command);
 }
 
+function validDeviceCommand(command) {
+  if (!command || command.schema !== 1 || !command.id) return false;
+  if (command.type === "set") return !!command.config && typeof command.config === "object";
+  if (command.type === "action") return !!command.action;
+  return false;
+}
+
+function setPendingDeviceCommand(id, command, receivedAt = new Date().toISOString()) {
+  pendingCommands[id] = {
+    id: command.id,
+    type: command.type,
+    sentAt: receivedAt,
+    command
+  };
+}
+
 function commandConfigHas(config, key) {
   return !!config && Object.prototype.hasOwnProperty.call(config, key);
 }
@@ -237,6 +257,34 @@ function abortPendingDeviceCommand(id) {
   render();
 }
 
+function handleRetainedDeviceCommand(id, rawCommand) {
+  if (!rawCommand) {
+    delete pendingCommands[id];
+    render();
+    return;
+  }
+
+  const command = JSON.parse(rawCommand);
+  if (!validDeviceCommand(command)) {
+    console.warn("Ignoring invalid retained command", id, command);
+    return;
+  }
+
+  const ack = devices[id] && devices[id].commandAck;
+  if (ack && ack.id === command.id) {
+    if (ack.applied === true) {
+      applyAcceptedSettingsCommand(id, { command });
+    }
+    delete pendingCommands[id];
+    clearRetainedDeviceCommand(id);
+    render();
+    return;
+  }
+
+  setPendingDeviceCommand(id, command);
+  render();
+}
+
 function handleConnectionClick() {
   primeAudioFromGesture();
   const brokerUrl = (currentConfig && currentConfig.url) || DEFAULT_BROKER_URL;
@@ -275,26 +323,16 @@ function connectMQTT(config) {
   newClient.on("connect", () => {
     if (client !== newClient) return;
     console.log("✅ Connected");
-    const filter = topicFilter(config);
-    newClient.subscribe(filter, (err) => {
+    const filters = [topicFilter(config), ackTopicFilter(config), commandTopicFilter(config)];
+    newClient.subscribe(filters, (err) => {
       if (client !== newClient) return;
       if (err) {
-        console.error("MQTT subscribe failed:", filter, err);
+        console.error("MQTT subscribe failed:", filters, err);
         setConnStatus("error");
         return;
       }
-      console.log("✅ Subscribed", filter);
-      const ackFilter = ackTopicFilter(config);
-      newClient.subscribe(ackFilter, (ackErr) => {
-        if (client !== newClient) return;
-        if (ackErr) {
-          console.error("MQTT ack subscribe failed:", ackFilter, ackErr);
-          setConnStatus("error");
-          return;
-        }
-        console.log("✅ Subscribed", ackFilter);
-        setConnStatus("connected");
-      });
+      console.log("✅ Subscribed", filters.join(", "));
+      setConnStatus("connected");
     });
   });
 
@@ -338,6 +376,12 @@ function connectMQTT(config) {
           commandAck: ack
         };
         render();
+        return;
+      }
+
+      const commandId = deviceIdFromTopic(topic, config, "/cmd");
+      if (commandId) {
+        handleRetainedDeviceCommand(commandId, message.toString());
         return;
       }
 
