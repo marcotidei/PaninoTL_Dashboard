@@ -189,9 +189,10 @@ function openDeviceCommandModal(event) {
   if (!d || !d.config) return;
 
   deviceCommandDeviceId = id;
-  deviceCommandTab = "settings";
-  deviceCommandAction = "syncTimeNow";
-  deviceCommandRequestId = newDeviceCommandId(id);
+  const pending = pendingCommands[id] && pendingCommands[id].command;
+  deviceCommandTab = pending && pending.type === "action" ? "actions" : "settings";
+  deviceCommandAction = pending && pending.type === "action" ? pending.action : "syncTimeNow";
+  deviceCommandRequestId = pending ? pending.id : newDeviceCommandId(id);
   document.getElementById("deviceCommandTitle").innerText = id;
 
   populateDeviceCommandIntervalSelects();
@@ -206,7 +207,7 @@ function openDeviceCommandModal(event) {
   setSelectValueWithFallback("cmd_dropboxUpload", c.uploadMode, "Current upload mode");
   document.getElementById("cmd_uploadTimeoutMin").value = c.uploadTimeout ?? "";
 
-  setDeviceCommandTab("settings");
+  setDeviceCommandTab(deviceCommandTab);
   renderDeviceActionChoices();
   renderDeviceCommandPreview();
   renderDeviceCommandAbortButton();
@@ -352,6 +353,15 @@ function abortDeviceCommand() {
   try {
     abortPendingDeviceCommand(id);
     closeDeviceCommandModal();
+  } catch (err) {
+    alert(err && err.message ? err.message : "Command abort failed");
+  }
+}
+
+function abortPendingDeviceCommandFromCard(event, id) {
+  event.stopPropagation();
+  try {
+    abortPendingDeviceCommand(id);
   } catch (err) {
     alert(err && err.message ? err.message : "Command abort failed");
   }

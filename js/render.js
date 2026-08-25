@@ -22,6 +22,12 @@ function pendingSettingsConfig(pendingCommand) {
   return command.config;
 }
 
+function pendingActionCommand(pendingCommand) {
+  const command = pendingCommand && pendingCommand.command;
+  if (!command || command.type !== "action" || !command.action) return null;
+  return command;
+}
+
 function hasPendingSetting(pendingCommand, keys) {
   const config = pendingSettingsConfig(pendingCommand);
   return !!config && keys.some(key => hasOwnValue(config, key));
@@ -161,6 +167,48 @@ function pendingSettingsPanelHtml(id, d, pendingCommand) {
             </div>
           `).join("")}
         </div>
+      </div>
+    </div>
+  `;
+}
+
+function actionCommandLabel(action) {
+  switch (action) {
+    case "syncTimeNow": return "Sync time now";
+    case "clearHealth": return "Clear health";
+    default: return action || "Unknown action";
+  }
+}
+
+function actionCommandIcon(action) {
+  switch (action) {
+    case "syncTimeNow": return "fa-clock-rotate-left";
+    case "clearHealth": return "fa-heart-circle-check";
+    default: return "fa-terminal";
+  }
+}
+
+function pendingActionPanelHtml(id, pendingCommand) {
+  const command = pendingActionCommand(pendingCommand);
+  if (!command) return "";
+
+  return `
+    <div class="section pending-command-panel section-clickable" data-device-id="${escapeAttr(id)}"
+      onclick="openDeviceCommandModal(event)" title="Preview pending command">
+      <div class="section-icon pending-command-panel-icon"><i class="fa-solid ${actionCommandIcon(command.action)}"></i></div>
+      <div class="section-body">
+        <div class="pending-command-panel-top">
+          <div>
+            <div class="pending-command-heading">Command ready for next sync</div>
+            <div class="pending-command-name">${escapeHtml(actionCommandLabel(command.action))}</div>
+          </div>
+          <button type="button" class="pending-command-abort"
+            onclick="abortPendingDeviceCommandFromCard(event, '${escapeAttr(id)}')"
+            title="Clear the retained pending command">
+            Abort
+          </button>
+        </div>
+        <pre class="pending-command-preview">${escapeHtml(JSON.stringify(command, null, 2))}</pre>
       </div>
     </div>
   `;
@@ -433,6 +481,7 @@ function render() {
         </div>
 
         ${pendingSettingsPanelHtml(id, d, pendingCommand)}
+        ${pendingActionPanelHtml(id, pendingCommand)}
 
         <div class="clear-actions">
           <div class="command-action-group">
