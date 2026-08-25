@@ -358,15 +358,6 @@ function abortDeviceCommand() {
   }
 }
 
-function abortPendingDeviceCommandFromCard(event, id) {
-  event.stopPropagation();
-  try {
-    abortPendingDeviceCommand(id);
-  } catch (err) {
-    alert(err && err.message ? err.message : "Command abort failed");
-  }
-}
-
 document.addEventListener("click", (e) => {
   const cameraModal = document.getElementById("cameraModal");
   const firmwareModal = document.getElementById("firmwareModal");

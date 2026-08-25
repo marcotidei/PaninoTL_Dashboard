@@ -638,54 +638,24 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   opacity: 0.95;
 }
 
-.pending-command-panel-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 .pending-command-heading {
   color: #ddd6fe;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .pending-command-name {
-  margin-top: 5px;
-  color: #fff;
-  font-weight: 800;
-}
-
-.pending-command-preview {
-  margin: 10px 0 0;
-  padding: 9px;
-  border: 1px solid rgba(221, 214, 254, 0.24);
-  border-radius: 8px;
-  background: rgba(24, 24, 27, 0.38);
   color: #ede9fe;
-  overflow: auto;
-  font-size: 11px;
-  line-height: 1.4;
-  max-height: 132px;
 }
 
-.pending-command-abort {
-  flex: 0 0 auto;
-  border: 1px solid rgba(254, 202, 202, 0.42);
-  border-radius: 8px;
-  background: rgba(127, 29, 29, 0.55);
-  color: #fee2e2;
-  padding: 7px 9px;
-  font-weight: 800;
-  cursor: pointer;
+.pending-command-current {
+  color: #ddd6fe;
 }
 
-.pending-command-abort:hover {
-  background: #7f1d1d;
+.pending-command-next {
   color: #fff;
+}
+
+.pending-command-arrow {
+  color: #ddd6fe;
 }
 
 .capture-toolbar {
