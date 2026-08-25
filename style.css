@@ -234,8 +234,13 @@ body {
 }
 
 .pending-command-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
   color: #facc15;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 body.is-reordering {
