@@ -3,6 +3,168 @@
 let lastRenderSnapshot = "";
 const RENDER_TIME_BUCKET_MS = 60 * 1000;
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function hasOwnValue(obj, key) {
+  return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+function pendingSettingsConfig(pendingCommand) {
+  const command = pendingCommand && pendingCommand.command;
+  if (!command || command.type !== "set" || !command.config) return null;
+  return command.config;
+}
+
+function hasPendingSetting(pendingCommand, keys) {
+  const config = pendingSettingsConfig(pendingCommand);
+  return !!config && keys.some(key => hasOwnValue(config, key));
+}
+
+function pendingSettingClass(pendingCommand, keys) {
+  return hasPendingSetting(pendingCommand, keys) ? "pending-setting-affected" : "";
+}
+
+function daysMaskToConfigString(value) {
+  const mask = scheduleDaysMaskFromValue(value);
+  return ["M", "T", "W", "T", "F", "S", "S"]
+    .map((label, i) => (mask & (1 << i)) ? label : "-")
+    .join("");
+}
+
+function formatUploadMode(mode) {
+  switch (Number(mode)) {
+    case 0: return "Disabled";
+    case 1: return "Thumbnail";
+    case 2: return "Full Resolution";
+    default: return "-";
+  }
+}
+
+function pendingUploadMode(config, currentMode) {
+  const enabled = hasOwnValue(config, "dropboxUploadEnabled")
+    ? !!config.dropboxUploadEnabled
+    : Number(currentMode) > 0;
+  const mode = hasOwnValue(config, "dropboxUploadMode")
+    ? Number(config.dropboxUploadMode)
+    : (Number(currentMode) === 2 ? 1 : 0);
+  return enabled ? (mode === 1 ? 2 : 1) : 0;
+}
+
+function formatTimeoutMin(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  return `${n} ${n === 1 ? "min" : "mins"}`;
+}
+
+function pendingChangeValueHtml(value) {
+  return value && value.html ? value.html : escapeHtml(value);
+}
+
+function pendingSettingsChanges(d, pendingCommand) {
+  const config = pendingSettingsConfig(pendingCommand);
+  if (!config) return [];
+
+  const c = d.config || {};
+  const changes = [];
+
+  if (hasOwnValue(config, "scheduleDays")) {
+    changes.push({
+      label: "Active days",
+      current: { html: renderDays(c.days) },
+      next: { html: renderDays(daysMaskToConfigString(config.scheduleDays)) }
+    });
+  }
+
+  if (hasOwnValue(config, "scheduleStart")) {
+    changes.push({
+      label: "Start",
+      current: c.start || "-",
+      next: config.scheduleStart || "-"
+    });
+  }
+
+  if (hasOwnValue(config, "scheduleEnd")) {
+    changes.push({
+      label: "End",
+      current: c.end || "-",
+      next: config.scheduleEnd || "-"
+    });
+  }
+
+  if (hasOwnValue(config, "intervalSec")) {
+    changes.push({
+      label: "Every",
+      current: formatIntervalMinutes(c.interval),
+      next: formatIntervalMinutes(config.intervalSec)
+    });
+  }
+
+  if (hasOwnValue(config, "photoLens")) {
+    changes.push({
+      label: "Lens",
+      current: lensName(c.lens),
+      next: lensName(Number(config.photoLens))
+    });
+  }
+
+  if (hasOwnValue(config, "photoOutput")) {
+    changes.push({
+      label: "Format",
+      current: photoOutputName(c.output),
+      next: photoOutputName(Number(config.photoOutput))
+    });
+  }
+
+  if (hasOwnValue(config, "dropboxUploadEnabled") || hasOwnValue(config, "dropboxUploadMode")) {
+    changes.push({
+      label: "Upload Last Image",
+      current: formatUploadMode(c.uploadMode),
+      next: formatUploadMode(pendingUploadMode(config, c.uploadMode))
+    });
+  }
+
+  if (hasOwnValue(config, "uploadTimeoutMin")) {
+    changes.push({
+      label: "Upload Timeout",
+      current: formatTimeoutMin(c.uploadTimeout),
+      next: formatTimeoutMin(config.uploadTimeoutMin)
+    });
+  }
+
+  return changes;
+}
+
+function pendingSettingsPanelHtml(d, pendingCommand) {
+  const changes = pendingSettingsChanges(d, pendingCommand);
+  if (!changes.length) return "";
+
+  return `
+    <div class="section pending-settings-panel">
+      <div class="section-icon pending-settings-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+      <div class="section-body">
+        <div class="pending-settings-heading">Ready for next sync</div>
+        <div class="pending-settings-list">
+          ${changes.map(change => `
+            <div class="pending-settings-row">
+              <span class="pending-settings-name">${escapeHtml(change.label)}</span>
+              <span class="pending-settings-current">${pendingChangeValueHtml(change.current)}</span>
+              <i class="fa-solid fa-arrow-right pending-settings-arrow" aria-hidden="true"></i>
+              <span class="pending-settings-next">${pendingChangeValueHtml(change.next)}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function buildSnapshot() {
   return JSON.stringify(
     {
@@ -38,7 +200,7 @@ function buildSnapshot() {
           healthTime:     d.healthTime,
           healthSticky:   d.healthSticky,
           firmware:       d.firmware,
-          commandPending: !!pendingCommands[id],
+          pendingCommand:  pendingCommands[id] && pendingCommands[id].command,
           commandAck:     d.commandAck,
           open:           !!openState[id]
         };
@@ -93,6 +255,12 @@ function render() {
     })();
     const pendingCommand = pendingCommands[id];
     const commandAck = d.commandAck || null;
+    const pendingScheduleDaysClass = pendingSettingClass(pendingCommand, ["scheduleDays"]);
+    const pendingScheduleWindowClass = pendingSettingClass(pendingCommand, ["scheduleStart", "scheduleEnd"]);
+    const pendingIntervalClass = pendingSettingClass(pendingCommand, ["intervalSec"]);
+    const pendingUploadClass = pendingSettingClass(pendingCommand, ["dropboxUploadEnabled", "dropboxUploadMode", "uploadTimeoutMin"]);
+    const pendingLensClass = pendingSettingClass(pendingCommand, ["photoLens"]);
+    const pendingOutputClass = pendingSettingClass(pendingCommand, ["photoOutput"]);
 
     const dev = document.createElement("div");
     dev.className    = "device " + panelState;
@@ -162,9 +330,9 @@ function render() {
         </div>
 
         <div class="summary-schedule">
-          <span class="summary-days">${renderDays(d.config.days)}</span>
-          <span>${d.config.start} → ${d.config.end}</span>
-          <span>${formatIntervalMinutes(d.config.interval)}</span>
+          <span class="summary-days ${pendingScheduleDaysClass}">${renderDays(d.config.days)}</span>
+          <span class="${pendingScheduleWindowClass}">${d.config.start} → ${d.config.end}</span>
+          <span class="${pendingIntervalClass}">${formatIntervalMinutes(d.config.interval)}</span>
         </div>
       </div>
 
@@ -230,10 +398,10 @@ function render() {
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
             <div class="section-body">
-              <div class="row"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
-              <div class="row"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-              <div class="row"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
-              <div class="row"><span>Upload/Timeout:</span><span>${formatUploadSummary(d.config)}</span></div>
+              <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
+              <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
+              <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
+              <div class="row ${pendingUploadClass}"><span>Upload/Timeout:</span><span>${formatUploadSummary(d.config)}</span></div>
             </div>
           </div>
 
@@ -254,11 +422,13 @@ function render() {
                 <div class="row"><span>SD free space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
               <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
-              <div class="row"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
-              <div class="row"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
+              <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
+              <div class="row ${pendingOutputClass}"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
             </div>
           </div>
         </div>
+
+        ${pendingSettingsPanelHtml(d, pendingCommand)}
 
         <div class="clear-actions">
           <div class="command-action-group">
@@ -267,10 +437,9 @@ function render() {
               aria-label="Device settings and commands for ${escapeAttr(id)}">
               <i class="fa-solid ${pendingCommand ? "fa-hourglass-half" : "fa-gear"}"></i>
             </button>
-            ${pendingCommand ? `<span class="command-status pending">Command pending</span>` : ""}
-            ${!pendingCommand && commandAck ? `
-              <span class="command-status ${commandAck.applied ? "ok" : "error"}">
-                ${commandAck.applied ? "Command applied" : "Command rejected"}
+            ${!pendingCommand && commandAck && commandAck.applied === false ? `
+              <span class="command-status error" title="${escapeAttr(commandAck.error || "Command rejected")}">
+                Command rejected
               </span>
             ` : ""}
           </div>

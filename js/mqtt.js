@@ -163,6 +163,62 @@ function publishDeviceCommand(id, command) {
   console.log("📤 Published command", topic, command);
 }
 
+function commandConfigHas(config, key) {
+  return !!config && Object.prototype.hasOwnProperty.call(config, key);
+}
+
+function scheduleMaskToDaysString(value) {
+  const mask = scheduleDaysMaskFromValue(value);
+  return ["M", "T", "W", "T", "F", "S", "S"]
+    .map((label, i) => (mask & (1 << i)) ? label : "-")
+    .join("");
+}
+
+function uploadModeFromCommandConfig(config, currentMode) {
+  const enabled = commandConfigHas(config, "dropboxUploadEnabled")
+    ? !!config.dropboxUploadEnabled
+    : Number(currentMode) > 0;
+  const mode = commandConfigHas(config, "dropboxUploadMode")
+    ? Number(config.dropboxUploadMode)
+    : (Number(currentMode) === 2 ? 1 : 0);
+  return enabled ? (mode === 1 ? 2 : 1) : 0;
+}
+
+function applyAcceptedSettingsCommand(id, pending) {
+  const command = pending && pending.command;
+  if (!command || command.type !== "set" || !command.config) return;
+  const d = devices[id];
+  if (!d || !d.config) return;
+
+  const config = command.config;
+  const next = { ...d.config };
+
+  if (commandConfigHas(config, "intervalSec")) {
+    const value = Number(config.intervalSec);
+    if (Number.isFinite(value)) next.interval = value;
+  }
+  if (commandConfigHas(config, "scheduleDays")) next.days = scheduleMaskToDaysString(config.scheduleDays);
+  if (commandConfigHas(config, "scheduleStart")) next.start = String(config.scheduleStart);
+  if (commandConfigHas(config, "scheduleEnd")) next.end = String(config.scheduleEnd);
+  if (commandConfigHas(config, "photoLens")) {
+    const value = Number(config.photoLens);
+    if (Number.isFinite(value)) next.lens = value;
+  }
+  if (commandConfigHas(config, "photoOutput")) {
+    const value = Number(config.photoOutput);
+    if (Number.isFinite(value)) next.output = value;
+  }
+  if (commandConfigHas(config, "dropboxUploadEnabled") || commandConfigHas(config, "dropboxUploadMode")) {
+    next.uploadMode = uploadModeFromCommandConfig(config, next.uploadMode);
+  }
+  if (commandConfigHas(config, "uploadTimeoutMin")) {
+    const value = Number(config.uploadTimeoutMin);
+    if (Number.isFinite(value)) next.uploadTimeout = value;
+  }
+
+  d.config = next;
+}
+
 function clearRetainedDeviceCommand(id) {
   if (!client || !client.connected || !id) return;
   client.publish(commandTopic(id), "", { qos: 0, retain: true });
@@ -261,6 +317,7 @@ function connectMQTT(config) {
         const ack = JSON.parse(rawAck);
         const pending = pendingCommands[ackId];
         if (pending && ack.id === pending.id) {
+          if (ack.applied === true) applyAcceptedSettingsCommand(ackId, pending);
           delete pendingCommands[ackId];
           clearRetainedDeviceCommand(ackId);
         }

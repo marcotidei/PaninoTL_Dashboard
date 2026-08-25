@@ -513,6 +513,101 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   min-width: 0;
 }
 
+.pending-settings-panel {
+  margin-top: 10px;
+  background: #facc15;
+  color: #422006;
+  border: 1px solid #fde047;
+}
+
+.pending-settings-icon {
+  color: #713f12;
+  opacity: 0.9;
+}
+
+.pending-settings-heading {
+  margin-bottom: 8px;
+  color: #422006;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pending-settings-list {
+  display: grid;
+  gap: 6px;
+}
+
+.pending-settings-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 1fr) minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.pending-settings-row > span {
+  min-width: 0;
+}
+
+.pending-settings-name {
+  color: #713f12;
+  font-weight: 800;
+}
+
+.pending-settings-current,
+.pending-settings-next {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.pending-settings-current {
+  color: #854d0e;
+}
+
+.pending-settings-next {
+  color: #1c1917;
+  font-weight: 800;
+}
+
+.pending-settings-arrow {
+  color: #854d0e;
+  font-size: 11px;
+}
+
+.pending-setting-affected {
+  font-weight: 700;
+}
+
+.summary-schedule .pending-setting-affected,
+.summary-schedule .pending-setting-affected .day-active,
+.summary-schedule .pending-setting-affected .day-inactive,
+.row.pending-setting-affected > span:last-child,
+.row.pending-setting-affected > span:last-child .day-active,
+.row.pending-setting-affected > span:last-child .day-inactive {
+  color: #facc15;
+}
+
+.pending-settings-current .day-active {
+  color: #854d0e;
+}
+
+.pending-settings-current .day-inactive {
+  color: rgba(133, 77, 14, 0.42);
+}
+
+.pending-settings-next .day-active {
+  color: #1c1917;
+}
+
+.pending-settings-next .day-inactive {
+  color: rgba(28, 25, 23, 0.35);
+}
+
 .capture-toolbar {
   display: flex;
   align-items: center;
@@ -912,6 +1007,14 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 @media (max-width: 560px) {
   .device-command-actions {
     grid-template-columns: 1fr;
+  }
+
+  .pending-settings-row {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .pending-settings-name {
+    grid-column: 1 / -1;
   }
 
   .fw-settings-row {
