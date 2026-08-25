@@ -141,12 +141,13 @@ function pendingSettingsChanges(d, pendingCommand) {
   return changes;
 }
 
-function pendingSettingsPanelHtml(d, pendingCommand) {
+function pendingSettingsPanelHtml(id, d, pendingCommand) {
   const changes = pendingSettingsChanges(d, pendingCommand);
   if (!changes.length) return "";
 
   return `
-    <div class="section pending-settings-panel">
+    <div class="section pending-settings-panel section-clickable" data-device-id="${escapeAttr(id)}"
+      onclick="openDeviceCommandModal(event)" title="Edit pending settings">
       <div class="section-icon pending-settings-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
       <div class="section-body">
         <div class="pending-settings-heading">Ready for next sync</div>
@@ -428,7 +429,7 @@ function render() {
           </div>
         </div>
 
-        ${pendingSettingsPanelHtml(d, pendingCommand)}
+        ${pendingSettingsPanelHtml(id, d, pendingCommand)}
 
         <div class="clear-actions">
           <div class="command-action-group">

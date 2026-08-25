@@ -162,7 +162,23 @@ function imageMarkedNotCurrent(id) {
   const d = devices[id];
   const issue = String((d && d.issueCode) || "").toLowerCase();
   const health = String((d && d.healthText) || "").toLowerCase();
-  return issue.includes("retrieve image") || issue.includes("media") || health.includes("media wedged");
+  const lastError = String((d && d.lastError) || "").toLowerCase();
+  const staleCaptureError =
+    lastError === "camera not found" ||
+    lastError === "connect failed" ||
+    lastError === "pairing failed" ||
+    lastError === "ble not ready" ||
+    lastError === "camera not ready" ||
+    lastError === "camera settings failed" ||
+    lastError === "pre-shot read failed" ||
+    lastError === "shutter failed" ||
+    lastError === "shot not confirmed" ||
+    lastError === "shooting failure";
+
+  return issue.includes("retrieve image")
+    || issue.includes("media")
+    || health.includes("media wedged")
+    || (staleCaptureError && isRecentError(d));
 }
 
 function captureImgWrap(id, kind, src, isLowRes, notCurrent) {

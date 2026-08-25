@@ -140,6 +140,48 @@ function setSelectValueWithFallback(id, value, label) {
   select.value = stringValue;
 }
 
+function modalCommandConfigHas(config, key) {
+  return !!config && Object.prototype.hasOwnProperty.call(config, key);
+}
+
+function modalScheduleMaskToDaysString(value) {
+  const mask = scheduleDaysMaskFromValue(value);
+  return ["M", "T", "W", "T", "F", "S", "S"]
+    .map((label, i) => (mask & (1 << i)) ? label : "-")
+    .join("");
+}
+
+function modalUploadModeFromCommandConfig(config, currentMode) {
+  const enabled = modalCommandConfigHas(config, "dropboxUploadEnabled")
+    ? !!config.dropboxUploadEnabled
+    : Number(currentMode) > 0;
+  const mode = modalCommandConfigHas(config, "dropboxUploadMode")
+    ? Number(config.dropboxUploadMode)
+    : (Number(currentMode) === 2 ? 1 : 0);
+  return enabled ? (mode === 1 ? 2 : 1) : 0;
+}
+
+function deviceCommandBaseConfigWithPending(id) {
+  const d = devices[id];
+  const base = { ...((d && d.config) || {}) };
+  const pending = pendingCommands[id] && pendingCommands[id].command;
+  const patch = pending && pending.type === "set" ? pending.config : null;
+  if (!patch) return base;
+
+  if (modalCommandConfigHas(patch, "intervalSec")) base.interval = Number(patch.intervalSec);
+  if (modalCommandConfigHas(patch, "scheduleDays")) base.days = modalScheduleMaskToDaysString(patch.scheduleDays);
+  if (modalCommandConfigHas(patch, "scheduleStart")) base.start = String(patch.scheduleStart);
+  if (modalCommandConfigHas(patch, "scheduleEnd")) base.end = String(patch.scheduleEnd);
+  if (modalCommandConfigHas(patch, "photoLens")) base.lens = Number(patch.photoLens);
+  if (modalCommandConfigHas(patch, "photoOutput")) base.output = Number(patch.photoOutput);
+  if (modalCommandConfigHas(patch, "dropboxUploadEnabled") || modalCommandConfigHas(patch, "dropboxUploadMode")) {
+    base.uploadMode = modalUploadModeFromCommandConfig(patch, base.uploadMode);
+  }
+  if (modalCommandConfigHas(patch, "uploadTimeoutMin")) base.uploadTimeout = Number(patch.uploadTimeoutMin);
+
+  return base;
+}
+
 function openDeviceCommandModal(event) {
   event.stopPropagation();
   const id = event.currentTarget.dataset.deviceId;
@@ -154,7 +196,7 @@ function openDeviceCommandModal(event) {
 
   populateDeviceCommandIntervalSelects();
 
-  const c = d.config || {};
+  const c = deviceCommandBaseConfigWithPending(id);
   setIntervalControls(c.interval);
   setScheduleDayControls(c.days);
   document.getElementById("cmd_scheduleStart").value = c.start || "";
@@ -167,6 +209,7 @@ function openDeviceCommandModal(event) {
   setDeviceCommandTab("settings");
   renderDeviceActionChoices();
   renderDeviceCommandPreview();
+  renderDeviceCommandAbortButton();
   document.getElementById("deviceCommandModal").classList.add("is-visible");
 }
 
@@ -183,6 +226,7 @@ function setDeviceCommandTab(tab) {
   document.getElementById("deviceCommandSettingsTab").classList.toggle("is-active", deviceCommandTab === "settings");
   document.getElementById("deviceCommandActionsTab").classList.toggle("is-active", deviceCommandTab === "actions");
   renderDeviceCommandPreview();
+  renderDeviceCommandAbortButton();
 }
 
 function selectDeviceCommandAction(action) {
@@ -273,6 +317,17 @@ function renderDeviceCommandPreview() {
   send.title = send.disabled
     ? (hasChanges ? "Connect to MQTT before sending" : "No setting changes to send")
     : "Publish retained MQTT command";
+  renderDeviceCommandAbortButton();
+}
+
+function renderDeviceCommandAbortButton() {
+  const abort = document.getElementById("deviceCommandAbort");
+  if (!abort) return;
+  const hasPending = !!(deviceCommandDeviceId && pendingCommands[deviceCommandDeviceId]);
+  const mqttReady = !!(client && client.connected);
+  abort.hidden = !hasPending;
+  abort.disabled = hasPending && !mqttReady;
+  abort.title = mqttReady ? "Clear the retained pending command" : "Connect to MQTT before aborting";
 }
 
 function sendDeviceCommand() {
@@ -288,6 +343,17 @@ function sendDeviceCommand() {
     closeDeviceCommandModal();
   } catch (err) {
     alert(err && err.message ? err.message : "Command publish failed");
+  }
+}
+
+function abortDeviceCommand() {
+  const id = deviceCommandDeviceId;
+  if (!id) return;
+  try {
+    abortPendingDeviceCommand(id);
+    closeDeviceCommandModal();
+  } catch (err) {
+    alert(err && err.message ? err.message : "Command abort failed");
   }
 }
 

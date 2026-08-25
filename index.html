@@ -261,6 +261,10 @@
     </div>
 
     <div class="device-command-footer">
+      <button id="deviceCommandAbort" type="button" class="cfg-btn device-command-abort" hidden
+        onclick="abortDeviceCommand()" title="Clear the retained pending command">
+        <i class="fa-solid fa-trash-can cfg-btn-icon"></i>Abort
+      </button>
       <button id="deviceCommandSend" type="button" class="cfg-btn device-command-send" disabled
         onclick="sendDeviceCommand()" title="No setting changes to send">
         <i class="fa-solid fa-paper-plane cfg-btn-icon"></i>Send

@@ -225,6 +225,18 @@ function clearRetainedDeviceCommand(id) {
   console.log("🧹 Cleared retained command", commandTopic(id));
 }
 
+function abortPendingDeviceCommand(id) {
+  if (!client || !client.connected) {
+    throw new Error("Dashboard is not connected to MQTT");
+  }
+  if (!id || !pendingCommands[id]) {
+    throw new Error("No pending command to abort");
+  }
+  clearRetainedDeviceCommand(id);
+  delete pendingCommands[id];
+  render();
+}
+
 function handleConnectionClick() {
   primeAudioFromGesture();
   const brokerUrl = (currentConfig && currentConfig.url) || DEFAULT_BROKER_URL;

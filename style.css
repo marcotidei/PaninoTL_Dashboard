@@ -520,6 +520,10 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   border: 1px solid #fde047;
 }
 
+.pending-settings-panel:hover {
+  background: #fde047;
+}
+
 .pending-settings-icon {
   color: #713f12;
   opacity: 0.9;
@@ -951,6 +955,7 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 
 .device-command-footer {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
   margin-top: 14px;
 }
@@ -960,7 +965,25 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   min-width: 132px;
 }
 
+.device-command-abort {
+  flex: 0 0 auto;
+  min-width: 104px;
+  background: #3b0d0d;
+  border-color: #7f1d1d;
+  color: #fee2e2;
+}
+
+.device-command-abort:hover {
+  background: #7f1d1d;
+  color: #fff;
+}
+
 .device-command-send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.device-command-abort:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -1015,6 +1038,15 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 
   .pending-settings-name {
     grid-column: 1 / -1;
+  }
+
+  .device-command-footer {
+    flex-wrap: wrap;
+  }
+
+  .device-command-abort,
+  .device-command-send {
+    flex: 1 1 140px;
   }
 
   .fw-settings-row {
