@@ -364,7 +364,6 @@ function render() {
     const pendingUploadModeClass = pendingSettingClass(pendingCommand, ["dropboxUploadEnabled", "dropboxUploadMode"]);
     const pendingUploadTimeoutClass = pendingSettingClass(pendingCommand, ["uploadTimeoutMin"]);
     const pendingPowerModeClass = pendingSettingClass(pendingCommand, ["powerMode"]);
-    const pendingBatteryMonitorClass = pendingSettingClass(pendingCommand, ["batteryMonitorEnabled"]);
     const pendingSdLogClass = pendingSettingClass(pendingCommand, ["sdLogEnabled"]);
     const pendingMaxSleepClass = pendingSettingClass(pendingCommand, ["maxSleepSec"]);
     const pendingNtpSyncClass = pendingSettingClass(pendingCommand, ["ntpSyncMode"]);
@@ -494,6 +493,7 @@ function render() {
                 <span>Battery:</span>
                 <span class="${batteryClass(d.batteryPct)}">${batteryLabel(d.batteryPct)}</span>
               </div>
+              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               <div class="row">
                 <span>Temperature:</span>
                 <span>${formatTemperature(d.rtcTempC)}</span>
@@ -513,9 +513,6 @@ function render() {
               <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
               <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
-              <div class="row ${pendingPowerModeClass}"><span>GoPro power:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
-              <div class="row ${pendingBatteryMonitorClass}"><span>Battery monitor:</span><span>${formatEnabled(d.config.batteryMonitorEnabled)}</span></div>
-              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
               <div class="row ${pendingUploadModeClass}"><span>Upload:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
@@ -540,6 +537,7 @@ function render() {
                 <div class="row"><span>SD free space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
               <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
+              <div class="row ${pendingPowerModeClass}"><span>GoPro power:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
               <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row ${pendingOutputClass}"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
             </div>
