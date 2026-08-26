@@ -235,6 +235,9 @@ function applyAcceptedSettingsCommand(id, pending) {
   if (commandConfigHas(config, "batteryMonitorEnabled")) {
     next.batteryMonitorEnabled = config.batteryMonitorEnabled ? 1 : 0;
   }
+  if (commandConfigHas(config, "sdLogEnabled")) {
+    next.sdLogEnabled = config.sdLogEnabled ? 1 : 0;
+  }
   if (commandConfigHas(config, "maxSleepSec")) {
     const value = Number(config.maxSleepSec);
     if (Number.isFinite(value)) next.maxSleepSec = value;
@@ -505,6 +508,7 @@ function connectMQTT(config) {
           output:   c.o,
           powerMode: c.p ?? 0,
           batteryMonitorEnabled: c.bm ?? 1,
+          sdLogEnabled: c.sdl ?? 0,
           maxSleepSec: c.k ?? 3600,
           ntpSyncMode: c.ntp ?? 0,
           // Tri-state: 0=Disabled, 1=Thumbnail, 2=Full Res.

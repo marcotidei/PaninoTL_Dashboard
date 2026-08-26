@@ -169,6 +169,14 @@ function pendingSettingsChanges(d, pendingCommand) {
     });
   }
 
+  if (hasOwnValue(config, "sdLogEnabled")) {
+    changes.push({
+      label: "SD Debug Log",
+      current: formatEnabled(c.sdLogEnabled),
+      next: formatEnabled(config.sdLogEnabled)
+    });
+  }
+
   if (hasOwnValue(config, "maxSleepSec")) {
     changes.push({
       label: "Keep Alive",
@@ -357,6 +365,7 @@ function render() {
     const pendingUploadTimeoutClass = pendingSettingClass(pendingCommand, ["uploadTimeoutMin"]);
     const pendingPowerModeClass = pendingSettingClass(pendingCommand, ["powerMode"]);
     const pendingBatteryMonitorClass = pendingSettingClass(pendingCommand, ["batteryMonitorEnabled"]);
+    const pendingSdLogClass = pendingSettingClass(pendingCommand, ["sdLogEnabled"]);
     const pendingMaxSleepClass = pendingSettingClass(pendingCommand, ["maxSleepSec"]);
     const pendingNtpSyncClass = pendingSettingClass(pendingCommand, ["ntpSyncMode"]);
     const pendingLensClass = pendingSettingClass(pendingCommand, ["photoLens"]);
@@ -506,6 +515,7 @@ function render() {
               <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
               <div class="row ${pendingPowerModeClass}"><span>GoPro power:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
               <div class="row ${pendingBatteryMonitorClass}"><span>Battery monitor:</span><span>${formatEnabled(d.config.batteryMonitorEnabled)}</span></div>
+              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
               <div class="row ${pendingUploadModeClass}"><span>Upload:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>

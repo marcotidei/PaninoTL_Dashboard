@@ -71,6 +71,7 @@ function deviceCommandPendingDirtyFields(config) {
   if (modalCommandConfigHas(config, "photoOutput")) fields.add("photoOutput");
   if (modalCommandConfigHas(config, "powerMode")) fields.add("powerMode");
   if (modalCommandConfigHas(config, "batteryMonitorEnabled")) fields.add("batteryMonitorEnabled");
+  if (modalCommandConfigHas(config, "sdLogEnabled")) fields.add("sdLogEnabled");
   if (modalCommandConfigHas(config, "maxSleepSec")) fields.add("maxSleepSec");
   if (modalCommandConfigHas(config, "ntpSyncMode")) fields.add("ntpSyncMode");
   if (modalCommandConfigHas(config, "dropboxUploadEnabled") || modalCommandConfigHas(config, "dropboxUploadMode")) {
@@ -216,6 +217,7 @@ function deviceCommandBaseConfigWithPending(id) {
   if (modalCommandConfigHas(patch, "photoOutput")) base.output = Number(patch.photoOutput);
   if (modalCommandConfigHas(patch, "powerMode")) base.powerMode = Number(patch.powerMode);
   if (modalCommandConfigHas(patch, "batteryMonitorEnabled")) base.batteryMonitorEnabled = patch.batteryMonitorEnabled ? 1 : 0;
+  if (modalCommandConfigHas(patch, "sdLogEnabled")) base.sdLogEnabled = patch.sdLogEnabled ? 1 : 0;
   if (modalCommandConfigHas(patch, "maxSleepSec")) base.maxSleepSec = Number(patch.maxSleepSec);
   if (modalCommandConfigHas(patch, "ntpSyncMode")) base.ntpSyncMode = Number(patch.ntpSyncMode);
   if (modalCommandConfigHas(patch, "dropboxUploadEnabled") || modalCommandConfigHas(patch, "dropboxUploadMode")) {
@@ -254,6 +256,7 @@ function openDeviceCommandModal(event) {
   setSelectValueWithFallback("cmd_dropboxUpload", c.uploadMode, "Current upload mode");
   setSelectValueWithFallback("cmd_powerMode", c.powerMode, "0");
   setSelectValueWithFallback("cmd_batteryMonitorEnabled", c.batteryMonitorEnabled, "1");
+  setSelectValueWithFallback("cmd_sdLogEnabled", c.sdLogEnabled, "0");
   document.getElementById("cmd_maxSleepMin").value =
     Number.isFinite(Number(c.maxSleepSec)) ? Math.max(1, Math.round(Number(c.maxSleepSec) / 60)) : "";
   setSelectValueWithFallback("cmd_ntpSyncMode", c.ntpSyncMode, "0");
@@ -343,6 +346,13 @@ function buildDeviceSettingsPatch(id) {
     const batteryMonitorEnabled = readNumberInput("cmd_batteryMonitorEnabled");
     if (batteryMonitorEnabled !== null && !sameCommandValue(batteryMonitorEnabled, c.batteryMonitorEnabled)) {
       patch.batteryMonitorEnabled = batteryMonitorEnabled === 1;
+    }
+  }
+
+  if (deviceCommandDirtyFields.has("sdLogEnabled")) {
+    const sdLogEnabled = readNumberInput("cmd_sdLogEnabled");
+    if (sdLogEnabled !== null && !sameCommandValue(sdLogEnabled, c.sdLogEnabled)) {
+      patch.sdLogEnabled = sdLogEnabled === 1;
     }
   }
 
