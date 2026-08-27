@@ -28,6 +28,38 @@ On first load, enter:
 
 The connection settings and display preferences are stored locally in the browser with `localStorage`.
 
+## Local Installation
+
+If a company network blocks browser WebSocket connections to the MQTT broker, run the dashboard locally:
+
+```bash
+./install-local.sh
+npm run local
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8787
+```
+
+Local mode serves the same dashboard files, including local copies of the MQTT browser library and Font Awesome icons. It also changes the default broker URL to:
+
+```text
+ws://127.0.0.1:8787/mqtt
+```
+
+The local Node process bridges that browser WebSocket to the HiveMQ broker over MQTT TLS on port `8883`. MQTT username, password, and topic prefix are still entered in the normal dashboard connection modal and stored only in browser `localStorage`.
+
+Optional environment variables:
+
+```bash
+PANINOTL_LOCAL_PORT=8787
+PANINOTL_UPSTREAM_MQTT=mqtts://your-broker.example.com:8883
+PANINOTL_TOPIC_PREFIX=panino
+npm run local
+```
+
 ## Dashboard Behavior
 
 - Device cards are ordered locally and can be rearranged by dragging the device name.
