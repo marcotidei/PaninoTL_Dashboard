@@ -54,6 +54,12 @@ Install and start the local dashboard:
 npm run local
 ```
 
+If you start it directly with `npm run local`, npm will install any missing local dependencies first. If you see `Cannot find module 'ws'`, run this once inside the dashboard folder:
+
+```bash
+npm install
+```
+
 Then open:
 
 ```text

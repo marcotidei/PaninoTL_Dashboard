@@ -4,7 +4,9 @@
   "private": true,
   "description": "PaninoTL static dashboard with optional local MQTT proxy",
   "scripts": {
+    "prestart": "npm install",
     "start": "node local/server.js",
+    "prelocal": "npm install",
     "local": "node local/server.js"
   },
   "dependencies": {
