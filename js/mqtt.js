@@ -421,6 +421,8 @@ function connectMQTT(config) {
       rememberDeviceOrder(id);
       const packetHasImageUrl = Object.prototype.hasOwnProperty.call(s, "img");
       const imageUrl = packetHasImageUrl ? (s.img || "") : (prev.imageUrl || "");
+      const packetHasLogUrl = Object.prototype.hasOwnProperty.call(s, "log");
+      const logUrl = packetHasLogUrl ? (s.log || "") : (prev.logUrl || "");
       const imageLinkReceived = !!(packetHasImageUrl && s.img);
       const lastUploadOk = s.up || prev.lastUploadOk || "";
       const imageRevision = imageUrl ? [imageUrl, lastUploadOk || s.ok || prev.lastShotOk || ""].join("|") : "";
@@ -497,6 +499,7 @@ function connectMQTT(config) {
         // Some packets may omit it; keep the last known link, but only reload
         // the image when this packet actually carries a non-empty image link.
         imageUrl,
+        logUrl,
         imageRevision,
         imagePacketSeq,
         config: {

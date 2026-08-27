@@ -241,6 +241,7 @@ function actionCommandLabel(action) {
   switch (action) {
     case "syncTimeNow": return "Sync time now";
     case "clearHealth": return "Clear health";
+    case "uploadSdLog": return "Upload SD log";
     default: return action || "Unknown action";
   }
 }
@@ -494,6 +495,9 @@ function render() {
                 <span class="${batteryClass(d.batteryPct)}">${batteryLabel(d.batteryPct)}</span>
               </div>
               <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
+              ${d.logUrl ? `
+                <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
+              ` : ""}
               <div class="row">
                 <span>Temperature:</span>
                 <span>${formatTemperature(d.rtcTempC)}</span>
