@@ -30,7 +30,7 @@ The connection settings and display preferences are stored locally in the browse
 
 ## Local Installation
 
-If a company network blocks browser WebSocket connections to the MQTT broker, run the dashboard locally:
+If a company network blocks browser WebSocket connections to the MQTT broker, run the dashboard locally. Local mode does not use browser WebSockets; the browser talks to the local Node process over plain HTTP polling, and Node connects to the MQTT broker over MQTT/TLS.
 
 Download the dashboard with Git:
 
@@ -54,7 +54,7 @@ Install and start the local dashboard:
 npm run local
 ```
 
-If you start it directly with `npm run local`, npm will install any missing local dependencies first. If you see `Cannot find module 'ws'`, run this once inside the dashboard folder:
+If you start it directly with `npm run local`, npm will install any missing local dependencies first. If you see `Cannot find module 'mqtt'`, run this once inside the dashboard folder:
 
 ```bash
 npm install
@@ -66,13 +66,13 @@ Then open:
 http://127.0.0.1:8787
 ```
 
-Local mode serves the same dashboard files, including local copies of the MQTT browser library and Font Awesome icons. It also changes the default broker URL to:
+Local mode serves the same dashboard files, including local copies of the MQTT browser library and Font Awesome icons. It also changes the default broker URL field to the local HTTP API:
 
 ```text
-ws://127.0.0.1:8787/mqtt
+http://127.0.0.1:8787/local-api
 ```
 
-If the browser had already saved the hosted GitHub Pages broker URL, local mode automatically changes that saved URL to the localhost proxy. If login still fails, click the connection button, confirm the Broker URL is `ws://127.0.0.1:8787/mqtt`, and try again.
+If the browser had already saved the hosted GitHub Pages broker URL or the old localhost WebSocket proxy URL, local mode automatically changes that saved URL to the localhost HTTP API. If login still fails, click the connection button, confirm the Broker URL is `http://127.0.0.1:8787/local-api`, and try again.
 
 You can verify that the local server is running here:
 
@@ -80,7 +80,7 @@ You can verify that the local server is running here:
 http://127.0.0.1:8787/local-status
 ```
 
-The local Node process bridges that browser WebSocket to the HiveMQ broker over MQTT TLS on port `8883`. MQTT username, password, and topic prefix are still entered in the normal dashboard connection modal and stored only in browser `localStorage`.
+The local Node process connects directly to the HiveMQ broker over MQTT TLS on port `8883`, subscribes to the retained PaninoTL topics, and exposes updates to the browser at `/local-api/events`. MQTT username, password, and topic prefix are still entered in the normal dashboard connection modal and stored only in browser `localStorage`.
 
 Optional environment variables:
 

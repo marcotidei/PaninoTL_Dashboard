@@ -28,7 +28,7 @@ Then open:
   http://127.0.0.1:8787
 
 The local dashboard defaults to:
-  ws://127.0.0.1:8787/mqtt
+  http://127.0.0.1:8787/local-api
 
-The server proxies that local WebSocket to HiveMQ over MQTT TLS.
+The browser uses plain HTTP polling; Node connects to HiveMQ over MQTT TLS.
 MSG
