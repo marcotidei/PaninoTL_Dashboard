@@ -32,6 +32,23 @@ The connection settings and display preferences are stored locally in the browse
 
 If a company network blocks browser WebSocket connections to the MQTT broker, run the dashboard locally:
 
+Download the dashboard with Git:
+
+```bash
+git clone https://github.com/marcotidei/PaninoTL_Dashboard.git
+cd PaninoTL_Dashboard
+```
+
+Or download it as a ZIP:
+
+1. Open `https://github.com/marcotidei/PaninoTL_Dashboard`
+2. Click `Code`
+3. Click `Download ZIP`
+4. Unzip the file
+5. Open a terminal in the unzipped `PaninoTL_Dashboard` folder
+
+Install and start the local dashboard:
+
 ```bash
 ./install-local.sh
 npm run local
@@ -47,6 +64,14 @@ Local mode serves the same dashboard files, including local copies of the MQTT b
 
 ```text
 ws://127.0.0.1:8787/mqtt
+```
+
+If the browser had already saved the hosted GitHub Pages broker URL, local mode automatically changes that saved URL to the localhost proxy. If login still fails, click the connection button, confirm the Broker URL is `ws://127.0.0.1:8787/mqtt`, and try again.
+
+You can verify that the local server is running here:
+
+```text
+http://127.0.0.1:8787/local-status
 ```
 
 The local Node process bridges that browser WebSocket to the HiveMQ broker over MQTT TLS on port `8883`. MQTT username, password, and topic prefix are still entered in the normal dashboard connection modal and stored only in browser `localStorage`.

@@ -102,6 +102,17 @@ function sendStatic(req, res) {
   const decoded = decodeURIComponent(requestUrl.pathname);
   const pathname = decoded === "/" ? "/index.html" : decoded;
 
+  if (pathname === "/local-status") {
+    res.writeHead(200, { "Content-Type": MIME[".json"], "Cache-Control": "no-store" });
+    res.end(JSON.stringify({
+      ok: true,
+      brokerUrl: localBrokerUrl(req),
+      upstream: UPSTREAM,
+      topicPrefix: TOPIC_PREFIX
+    }));
+    return;
+  }
+
   if (sendVendor(req, res, pathname)) return;
 
   if (pathname === "/index.html") {
@@ -142,6 +153,7 @@ function attachMqttBridge(server) {
   });
 
   wss.on("connection", ws => {
+    console.log("[local-mqtt-proxy] browser connected");
     const mqttSocket = upstream.secure
       ? tls.connect({ host: upstream.host, port: upstream.port, servername: upstream.host })
       : net.connect({ host: upstream.host, port: upstream.port });
@@ -155,6 +167,7 @@ function attachMqttBridge(server) {
     }
 
     mqttSocket.on("connect", () => {
+      console.log(`[local-mqtt-proxy] upstream connected ${upstream.host}:${upstream.port}`);
       upstreamReady = true;
       while (pending.length) mqttSocket.write(pending.shift());
     });
@@ -168,7 +181,10 @@ function attachMqttBridge(server) {
       closeBoth();
     });
 
-    mqttSocket.on("close", closeBoth);
+    mqttSocket.on("close", () => {
+      console.log("[local-mqtt-proxy] upstream closed");
+      closeBoth();
+    });
 
     ws.on("message", data => {
       const packet = Buffer.isBuffer(data) ? data : Buffer.from(data);
@@ -176,7 +192,10 @@ function attachMqttBridge(server) {
       else pending.push(packet);
     });
 
-    ws.on("close", closeBoth);
+    ws.on("close", () => {
+      console.log("[local-mqtt-proxy] browser disconnected");
+      closeBoth();
+    });
     ws.on("error", closeBoth);
   });
 }

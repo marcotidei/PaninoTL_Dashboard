@@ -11,6 +11,27 @@ function withConfigDefaults(config) {
   };
 }
 
+function isLocalProxyMode() {
+  return !!window.PANINOTL_LOCAL_PROXY;
+}
+
+function shouldUseLocalProxyForSavedUrl(url) {
+  if (!isLocalProxyMode()) return false;
+  const savedUrl = String(url || "").trim();
+  if (!savedUrl) return false;
+  return savedUrl === HOSTED_BROKER_URL || savedUrl.includes("hivemq.cloud:8884");
+}
+
+function migrateConfigForLocalProxy(config) {
+  config = withConfigDefaults(config);
+  if (shouldUseLocalProxyForSavedUrl(config.url)) {
+    config = { ...config, url: DEFAULT_BROKER_URL };
+    localStorage.setItem("mqtt_config", JSON.stringify(config));
+    console.log("Using local MQTT proxy for saved hosted broker settings");
+  }
+  return config;
+}
+
 function topicPrefix(config = currentConfig) {
   return normalizeTopicPrefix(config && config.topicPrefix) || DEFAULT_TOPIC_PREFIX;
 }
@@ -49,7 +70,7 @@ function deviceIdFromTopic(topic, config = currentConfig, end = "/state") {
 async function loadConfig() {
   const saved = localStorage.getItem("mqtt_config");
   if (saved) {
-    try { return withConfigDefaults(JSON.parse(saved)); } catch { localStorage.removeItem("mqtt_config"); }
+    try { return migrateConfigForLocalProxy(JSON.parse(saved)); } catch { localStorage.removeItem("mqtt_config"); }
   }
   return withConfigDefaults({});
 }
