@@ -280,7 +280,7 @@ function isInsideWindow(d, date) {
 }
 
 // Device schedules are aligned to midnight; scan minute slots for the next valid one.
-function nextScheduledConnection(d, from = new Date()) {
+function nextScheduledSlotAfter(d, from) {
   if (!d.config || !d.config.interval) return null;
   const intervalMs = d.config.interval * 1000;
   const search     = new Date(from);
@@ -296,6 +296,17 @@ function nextScheduledConnection(d, from = new Date()) {
     if (isInsideWindow(d, candidate)) return candidate;
   }
   return null;
+}
+
+function nextScheduledConnection(d, from = new Date()) {
+  const lastComm = parseTS(d.lastCommDevice);
+  if (lastComm && !isNaN(lastComm) && d.config && d.config.interval) {
+    const expected = nextScheduledSlotAfter(d, lastComm);
+    const keepExpectedUntil = new Date(lastComm.getTime() + (d.config.interval + GRACE_SECONDS) * 1000);
+    if (expected && from <= keepExpectedUntil) return expected;
+  }
+
+  return nextScheduledSlotAfter(d, from);
 }
 
 // Health and status logic

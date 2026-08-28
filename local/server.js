@@ -432,6 +432,7 @@ server.on("error", err => {
 });
 
 server.listen(PORT, HOST, () => {
+  console.log(`========== PaninoTL local dashboard start ${new Date().toISOString()} ==========`);
   console.log(`PaninoTL local dashboard: http://${HOST}:${PORT}`);
   console.log(`Browser transport:        HTTP polling at /local-api/events`);
   console.log(`Upstream MQTT bridge:     ${UPSTREAM}`);

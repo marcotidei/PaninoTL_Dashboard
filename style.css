@@ -238,7 +238,7 @@ body {
   place-items: center;
   width: 16px;
   height: 16px;
-  color: #facc15;
+  color: #f59e0b;
   font-size: 12px;
   line-height: 1;
 }
@@ -525,13 +525,13 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 
 .pending-settings-panel {
   margin-top: 10px;
-  background: #facc15;
+  background: #f59e0b;
   color: #422006;
-  border: 1px solid #fde047;
+  border: 1px solid #d97706;
 }
 
 .pending-settings-panel:hover {
-  background: #fde047;
+  background: #d97706;
 }
 
 .pending-settings-icon {
@@ -603,7 +603,7 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 .row.pending-setting-affected > span:last-child,
 .row.pending-setting-affected > span:last-child .day-active,
 .row.pending-setting-affected > span:last-child .day-inactive {
-  color: #facc15;
+  color: #f59e0b;
 }
 
 .pending-settings-current .day-active {
@@ -1059,8 +1059,8 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .command-status.pending {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.12);
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
 }
 
 .command-status.ok {
