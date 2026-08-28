@@ -5,6 +5,7 @@ function openFirmwareModal(id) {
 
   const f = d.firmware || {};
   document.getElementById("fwInfoDevice").innerText   = id;
+  document.getElementById("fwInfoWifiMac").innerText  = f.wmac || "-";
   document.getElementById("fwInfoTz").innerText       = d.tz || "-";
   document.getElementById("fwInfoDatetime").innerText = f.dt || "-";
   document.getElementById("fwInfoId").innerText       = f.id || "-";
