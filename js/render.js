@@ -212,6 +212,22 @@ function pendingSettingsChanges(d, pendingCommand) {
     });
   }
 
+  if (hasOwnValue(config, "dropboxEnsureFullResUpload")) {
+    changes.push({
+      label: "Ensure Full Res Upload",
+      current: formatEnabled(c.ensureFullResUpload),
+      next: formatEnabled(config.dropboxEnsureFullResUpload)
+    });
+  }
+
+  if (hasOwnValue(config, "dropboxBackfillMaxAfterSchedule")) {
+    changes.push({
+      label: "Backfill After Schedule",
+      current: c.backfillMaxAfterSchedule ?? "-",
+      next: config.dropboxBackfillMaxAfterSchedule
+    });
+  }
+
   if (hasOwnValue(config, "uploadTimeoutMin")) {
     changes.push({
       label: "Upload Timeout",
@@ -410,6 +426,8 @@ function render() {
     const pendingScheduleWindowClass = pendingSettingClass(pendingCommand, ["scheduleStart", "scheduleEnd"]);
     const pendingIntervalClass = pendingSettingClass(pendingCommand, ["intervalSec"]);
     const pendingUploadModeClass = pendingSettingClass(pendingCommand, ["dropboxUploadEnabled", "dropboxUploadMode"]);
+    const pendingEnsureUploadClass = pendingSettingClass(pendingCommand, ["dropboxEnsureFullResUpload"]);
+    const pendingBackfillMaxClass = pendingSettingClass(pendingCommand, ["dropboxBackfillMaxAfterSchedule"]);
     const pendingUploadTimeoutClass = pendingSettingClass(pendingCommand, ["uploadTimeoutMin"]);
     const pendingPowerModeClass = pendingSettingClass(pendingCommand, ["powerMode"]);
     const pendingSdLogClass = pendingSettingClass(pendingCommand, ["sdLogEnabled"]);
@@ -531,6 +549,7 @@ function render() {
               <div class="row"><span>Next comm.:</span><span>${formatDateTime(nextScheduledConnection(d), d.tz)}</span></div>
               <div class="row"><span>Last capture:</span><span>${formatDateTime(d.lastShotOk, d.tz)}</span></div>
               <div class="row"><span>Confirmed photos:</span><span>${d.photosSuccessful}</span></div>
+              <div class="row"><span>Pending full-res uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
               <div class="row">
                 <span>Failed photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
@@ -567,6 +586,8 @@ function render() {
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
               <div class="row ${pendingUploadModeClass}"><span>Upload:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
+              <div class="row ${pendingEnsureUploadClass}"><span>Ensure full-res upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
+              <div class="row ${pendingBackfillMaxClass}"><span>Backfill after schedule:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
               <div class="row ${pendingUploadTimeoutClass}"><span>Upload timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
             </div>
           </div>

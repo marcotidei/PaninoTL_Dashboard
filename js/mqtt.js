@@ -451,6 +451,13 @@ function applyAcceptedSettingsCommand(id, pending) {
   if (commandConfigHas(config, "dropboxUploadEnabled") || commandConfigHas(config, "dropboxUploadMode")) {
     next.uploadMode = uploadModeFromCommandConfig(config, next.uploadMode);
   }
+  if (commandConfigHas(config, "dropboxEnsureFullResUpload")) {
+    next.ensureFullResUpload = config.dropboxEnsureFullResUpload ? 1 : 0;
+  }
+  if (commandConfigHas(config, "dropboxBackfillMaxAfterSchedule")) {
+    const value = Number(config.dropboxBackfillMaxAfterSchedule);
+    if (Number.isFinite(value)) next.backfillMaxAfterSchedule = value;
+  }
   if (commandConfigHas(config, "uploadTimeoutMin")) {
     const value = Number(config.uploadTimeoutMin);
     if (Number.isFinite(value)) next.uploadTimeout = value;
@@ -622,6 +629,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
       photosSuccessful,
       sdPhotoCount:     (typeof s.sdpc === "number") ? s.sdpc : 0,
+      pendingFullResUploads: (typeof s.pu === "number") ? s.pu : 0,
       photosFailed,
       sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
       sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
@@ -663,6 +671,8 @@ function handleMqttMessage(topic, message, config = currentConfig) {
         ntpSyncMode: c.ntp ?? 0,
         // Tri-state: 0=Disabled, 1=Thumbnail, 2=Full Res.
         uploadMode: c.u,
+        ensureFullResUpload: c.efu ?? 0,
+        backfillMaxAfterSchedule: c.bfm ?? 3,
         uploadTimeout: c.uto
       },
       gopro:         g,

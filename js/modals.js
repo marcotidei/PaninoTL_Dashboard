@@ -78,6 +78,8 @@ function deviceCommandPendingDirtyFields(config) {
   if (modalCommandConfigHas(config, "dropboxUploadEnabled") || modalCommandConfigHas(config, "dropboxUploadMode")) {
     fields.add("dropboxUpload");
   }
+  if (modalCommandConfigHas(config, "dropboxEnsureFullResUpload")) fields.add("dropboxEnsureFullResUpload");
+  if (modalCommandConfigHas(config, "dropboxBackfillMaxAfterSchedule")) fields.add("dropboxBackfillMaxAfterSchedule");
   if (modalCommandConfigHas(config, "uploadTimeoutMin")) fields.add("uploadTimeoutMin");
 
   return fields;
@@ -247,6 +249,12 @@ function deviceCommandBaseConfigWithPending(id) {
   if (modalCommandConfigHas(patch, "dropboxUploadEnabled") || modalCommandConfigHas(patch, "dropboxUploadMode")) {
     base.uploadMode = modalUploadModeFromCommandConfig(patch, base.uploadMode);
   }
+  if (modalCommandConfigHas(patch, "dropboxEnsureFullResUpload")) {
+    base.ensureFullResUpload = patch.dropboxEnsureFullResUpload ? 1 : 0;
+  }
+  if (modalCommandConfigHas(patch, "dropboxBackfillMaxAfterSchedule")) {
+    base.backfillMaxAfterSchedule = Number(patch.dropboxBackfillMaxAfterSchedule);
+  }
   if (modalCommandConfigHas(patch, "uploadTimeoutMin")) base.uploadTimeout = Number(patch.uploadTimeoutMin);
 
   return base;
@@ -278,6 +286,8 @@ function openDeviceCommandModal(event) {
   setSelectValueWithFallback("cmd_photoLens", c.lens, "Current lens");
   setSelectValueWithFallback("cmd_photoOutput", c.output, "Current output");
   setSelectValueWithFallback("cmd_dropboxUpload", c.uploadMode, "Current upload mode");
+  setSelectValueWithFallback("cmd_dropboxEnsureFullResUpload", c.ensureFullResUpload, "0");
+  document.getElementById("cmd_dropboxBackfillMaxAfterSchedule").value = c.backfillMaxAfterSchedule ?? 3;
   setSelectValueWithFallback("cmd_powerMode", c.powerMode, "0");
   setSelectValueWithFallback("cmd_batteryMonitorEnabled", c.batteryMonitorEnabled, "1");
   setSelectValueWithFallback("cmd_sdLogEnabled", c.sdLogEnabled, "0");
@@ -399,6 +409,20 @@ function buildDeviceSettingsPatch(id) {
     if (Number.isFinite(uploadMode) && !sameCommandValue(uploadMode, c.uploadMode)) {
       patch.dropboxUploadEnabled = uploadMode > 0;
       patch.dropboxUploadMode = uploadMode === 2 ? 1 : 0;
+    }
+  }
+
+  if (deviceCommandDirtyFields.has("dropboxEnsureFullResUpload")) {
+    const ensureFullResUpload = readNumberInput("cmd_dropboxEnsureFullResUpload");
+    if (ensureFullResUpload !== null && !sameCommandValue(ensureFullResUpload, c.ensureFullResUpload)) {
+      patch.dropboxEnsureFullResUpload = ensureFullResUpload === 1;
+    }
+  }
+
+  if (deviceCommandDirtyFields.has("dropboxBackfillMaxAfterSchedule")) {
+    const maxBackfill = readNumberInput("cmd_dropboxBackfillMaxAfterSchedule");
+    if (maxBackfill !== null && !sameCommandValue(maxBackfill, c.backfillMaxAfterSchedule)) {
+      patch.dropboxBackfillMaxAfterSchedule = maxBackfill;
     }
   }
 

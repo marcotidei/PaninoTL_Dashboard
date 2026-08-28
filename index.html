@@ -228,6 +228,17 @@
             <option value="2">Full Resolution</option>
           </select>
         </label>
+        <label class="fw-settings-row">
+          Ensure Full Res Upload
+          <select id="cmd_dropboxEnsureFullResUpload" onchange="markDeviceCommandFieldChanged('dropboxEnsureFullResUpload')">
+            <option value="0">Disabled</option>
+            <option value="1">Enabled</option>
+          </select>
+        </label>
+        <label class="fw-settings-row">
+          Backfill After Schedule
+          <input id="cmd_dropboxBackfillMaxAfterSchedule" type="number" min="0" max="10" step="1" inputmode="numeric" oninput="markDeviceCommandFieldChanged('dropboxBackfillMaxAfterSchedule')">
+        </label>
       </div>
 
       <h2 class="fw-settings-title">Power</h2>
