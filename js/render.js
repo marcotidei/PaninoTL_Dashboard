@@ -17,7 +17,7 @@ function hasOwnValue(obj, key) {
 }
 
 function pendingSettingsConfig(pendingCommand) {
-  const command = pendingCommand && pendingCommand.command;
+  const command = pendingCommand && pendingCommand.command ? pendingCommand.command : pendingCommand;
   if (!command) return null;
   if (command.type === "set") return command.config || null;
   if (command.type === "batch" && Array.isArray(command.commands)) {
@@ -28,7 +28,7 @@ function pendingSettingsConfig(pendingCommand) {
 }
 
 function pendingActionCommands(pendingCommand) {
-  const command = pendingCommand && pendingCommand.command;
+  const command = pendingCommand && pendingCommand.command ? pendingCommand.command : pendingCommand;
   if (!command) return [];
   if (command.type === "action" && command.action) return [command.action];
   if (command.type === "batch" && Array.isArray(command.commands)) {
@@ -268,6 +268,40 @@ function pendingActionPanelHtml(id, pendingCommand) {
       <div class="section-body">
         <div class="pending-settings-heading pending-command-heading">Command ready for next sync</div>
         <div class="pending-settings-list">
+          ${actions.map(action => `
+            <div class="pending-settings-row">
+              <span class="pending-settings-name pending-command-name">Action</span>
+              <span class="pending-settings-current pending-command-current">Pending</span>
+              <i class="fa-solid fa-arrow-right pending-settings-arrow pending-command-arrow" aria-hidden="true"></i>
+              <span class="pending-settings-next pending-command-next">${escapeHtml(actionCommandLabel(action))}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function pendingCommandPanelHtml(id, d, pendingCommand) {
+  const changes = pendingSettingsChanges(d, pendingCommand);
+  const actions = pendingActionCommands(pendingCommand);
+  if (!changes.length && !actions.length) return "";
+
+  return `
+    <div class="section pending-settings-panel pending-command-panel section-clickable" data-device-id="${escapeAttr(id)}"
+      onclick="openDeviceCommandModal(event)" title="Edit pending settings and commands">
+      <div class="section-icon pending-settings-icon pending-command-panel-icon"><i class="fa-solid fa-arrows-rotate"></i></div>
+      <div class="section-body">
+        <div class="pending-settings-heading pending-command-heading">Ready for next sync</div>
+        <div class="pending-settings-list">
+          ${changes.map(change => `
+            <div class="pending-settings-row">
+              <span class="pending-settings-name">${escapeHtml(change.label)}</span>
+              <span class="pending-settings-current">${pendingChangeValueHtml(change.current)}</span>
+              <i class="fa-solid fa-arrow-right pending-settings-arrow" aria-hidden="true"></i>
+              <span class="pending-settings-next">${pendingChangeValueHtml(change.next)}</span>
+            </div>
+          `).join("")}
           ${actions.map(action => `
             <div class="pending-settings-row">
               <span class="pending-settings-name pending-command-name">Action</span>
@@ -561,8 +595,7 @@ function render() {
           </div>
         </div>
 
-        ${pendingSettingsPanelHtml(id, d, pendingCommand)}
-        ${pendingActionPanelHtml(id, pendingCommand)}
+        ${pendingCommandPanelHtml(id, d, pendingCommand)}
 
         <div class="clear-actions">
           <div class="command-action-group">

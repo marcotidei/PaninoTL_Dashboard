@@ -186,6 +186,7 @@ function modalCommandConfigHas(config, key) {
 }
 
 function modalCommandSettingsConfig(command) {
+  command = command && command.command ? command.command : command;
   if (!command) return null;
   if (command.type === "set") return command.config || null;
   if (command.type === "batch" && Array.isArray(command.commands)) {
@@ -196,6 +197,7 @@ function modalCommandSettingsConfig(command) {
 }
 
 function modalCommandActions(command) {
+  command = command && command.command ? command.command : command;
   if (!command) return [];
   if (command.type === "action" && command.action) return [command.action];
   if (command.type === "batch" && Array.isArray(command.commands)) {

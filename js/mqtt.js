@@ -379,6 +379,7 @@ function commandConfigHas(config, key) {
 }
 
 function commandSettingsConfig(command) {
+  command = command && command.command ? command.command : command;
   if (!command) return null;
   if (command.type === "set") return command.config || null;
   if (command.type === "batch" && Array.isArray(command.commands)) {
