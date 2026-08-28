@@ -279,15 +279,15 @@
 
     <div id="deviceCommandActionsPanel" class="device-command-panel" hidden>
       <div class="device-command-actions">
-        <button type="button" class="device-action-choice is-active" data-action="syncTimeNow" onclick="selectDeviceCommandAction('syncTimeNow')">
+        <button type="button" class="device-action-choice" data-action="syncTimeNow" onclick="toggleDeviceCommandAction('syncTimeNow')">
           <i class="fa-solid fa-clock-rotate-left"></i>
           <span>Sync time now</span>
         </button>
-        <button type="button" class="device-action-choice" data-action="clearHealth" onclick="selectDeviceCommandAction('clearHealth')">
+        <button type="button" class="device-action-choice" data-action="clearHealth" onclick="toggleDeviceCommandAction('clearHealth')">
           <i class="fa-solid fa-heart-circle-check"></i>
           <span>Clear health</span>
         </button>
-        <button type="button" class="device-action-choice" data-action="uploadSdLog" onclick="selectDeviceCommandAction('uploadSdLog')">
+        <button type="button" class="device-action-choice" data-action="uploadSdLog" onclick="toggleDeviceCommandAction('uploadSdLog')">
           <i class="fa-solid fa-file-arrow-up"></i>
           <span>Upload SD log</span>
         </button>

@@ -354,6 +354,14 @@ function validDeviceCommand(command) {
   if (!command || command.schema !== 1 || !command.id) return false;
   if (command.type === "set") return !!command.config && typeof command.config === "object";
   if (command.type === "action") return !!command.action;
+  if (command.type === "batch") {
+    return Array.isArray(command.commands) && command.commands.length > 0 && command.commands.every(op => (
+      op && (
+        (op.type === "set" && op.config && typeof op.config === "object") ||
+        (op.type === "action" && !!op.action)
+      )
+    ));
+  }
   return false;
 }
 
@@ -368,6 +376,16 @@ function setPendingDeviceCommand(id, command, receivedAt = new Date().toISOStrin
 
 function commandConfigHas(config, key) {
   return !!config && Object.prototype.hasOwnProperty.call(config, key);
+}
+
+function commandSettingsConfig(command) {
+  if (!command) return null;
+  if (command.type === "set") return command.config || null;
+  if (command.type === "batch" && Array.isArray(command.commands)) {
+    const op = command.commands.find(item => item && item.type === "set" && item.config);
+    return op ? op.config : null;
+  }
+  return null;
 }
 
 function scheduleMaskToDaysString(value) {
@@ -389,11 +407,11 @@ function uploadModeFromCommandConfig(config, currentMode) {
 
 function applyAcceptedSettingsCommand(id, pending) {
   const command = pending && pending.command;
-  if (!command || command.type !== "set" || !command.config) return;
+  const config = commandSettingsConfig(command);
+  if (!command || !config) return;
   const d = devices[id];
   if (!d || !d.config) return;
 
-  const config = command.config;
   const next = { ...d.config };
 
   if (commandConfigHas(config, "intervalSec")) {

@@ -28,7 +28,7 @@ function closeSettingsModal() {
 
 let deviceCommandDeviceId = null;
 let deviceCommandTab = "settings";
-let deviceCommandAction = "syncTimeNow";
+let deviceCommandActions = new Set();
 let deviceCommandRequestId = null;
 let deviceCommandIntervalsReady = false;
 let deviceCommandDirtyFields = new Set();
@@ -185,6 +185,27 @@ function modalCommandConfigHas(config, key) {
   return !!config && Object.prototype.hasOwnProperty.call(config, key);
 }
 
+function modalCommandSettingsConfig(command) {
+  if (!command) return null;
+  if (command.type === "set") return command.config || null;
+  if (command.type === "batch" && Array.isArray(command.commands)) {
+    const op = command.commands.find(item => item && item.type === "set" && item.config);
+    return op ? op.config : null;
+  }
+  return null;
+}
+
+function modalCommandActions(command) {
+  if (!command) return [];
+  if (command.type === "action" && command.action) return [command.action];
+  if (command.type === "batch" && Array.isArray(command.commands)) {
+    return command.commands
+      .filter(item => item && item.type === "action" && item.action)
+      .map(item => item.action);
+  }
+  return [];
+}
+
 function modalScheduleMaskToDaysString(value) {
   const mask = scheduleDaysMaskFromValue(value);
   return ["M", "T", "W", "T", "F", "S", "S"]
@@ -206,7 +227,7 @@ function deviceCommandBaseConfigWithPending(id) {
   const d = devices[id];
   const base = { ...((d && d.config) || {}) };
   const pending = pendingCommands[id] && pendingCommands[id].command;
-  const patch = pending && pending.type === "set" ? pending.config : null;
+  const patch = modalCommandSettingsConfig(pending);
   if (!patch) return base;
 
   if (modalCommandConfigHas(patch, "intervalSec")) base.interval = Number(patch.intervalSec);
@@ -236,12 +257,12 @@ function openDeviceCommandModal(event) {
 
   deviceCommandDeviceId = id;
   const pending = pendingCommands[id] && pendingCommands[id].command;
-  deviceCommandTab = pending && pending.type === "action" ? "actions" : "settings";
-  deviceCommandAction = pending && pending.type === "action" ? pending.action : "syncTimeNow";
+  const pendingActions = modalCommandActions(pending);
+  deviceCommandTab = pendingActions.length && !modalCommandSettingsConfig(pending) ? "actions" : "settings";
+  deviceCommandActions = new Set(pendingActions);
   deviceCommandRequestId = pending ? pending.id : newDeviceCommandId(id);
-  deviceCommandDirtyFields = pending && pending.type === "set"
-    ? deviceCommandPendingDirtyFields(pending.config)
-    : new Set();
+  const pendingConfig = modalCommandSettingsConfig(pending);
+  deviceCommandDirtyFields = pendingConfig ? deviceCommandPendingDirtyFields(pendingConfig) : new Set();
   document.getElementById("deviceCommandTitle").innerText = id;
 
   populateDeviceCommandIntervalSelects();
@@ -273,6 +294,7 @@ function closeDeviceCommandModal() {
   document.getElementById("deviceCommandModal").classList.remove("is-visible");
   deviceCommandDeviceId = null;
   deviceCommandRequestId = null;
+  deviceCommandActions = new Set();
   deviceCommandDirtyFields = new Set();
 }
 
@@ -286,15 +308,16 @@ function setDeviceCommandTab(tab) {
   renderDeviceCommandAbortButton();
 }
 
-function selectDeviceCommandAction(action) {
-  deviceCommandAction = action;
+function toggleDeviceCommandAction(action) {
+  if (deviceCommandActions.has(action)) deviceCommandActions.delete(action);
+  else deviceCommandActions.add(action);
   renderDeviceActionChoices();
   renderDeviceCommandPreview();
 }
 
 function renderDeviceActionChoices() {
   document.querySelectorAll(".device-action-choice").forEach(btn => {
-    btn.classList.toggle("is-active", btn.dataset.action === deviceCommandAction);
+    btn.classList.toggle("is-active", deviceCommandActions.has(btn.dataset.action));
   });
 }
 
@@ -389,21 +412,41 @@ function buildDeviceSettingsPatch(id) {
 function buildDeviceCommandPreview() {
   const id = deviceCommandDeviceId;
   if (!id) return {};
+  const requestId = deviceCommandRequestId || newDeviceCommandId(id);
+  const config = buildDeviceSettingsPatch(id);
+  const commands = [];
 
-  if (deviceCommandTab === "actions") {
+  if (Object.keys(config).length > 0) {
+    commands.push({ type: "set", config });
+  }
+
+  deviceCommandActions.forEach(action => {
+    commands.push({ type: "action", action });
+  });
+
+  if (commands.length > 1) {
     return {
       schema: 1,
-      id: deviceCommandRequestId || newDeviceCommandId(id),
+      id: requestId,
+      type: "batch",
+      commands
+    };
+  }
+
+  if (commands.length === 1 && commands[0].type === "action") {
+    return {
+      schema: 1,
+      id: requestId,
       type: "action",
-      action: deviceCommandAction
+      action: commands[0].action
     };
   }
 
   return {
     schema: 1,
-    id: deviceCommandRequestId || newDeviceCommandId(id),
+    id: requestId,
     type: "set",
-    config: buildDeviceSettingsPatch(id)
+    config
   };
 }
 
@@ -415,7 +458,9 @@ function renderDeviceCommandPreview() {
   const send = document.getElementById("deviceCommandSend");
   if (!send) return;
   const command = buildDeviceCommandPreview();
-  const hasChanges = command.type === "action" || Object.keys(command.config || {}).length > 0;
+  const hasChanges = command.type === "action" ||
+    (command.type === "batch" && Array.isArray(command.commands) && command.commands.length > 0) ||
+    Object.keys(command.config || {}).length > 0;
   const mqttReady = !!(client && client.connected);
   send.disabled = !mqttReady || !deviceCommandDeviceId || !hasChanges;
   send.title = send.disabled
@@ -438,8 +483,11 @@ function sendDeviceCommand() {
   const id = deviceCommandDeviceId;
   const command = buildDeviceCommandPreview();
   if (!id) return;
-  if (command.type === "set" && Object.keys(command.config || {}).length === 0) {
-    alert("No setting changes to send");
+  const hasChanges = command.type === "action" ||
+    (command.type === "batch" && Array.isArray(command.commands) && command.commands.length > 0) ||
+    Object.keys(command.config || {}).length > 0;
+  if (!hasChanges) {
+    alert("No setting changes or commands to send");
     return;
   }
   try {
