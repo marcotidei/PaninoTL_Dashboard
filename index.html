@@ -41,7 +41,7 @@
 
 <footer class="app-footer">
   <span>PaninoTL Dashboard</span>
-  <span>v2.0.0</span>
+  <span>v3.0.0</span>
 </footer>
 
 <div id="cameraModal" class="modal-overlay">
@@ -228,14 +228,14 @@
             <option value="2">Full Resolution</option>
           </select>
         </label>
-        <label class="fw-settings-row">
+        <label class="fw-settings-row" id="cmd_dropboxEnsureFullResUploadRow">
           Ensure Full Res Upload
           <select id="cmd_dropboxEnsureFullResUpload" onchange="markDeviceCommandFieldChanged('dropboxEnsureFullResUpload')">
             <option value="0">Disabled</option>
             <option value="1">Enabled</option>
           </select>
         </label>
-        <label class="fw-settings-row">
+        <label class="fw-settings-row" id="cmd_dropboxBackfillMaxAfterScheduleRow">
           Backfill After Schedule
           <input id="cmd_dropboxBackfillMaxAfterSchedule" type="number" min="0" max="10" step="1" inputmode="numeric" oninput="markDeviceCommandFieldChanged('dropboxBackfillMaxAfterSchedule')">
         </label>
@@ -282,7 +282,7 @@
             <option value="4">Monthly</option>
           </select>
         </label>
-        <label class="fw-settings-row">
+        <label class="fw-settings-row" id="cmd_uploadTimeoutMinRow">
           Upload Timeout (min)
           <input id="cmd_uploadTimeoutMin" type="number" min="1" max="30" step="1" inputmode="numeric" oninput="markDeviceCommandFieldChanged('uploadTimeoutMin')">
         </label>

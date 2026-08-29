@@ -435,6 +435,10 @@ function render() {
     const pendingNtpSyncClass = pendingSettingClass(pendingCommand, ["ntpSyncMode"]);
     const pendingLensClass = pendingSettingClass(pendingCommand, ["photoLens"]);
     const pendingOutputClass = pendingSettingClass(pendingCommand, ["photoOutput"]);
+    const uploadEnabled = Number(d.config.uploadMode) > 0;
+    const fullResUpload = Number(d.config.uploadMode) === 2;
+    const ensureFullResUpload = Number(d.config.ensureFullResUpload) === 1 || d.config.ensureFullResUpload === true;
+    const hasPendingFullResUploads = Number(d.pendingFullResUploads || 0) > 0;
 
     const dev = document.createElement("div");
     dev.className    = "device " + panelState;
@@ -549,7 +553,9 @@ function render() {
               <div class="row"><span>Next comm.:</span><span>${formatDateTime(nextScheduledConnection(d), d.tz)}</span></div>
               <div class="row"><span>Last capture:</span><span>${formatDateTime(d.lastShotOk, d.tz)}</span></div>
               <div class="row"><span>Confirmed photos:</span><span>${d.photosSuccessful}</span></div>
-              <div class="row"><span>Pending full-res uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
+              ${ensureFullResUpload || hasPendingFullResUploads ? `
+                <div class="row"><span>Pending full-res uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
+              ` : ""}
               <div class="row">
                 <span>Failed photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
@@ -586,9 +592,15 @@ function render() {
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
               <div class="row ${pendingUploadModeClass}"><span>Upload:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
-              <div class="row ${pendingEnsureUploadClass}"><span>Ensure full-res upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
-              <div class="row ${pendingBackfillMaxClass}"><span>Backfill after schedule:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
-              <div class="row ${pendingUploadTimeoutClass}"><span>Upload timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
+              ${fullResUpload ? `
+                <div class="row ${pendingEnsureUploadClass}"><span>Ensure full-res upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
+              ` : ""}
+              ${fullResUpload && ensureFullResUpload ? `
+                <div class="row ${pendingBackfillMaxClass}"><span>Backfill after schedule:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
+              ` : ""}
+              ${uploadEnabled ? `
+                <div class="row ${pendingUploadTimeoutClass}"><span>Upload timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
+              ` : ""}
             </div>
           </div>
 

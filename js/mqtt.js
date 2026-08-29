@@ -450,9 +450,11 @@ function applyAcceptedSettingsCommand(id, pending) {
   }
   if (commandConfigHas(config, "dropboxUploadEnabled") || commandConfigHas(config, "dropboxUploadMode")) {
     next.uploadMode = uploadModeFromCommandConfig(config, next.uploadMode);
+    if (Number(next.uploadMode) !== 2) next.ensureFullResUpload = 0;
   }
   if (commandConfigHas(config, "dropboxEnsureFullResUpload")) {
     next.ensureFullResUpload = config.dropboxEnsureFullResUpload ? 1 : 0;
+    if (Number(next.uploadMode) !== 2) next.ensureFullResUpload = 0;
   }
   if (commandConfigHas(config, "dropboxBackfillMaxAfterSchedule")) {
     const value = Number(config.dropboxBackfillMaxAfterSchedule);

@@ -57,7 +57,23 @@ function sameCommandValue(a, b) {
 
 function markDeviceCommandFieldChanged(field) {
   if (field) deviceCommandDirtyFields.add(field);
+  updateDeviceCommandConditionalRows();
   renderDeviceCommandPreview();
+}
+
+function updateDeviceCommandConditionalRows() {
+  const uploadMode = Number(document.getElementById("cmd_dropboxUpload")?.value || 0);
+  const ensureFull = Number(document.getElementById("cmd_dropboxEnsureFullResUpload")?.value || 0) === 1;
+  const uploadEnabled = uploadMode > 0;
+  const fullResUpload = uploadMode === 2;
+
+  const uploadTimeoutRow = document.getElementById("cmd_uploadTimeoutMinRow");
+  const ensureRow = document.getElementById("cmd_dropboxEnsureFullResUploadRow");
+  const backfillRow = document.getElementById("cmd_dropboxBackfillMaxAfterScheduleRow");
+
+  if (uploadTimeoutRow) uploadTimeoutRow.hidden = !uploadEnabled;
+  if (ensureRow) ensureRow.hidden = !fullResUpload;
+  if (backfillRow) backfillRow.hidden = !(fullResUpload && ensureFull);
 }
 
 function deviceCommandPendingDirtyFields(config) {
@@ -295,6 +311,7 @@ function openDeviceCommandModal(event) {
     Number.isFinite(Number(c.maxSleepSec)) ? Math.max(1, Math.round(Number(c.maxSleepSec) / 60)) : "";
   setSelectValueWithFallback("cmd_ntpSyncMode", c.ntpSyncMode, "0");
   document.getElementById("cmd_uploadTimeoutMin").value = c.uploadTimeout ?? "";
+  updateDeviceCommandConditionalRows();
 
   setDeviceCommandTab(deviceCommandTab);
   renderDeviceActionChoices();
@@ -413,15 +430,18 @@ function buildDeviceSettingsPatch(id) {
   }
 
   if (deviceCommandDirtyFields.has("dropboxEnsureFullResUpload")) {
+    const uploadMode = Number(document.getElementById("cmd_dropboxUpload").value);
     const ensureFullResUpload = readNumberInput("cmd_dropboxEnsureFullResUpload");
-    if (ensureFullResUpload !== null && !sameCommandValue(ensureFullResUpload, c.ensureFullResUpload)) {
+    if (uploadMode === 2 && ensureFullResUpload !== null && !sameCommandValue(ensureFullResUpload, c.ensureFullResUpload)) {
       patch.dropboxEnsureFullResUpload = ensureFullResUpload === 1;
     }
   }
 
   if (deviceCommandDirtyFields.has("dropboxBackfillMaxAfterSchedule")) {
+    const uploadMode = Number(document.getElementById("cmd_dropboxUpload").value);
+    const ensureFullResUpload = Number(document.getElementById("cmd_dropboxEnsureFullResUpload").value) === 1;
     const maxBackfill = readNumberInput("cmd_dropboxBackfillMaxAfterSchedule");
-    if (maxBackfill !== null && !sameCommandValue(maxBackfill, c.backfillMaxAfterSchedule)) {
+    if (uploadMode === 2 && ensureFullResUpload && maxBackfill !== null && !sameCommandValue(maxBackfill, c.backfillMaxAfterSchedule)) {
       patch.dropboxBackfillMaxAfterSchedule = maxBackfill;
     }
   }
