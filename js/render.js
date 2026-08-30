@@ -542,7 +542,6 @@ function render() {
               `}
             </div>
           </div>
-
           <div class="section section-clickable" onclick="openFirmwareModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
@@ -556,6 +555,10 @@ function render() {
                   ${d.photosFailed || 0}
                 </span>
               </div>
+              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
+              ${d.logUrl ? `
+                <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
+              ` : ""}
               ${d.batteryPct == null || d.batteryPct < 0 ? `
                 <div class="row">
                   <span>Battery:</span>
@@ -570,10 +573,6 @@ function render() {
                   </div>
                 </div>
               `}
-              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
-              ${d.logUrl ? `
-                <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
-              ` : ""}
               ${d.rtcTempC == null || Number.isNaN(d.rtcTempC) ? `
                 <div class="row">
                   <span>Temperature:</span>
