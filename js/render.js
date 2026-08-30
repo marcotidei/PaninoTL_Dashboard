@@ -542,23 +542,25 @@ function render() {
               `}
             </div>
           </div>
+
           <div class="section section-clickable" onclick="openFirmwareModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
               <div class="row"><span>Last comm.:</span><span>${elapsedAgo(d.lastCommDevice)}</span></div>
+
               <div class="row"><span>Next comm.:</span><span>${formatDateTime(nextScheduledConnection(d), d.tz)}</span></div>
+
               <div class="row"><span>Last capture:</span><span>${formatDateTime(d.lastShotOk, d.tz)}</span></div>
+
               <div class="row"><span>Confirmed photos:</span><span>${d.photosSuccessful}</span></div>
+
               <div class="row">
                 <span>Failed photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
                   ${d.photosFailed || 0}
                 </span>
               </div>
-              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
-              ${d.logUrl ? `
-                <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
-              ` : ""}
+
               ${d.batteryPct == null || d.batteryPct < 0 ? `
                 <div class="row">
                   <span>Battery:</span>
@@ -573,6 +575,7 @@ function render() {
                   </div>
                 </div>
               `}
+
               ${d.rtcTempC == null || Number.isNaN(d.rtcTempC) ? `
                 <div class="row">
                   <span>Temperature:</span>
@@ -587,6 +590,7 @@ function render() {
                   </div>
                 </div>
               `}
+
               <div class="row sd-row">
                 <div class="sd-wrap">
                   <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"></i>
@@ -594,6 +598,13 @@ function render() {
                   <span class="sd-summary ${wifiQualityClass(d.wifiQuality)}">${wifiQualityLabel(d.wifiQuality)} (${clampPercent(d.wifiQuality)}%)</span>
                 </div>
               </div>
+              
+              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
+
+              ${d.logUrl ? `
+                <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
+              ` : ""}
+
             </div>
           </div>
 
