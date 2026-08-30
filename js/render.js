@@ -557,9 +557,6 @@ function render() {
               <div class="row"><span>Next comm.:</span><span>${formatDateTime(nextScheduledConnection(d), d.tz)}</span></div>
               <div class="row"><span>Last capture:</span><span>${formatDateTime(d.lastShotOk, d.tz)}</span></div>
               <div class="row"><span>Confirmed photos:</span><span>${d.photosSuccessful}</span></div>
-              ${ensureFullResUpload || hasPendingFullResUploads ? `
-                <div class="row"><span>Pending full-res uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
-              ` : ""}
               <div class="row">
                 <span>Failed photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
@@ -595,6 +592,12 @@ function render() {
               <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <div class="section-body">
               <div class="row ${pendingUploadModeClass}"><span>Upload:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
               ${fullResUpload ? `
                 <div class="row ${pendingEnsureUploadClass}"><span>Ensure full-res upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
@@ -602,8 +605,14 @@ function render() {
               ${fullResUpload && ensureFullResUpload ? `
                 <div class="row ${pendingBackfillMaxClass}"><span>Backfill after schedule:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
               ` : ""}
+              ${ensureFullResUpload || hasPendingFullResUploads ? `
+                <div class="row"><span>Pending full-res uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
+              ` : ""}
               ${uploadEnabled ? `
                 <div class="row ${pendingUploadTimeoutClass}"><span>Upload timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
+              ` : ""}
+              ${uploadEnabled && d.dropboxTotalMB > 0 ? `
+                <div class="row"><span>Dropbox free space:</span><span>${formatFreeSmart(d.dropboxFreeMB)} / ${formatTotalGB(d.dropboxTotalMB)}</span></div>
               ` : ""}
             </div>
           </div>

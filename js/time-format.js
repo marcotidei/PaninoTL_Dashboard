@@ -368,6 +368,7 @@ function runtimeErrorLevel(d, errorText) {
   const uploadRelated =
     text === "Upload failed" ||
     text === "Dropbox image link unavailable" ||
+    text === "Dropbox account full" ||
     text === "Unable to retrieve image from camera";
   if (uploadRelated && Number(d && d.config && d.config.uploadMode) === 1) {
     return "warn";

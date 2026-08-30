@@ -34,7 +34,8 @@ const LAST_ERR_TEXT = [
   "Panino SD failed",
   "Upload failed",
   "Dropbox authorization not configured",
-  "Dropbox image link unavailable"
+  "Dropbox image link unavailable",
+  "Dropbox account full"
 ];
 
 // New compact health-code registry. During migration, devices that publish "h"
@@ -55,6 +56,7 @@ const HEALTH_CODE_TEXT = {
   5001: "Upload failed",
   5002: "Dropbox authorization not configured",
   5003: "Dropbox image link unavailable",
+  5004: "Dropbox account full",
   6001: "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera",
   6002: "Camera media wedged - hold the GoPro power button for 20s, then retry; factory reset if it persists",
   9001: "Shooting failure"
