@@ -81,7 +81,11 @@ function formatTimeoutMin(value) {
 }
 
 function formatPowerMode(value) {
-  return Number(value) === 1 ? "Power Save" : "Always On";
+  switch (Number(value)) {
+    case 1: return "Power Save";
+    case 2: return "Hybrid";
+    default: return "Always On";
+  }
 }
 
 function formatNtpSyncMode(value) {

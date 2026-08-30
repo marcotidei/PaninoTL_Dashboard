@@ -98,6 +98,8 @@ npm run local
 - Timestamps can be shown in local time or device time.
 - Alerts are shown only when the firmware publishes an active issue or recent error.
 - Older firmware that does not publish newer alert fields simply omits those fields in the dashboard.
+- GoPro power mode displays Always On, Power Save, or Hybrid when published by
+  the firmware.
 
 ## Image Behavior
 

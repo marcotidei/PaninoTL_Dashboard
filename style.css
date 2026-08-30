@@ -524,24 +524,32 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .pending-settings-panel {
+  --pending-panel-text: #271604;
+  --pending-panel-muted: #6b3b08;
+  --pending-panel-heading: #422006;
+  --pending-panel-name: #713f12;
+  --pending-panel-current: #854d0e;
+  --pending-panel-current-muted: rgba(133, 77, 14, 0.42);
+  --pending-panel-next: #111827;
+  --pending-panel-next-muted: rgba(17, 24, 39, 0.42);
   margin-top: 10px;
   background: #f59e0b;
-  color: #422006;
+  color: var(--pending-panel-text);
   border: 1px solid #d97706;
 }
 
 .pending-settings-panel:hover {
-  background: #d97706;
+  background: #fbbf24;
 }
 
 .pending-settings-icon {
-  color: #713f12;
+  color: var(--pending-panel-name);
   opacity: 0.9;
 }
 
 .pending-settings-heading {
   margin-bottom: 8px;
-  color: #422006;
+  color: var(--pending-panel-heading);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -567,7 +575,7 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .pending-settings-name {
-  color: #713f12;
+  color: var(--pending-panel-name);
   font-weight: 800;
 }
 
@@ -580,17 +588,21 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .pending-settings-current {
-  color: #854d0e;
+  color: var(--pending-panel-current);
 }
 
 .pending-settings-next {
-  color: #1c1917;
+  color: var(--pending-panel-next);
   font-weight: 800;
 }
 
 .pending-settings-arrow {
-  color: #854d0e;
+  color: var(--pending-panel-current);
   font-size: 11px;
+}
+
+.pending-settings-panel .text-muted {
+  color: var(--pending-panel-muted);
 }
 
 .pending-setting-affected {
@@ -607,25 +619,33 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .pending-settings-current .day-active {
-  color: #854d0e;
+  color: var(--pending-panel-current);
 }
 
 .pending-settings-current .day-inactive {
-  color: rgba(133, 77, 14, 0.42);
+  color: var(--pending-panel-current-muted);
 }
 
 .pending-settings-next .day-active {
-  color: #1c1917;
+  color: var(--pending-panel-next);
 }
 
 .pending-settings-next .day-inactive {
-  color: rgba(28, 25, 23, 0.35);
+  color: var(--pending-panel-next-muted);
 }
 
 .pending-command-panel {
+  --pending-panel-text: #f5f3ff;
+  --pending-panel-muted: #c4b5fd;
+  --pending-panel-heading: #ddd6fe;
+  --pending-panel-name: #ede9fe;
+  --pending-panel-current: #ddd6fe;
+  --pending-panel-current-muted: rgba(221, 214, 254, 0.45);
+  --pending-panel-next: #ffffff;
+  --pending-panel-next-muted: rgba(255, 255, 255, 0.45);
   margin-top: 10px;
   background: #581c87;
-  color: #f5f3ff;
+  color: var(--pending-panel-text);
   border: 1px solid #7e22ce;
 }
 
@@ -634,28 +654,28 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .pending-command-panel-icon {
-  color: #ddd6fe;
+  color: var(--pending-panel-heading);
   opacity: 0.95;
 }
 
 .pending-command-heading {
-  color: #ddd6fe;
+  color: var(--pending-panel-heading);
 }
 
 .pending-command-name {
-  color: #ede9fe;
+  color: var(--pending-panel-name);
 }
 
 .pending-command-current {
-  color: #ddd6fe;
+  color: var(--pending-panel-current);
 }
 
 .pending-command-next {
-  color: #fff;
+  color: var(--pending-panel-next);
 }
 
 .pending-command-arrow {
-  color: #ddd6fe;
+  color: var(--pending-panel-current);
 }
 
 .capture-toolbar {
