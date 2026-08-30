@@ -2,7 +2,7 @@
 
 Stable browser dashboard for PaninoTL devices.
 
-Version: `v1.0.0`
+Last updated: `2026-08-29 22:21 EDT`
 
 The dashboard connects to the configured MQTT broker, reads retained PaninoTL device state packets, and shows device health, schedule, camera status, Wi-Fi/battery status, SD usage, alerts, and the latest uploaded image when image upload is enabled.
 

@@ -1,4 +1,9 @@
 // Boot
+const dashboardUpdatedAt = document.getElementById("dashboardUpdatedAt");
+if (dashboardUpdatedAt) {
+  dashboardUpdatedAt.textContent = `Updated ${DASHBOARD_UPDATED_AT}`;
+}
+
 updateTzToggleUI();   // restore the persisted My time / Device time choice
 updateViewToggleUI(); // restore the persisted Compact / Expanded view choice
 updateSoundToggleUI(); // restore the persisted image chime choice

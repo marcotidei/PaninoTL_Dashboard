@@ -5,6 +5,7 @@ const DEFAULT_BROKER_URL   = window.PANINOTL_DEFAULT_BROKER_URL || HOSTED_BROKER
 const DEFAULT_TOPIC_PREFIX = window.PANINOTL_DEFAULT_TOPIC_PREFIX || "panino";
 const DEFAULT_TOPIC_FILTER = `${DEFAULT_TOPIC_PREFIX}/+/state`;
 const GRACE_SECONDS = 120;
+const DASHBOARD_UPDATED_AT = "2026-08-29 22:21 EDT";
 
 // Must stay in sync with ISSUE_* (PaninoTL/include/board_config.h) -- the
 // firmware sends the numeric code only, to keep the retained packet small.
