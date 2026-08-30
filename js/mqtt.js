@@ -635,6 +635,8 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       photosFailed,
       sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
       sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
+      paninoSdFault: Number(s.psdf || 0) === 1,
+      paninoSdFaultTime: s.psdt || "",
       dropboxTotalMB: (typeof s.dbxt === "number") ? s.dbxt : 0,
       dropboxFreeMB:  (typeof s.dbxf === "number") ? s.dbxf : 0,
       lastShotOk:    s.ok,

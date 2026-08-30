@@ -620,6 +620,12 @@ function render() {
           <div class="section section-clickable" onclick="openCameraModal('${id}')">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
+              <div class="row">
+                <span>Panino SD:</span>
+                <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
+                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${formatDateTime(d.paninoSdFaultTime, d.tz)}` : ""}` : "OK"}
+                </span>
+              </div>
               ${hasSdTotal(d) ? `
                 <div class="row sd-row">
                   <div class="sd-wrap">
