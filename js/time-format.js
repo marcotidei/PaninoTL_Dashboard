@@ -1,12 +1,5 @@
-// Time helpers
-//
-// Two wire formats coexist on the broker (see PaninoTL
-// docs/time_handling_analysis.md):
-//   new firmware: "YYYY-MM-DDTHH:MM:SSZ"  -- true UTC instant, exact math
-//   old firmware: "YYYY-MM-DD HH:MM:SS"   -- device wall-clock, no zone info;
-//                 parsed in the viewer's zone as before (correct only when
-//                 viewer and device share a zone -- the legacy limitation)
-// The formats are self-distinguishing, so per-message detection is enough.
+// Time helpers. Firmware publishes ISO8601 UTC timestamps when timezone is
+// configured, and local wall-clock strings when it has no zone rule.
 function parseTS(ts) {
   if (!ts || ts === "-") return null;
   if (ts instanceof Date) return ts;
@@ -15,15 +8,16 @@ function parseTS(ts) {
     return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]),
                              Number(iso[4]), Number(iso[5]), Number(iso[6])));
   }
-  const m = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
-  if (!m) return null;
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]));
+  const wall = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+  if (wall) {
+    return new Date(Number(wall[1]), Number(wall[2]) - 1, Number(wall[3]),
+                    Number(wall[4]), Number(wall[5]), Number(wall[6]));
+  }
+  return null;
 }
 
 // Timezone display mode: "my" renders instants in the viewer's zone,
-// "device" in the zone the device publishes ("tz" field, new firmware only).
-// Old-firmware devices have no zone info, so both modes show their wall-clock
-// strings as-is.
+// "device" in the zone the device publishes ("tz" field).
 let tzMode = localStorage.getItem("tzMode") || "my";
 
 function setTzMode(mode) {
@@ -160,7 +154,7 @@ function elapsedAgoDetailed(ts) {
   return `${parts.join(" ")} ago`;
 }
 
-// tz is the device's IANA zone name (may be undefined for old firmware).
+// tz is the device's IANA zone name.
 // Device-time mode uses the browser's own tzdata via Intl, so DST resolves
 // correctly for any instant with zero date math here.
 function formatDateTime(ts, tz) {
@@ -197,8 +191,29 @@ function sdUsagePercent(d) {
   return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
 }
 
+function dropboxUsagePercent(d) {
+  if (!d.dropboxTotalMB || d.dropboxTotalMB === 0) return 0;
+  return Math.round(100 * (1 - (d.dropboxFreeMB / d.dropboxTotalMB)));
+}
+
+function clampPercent(value) {
+  const pct = Number(value);
+  if (!Number.isFinite(pct)) return 0;
+  return Math.max(0, Math.min(100, Math.round(pct)));
+}
+
+function usedSpaceMB(totalMB, freeMB) {
+  if (typeof totalMB !== "number" || totalMB <= 0) return 0;
+  if (typeof freeMB !== "number" || freeMB < 0) return totalMB;
+  return Math.max(0, totalMB - freeMB);
+}
+
 function hasSdTotal(d) {
   return typeof d.sdTotalMB === "number" && d.sdTotalMB > 0;
+}
+
+function hasDropboxTotal(d) {
+  return typeof d.dropboxTotalMB === "number" && d.dropboxTotalMB > 0;
 }
 
 function formatTotalGB(mb) {
@@ -221,6 +236,28 @@ function formatTemperature(celsius) {
   if (celsius == null || Number.isNaN(celsius)) return "-";
   const fahrenheit = (celsius * 9 / 5) + 32;
   return `${celsius.toFixed(2)}°C (${fahrenheit.toFixed(2)}°F)`;
+}
+
+function temperatureBarPercent(celsius) {
+  const value = Number(celsius);
+  if (!Number.isFinite(value)) return 0;
+  return clampPercent(((value + 10) / 80) * 100);
+}
+
+function temperatureLevelClass(celsius) {
+  const value = Number(celsius);
+  if (!Number.isFinite(value)) return "";
+  if (value >= 60) return "sd-error";
+  if (value >= 45) return "sd-warn";
+  return "sd-ok";
+}
+
+function temperatureTextClass(celsius) {
+  const value = Number(celsius);
+  if (!Number.isFinite(value)) return "text-default";
+  if (value >= 60) return "text-danger";
+  if (value >= 45) return "text-warning";
+  return "text-default";
 }
 
 function formatIntervalMinutes(seconds) {
@@ -256,8 +293,8 @@ function dayIndexMon0(jsDay) {
 }
 
 function isDayActive(days, date) {
-  if (!days || days.length < 7) return false;
-  return days[dayIndexMon0(date.getDay())] !== "-";
+  const mask = Number(days) & 0x7f;
+  return !!(mask & (1 << dayIndexMon0(date.getDay())));
 }
 
 function isInsideWindow(d, date) {
@@ -550,6 +587,13 @@ function batteryClass(pct) {
   return "text-danger";
 }
 
+function batteryLevelClass(pct) {
+  if (pct == null || pct < 0) return "";
+  if (pct >= 40) return "sd-ok";
+  if (pct >= 15) return "sd-warn";
+  return "sd-error";
+}
+
 function batteryIconClass(pct) {
   if (pct == null || pct < 0) return "fa-plug-circle-bolt";
   if (pct >= 90) return "fa-battery-full";
@@ -561,6 +605,13 @@ function batteryIconClass(pct) {
 
 function batteryLabel(pct) {
   return (pct == null || pct < 0) ? "Not monitored" : `${pct}%`;
+}
+
+function wifiLevelClass(q) {
+  const v = Number(q ?? 0);
+  if (v >= 60) return "sd-ok";
+  if (v >= 40) return "sd-warn";
+  return "sd-error";
 }
 
 function failureTextClass(count) {
@@ -582,10 +633,19 @@ function sdLevelClass(d) {
   return "sd-error";
 }
 
-function renderDays(daysStr) {
+function dropboxLevelClass(d) {
+  if (!hasDropboxTotal(d)) return "";
+  const pct = dropboxUsagePercent(d);
+  if (pct < 70) return "sd-ok";
+  if (pct < 90) return "sd-warn";
+  return "sd-error";
+}
+
+function renderDays(daysMask) {
+  const mask = Number(daysMask) & 0x7f;
   const labels = ["M","T","W","T","F","S","S"];
   return labels.map((label, i) => {
-    const active = !!daysStr && daysStr[i] && daysStr[i] !== "-";
+    const active = !!(mask & (1 << i));
     return active
       ? `<span class="day-active">${label}</span>`
       : `<span class="day-inactive">${label}</span>`;

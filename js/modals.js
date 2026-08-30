@@ -227,13 +227,6 @@ function modalCommandActions(command) {
   return [];
 }
 
-function modalScheduleMaskToDaysString(value) {
-  const mask = scheduleDaysMaskFromValue(value);
-  return ["M", "T", "W", "T", "F", "S", "S"]
-    .map((label, i) => (mask & (1 << i)) ? label : "-")
-    .join("");
-}
-
 function modalUploadModeFromCommandConfig(config, currentMode) {
   const enabled = modalCommandConfigHas(config, "dropboxUploadEnabled")
     ? !!config.dropboxUploadEnabled
@@ -252,7 +245,7 @@ function deviceCommandBaseConfigWithPending(id) {
   if (!patch) return base;
 
   if (modalCommandConfigHas(patch, "intervalSec")) base.interval = Number(patch.intervalSec);
-  if (modalCommandConfigHas(patch, "scheduleDays")) base.days = modalScheduleMaskToDaysString(patch.scheduleDays);
+  if (modalCommandConfigHas(patch, "scheduleDays")) base.days = scheduleDaysMaskFromValue(patch.scheduleDays);
   if (modalCommandConfigHas(patch, "scheduleStart")) base.start = String(patch.scheduleStart);
   if (modalCommandConfigHas(patch, "scheduleEnd")) base.end = String(patch.scheduleEnd);
   if (modalCommandConfigHas(patch, "photoLens")) base.lens = Number(patch.photoLens);

@@ -7,8 +7,7 @@ const DEFAULT_TOPIC_FILTER = `${DEFAULT_TOPIC_PREFIX}/+/state`;
 const GRACE_SECONDS = 120;
 const DASHBOARD_UPDATED_AT = "2026-08-29 22:21 EDT";
 
-// Must stay in sync with ISSUE_* (PaninoTL/include/board_config.h) -- the
-// firmware sends the numeric code only, to keep the retained packet small.
+// Must stay in sync with ISSUE_* (PaninoTL/include/board_config.h).
 const ISSUE_CODE_TEXT = [
   "None",
   "Camera not found",
@@ -38,8 +37,7 @@ const LAST_ERR_TEXT = [
   "Dropbox account full"
 ];
 
-// New compact health-code registry. During migration, devices that publish "h"
-// use this table; older retained packets keep using LAST_ERR_TEXT/ISSUE_CODE_TEXT.
+// Compact health-code registry.
 const HEALTH_CODE_TEXT = {
   0:    "None",
   2001: "Camera not found",
@@ -64,8 +62,11 @@ const HEALTH_CODE_TEXT = {
 
 function decodeCode(table, code, missingValue = "Unknown") {
   if (typeof code === "number") return (table[code] !== undefined) ? table[code] : "Unknown";
-  // Older firmware sent the string directly; show it as-is instead of "Unknown".
-  if (typeof code === "string") return code;
+  if (typeof code === "string" && code.trim() !== "") {
+    const numeric = Number(code);
+    if (!Number.isNaN(numeric)) return (table[numeric] !== undefined) ? table[numeric] : "Unknown";
+    return code;
+  }
   return missingValue;
 }
 

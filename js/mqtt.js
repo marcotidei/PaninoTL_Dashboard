@@ -300,6 +300,7 @@ async function connectLocalHttp(config) {
 
   clearDashboardState();
   render();
+  if (typeof loadLocalFakeCameras === "function") loadLocalFakeCameras(config);
   endActiveClient(false);
 
   localConnectToken += 1;
@@ -389,13 +390,6 @@ function commandSettingsConfig(command) {
   return null;
 }
 
-function scheduleMaskToDaysString(value) {
-  const mask = scheduleDaysMaskFromValue(value);
-  return ["M", "T", "W", "T", "F", "S", "S"]
-    .map((label, i) => (mask & (1 << i)) ? label : "-")
-    .join("");
-}
-
 function uploadModeFromCommandConfig(config, currentMode) {
   const enabled = commandConfigHas(config, "dropboxUploadEnabled")
     ? !!config.dropboxUploadEnabled
@@ -419,7 +413,7 @@ function applyAcceptedSettingsCommand(id, pending) {
     const value = Number(config.intervalSec);
     if (Number.isFinite(value)) next.interval = value;
   }
-  if (commandConfigHas(config, "scheduleDays")) next.days = scheduleMaskToDaysString(config.scheduleDays);
+  if (commandConfigHas(config, "scheduleDays")) next.days = scheduleDaysMaskFromValue(config.scheduleDays);
   if (commandConfigHas(config, "scheduleStart")) next.start = String(config.scheduleStart);
   if (commandConfigHas(config, "scheduleEnd")) next.end = String(config.scheduleEnd);
   if (commandConfigHas(config, "photoLens")) {
@@ -598,17 +592,15 @@ function handleMqttMessage(topic, message, config = currentConfig) {
     const healthLevel = hasHealth ? normalizeHealthSeverity(h.s) : null;
     const healthTime = hasHealth && h.t && h.t !== "-" ? h.t : null;
     const healthSticky = hasHealth && Number(h.k) === 1;
-    const legacyLastError = decodeCode(LAST_ERR_TEXT, s.err, "None");
-    const legacyLastErrorTime = s.et;
-    const legacyIssueCode = Object.prototype.hasOwnProperty.call(s, "iss")
+    const currentLastError = decodeCode(LAST_ERR_TEXT, s.err, "None");
+    const currentLastErrorTime = s.et;
+    const currentIssueCode = Object.prototype.hasOwnProperty.call(s, "iss")
                             ? decodeCode(ISSUE_CODE_TEXT, s.iss, "None")
                             : null;
     const issueTime = s.it && s.it !== "-" ? s.it : null;
-    const lastError = hasHealth && !healthSticky ? healthText : legacyLastError;
-    const lastErrorTime = hasHealth && !healthSticky ? healthTime : legacyLastErrorTime;
-    const issueCode = hasHealth && healthSticky
-                      ? healthText
-                      : legacyIssueCode;
+    const lastError = hasHealth && !healthSticky ? healthText : currentLastError;
+    const lastErrorTime = hasHealth && !healthSticky ? healthTime : currentLastErrorTime;
+    const issueCode = hasHealth && healthSticky ? healthText : currentIssueCode;
     const failedPhotosIncreased = errorSoundState[id]
       && typeof prev.photosFailed === "number"
       && photosFailed > prev.photosFailed;
@@ -649,11 +641,8 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       healthLevel,
       healthTime,
       healthSticky,
-      // A *standing* condition needing user action (e.g. camera media
-      // subsystem wedged, needs a long power-button hold) -- unlike lastError, this
-      // isn't tied to a specific failed shot and doesn't clear just
-      // because a later shot succeeded. Old firmware does not publish "iss";
-      // keep that as null so the dashboard shows no standing-issue state.
+      // A standing condition needing user action; unlike lastError, this is not
+      // tied to a specific failed shot and does not clear because a later shot succeeded.
       issueCode,
       issueTime,
       // Dropbox share link the device resolved for its own last_capture.jpg.
@@ -665,7 +654,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       imagePacketSeq,
       config: {
         interval: c.i,
-        days:     c.d,
+        days:     scheduleDaysMaskFromValue(c.d),
         start:    c.s,
         end:      c.e,
         lens:     c.l,
@@ -685,8 +674,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       firmware:      f,
       commandAck:    prev.commandAck || null,
       lastCommDevice: s.t,
-      // IANA zone name (new firmware only). Presence implies the "s" block
-      // timestamps are ISO8601 UTC; absence means legacy wall-clock strings.
+      // IANA zone name used for the device-time display mode.
       tz:            s.tz || ""
     };
 
@@ -715,6 +703,7 @@ function connectMQTT(config) {
 
   clearDashboardState();
   render();
+  if (typeof loadLocalFakeCameras === "function") loadLocalFakeCameras(config);
 
   endActiveClient(false);
   setConnStatus("connecting");

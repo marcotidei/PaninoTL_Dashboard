@@ -1369,6 +1369,10 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   align-items: center;
 }
 
+.sd-row > .sd-wrap {
+  flex: 1 1 auto;
+}
+
 .sd-wrap {
   display: flex;
   align-items: center;
@@ -1376,6 +1380,12 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   gap: 8px;
   min-width: 0;
   overflow: hidden;
+}
+
+.sd-wrap > i {
+  flex: 0 0 18px;
+  width: 18px;
+  text-align: center;
 }
 
 .sd-progress {
@@ -1427,8 +1437,10 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .sd-summary {
+  flex: 0 0 auto;
   text-align: right;
   white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .clear-actions {

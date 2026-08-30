@@ -91,13 +91,17 @@ PANINOTL_TOPIC_PREFIX=panino
 npm run local
 ```
 
+For UI work without a device, run `npm run local` and edit `fake-camera.json`.
+When that file is available over the local HTTP server, the dashboard adds it as
+a local fake camera panel. Browsers usually block `fake-camera.json` when
+`index.html` is opened directly with `file://`.
+
 ## Dashboard Behavior
 
 - Device cards are ordered locally and can be rearranged by dragging the device name.
 - Compact and expanded views are available from Display Settings.
 - Timestamps can be shown in local time or device time.
 - Alerts are shown only when the firmware publishes an active issue or recent error.
-- Older firmware that does not publish newer alert fields simply omits those fields in the dashboard.
 - GoPro power mode displays Always On, Power Save, or Hybrid when published by
   the firmware.
 

@@ -9,6 +9,7 @@ updateViewToggleUI(); // restore the persisted Compact / Expanded view choice
 updateSoundToggleUI(); // restore the persisted image chime choice
 applyThumbSize();     // restore the persisted thumbnail size choice
 render();
+loadLocalFakeCameras();
 
 setInterval(() => {
   if (!uiLocked) render();
@@ -25,4 +26,5 @@ if (typeof Notification !== "undefined" && Notification.permission !== "granted"
     return;
   }
   connectMQTT(cfg);
+  loadLocalFakeCameras(cfg);
 })();

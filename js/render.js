@@ -48,13 +48,6 @@ function pendingSettingClass(pendingCommand, keys) {
   return hasPendingSetting(pendingCommand, keys) ? "pending-setting-affected" : "";
 }
 
-function daysMaskToConfigString(value) {
-  const mask = scheduleDaysMaskFromValue(value);
-  return ["M", "T", "W", "T", "F", "S", "S"]
-    .map((label, i) => (mask & (1 << i)) ? label : "-")
-    .join("");
-}
-
 function formatUploadMode(mode) {
   switch (Number(mode)) {
     case 0: return "Disabled";
@@ -124,7 +117,7 @@ function pendingSettingsChanges(d, pendingCommand) {
     changes.push({
       label: "Active days",
       current: { html: renderDays(c.days) },
-      next: { html: renderDays(daysMaskToConfigString(config.scheduleDays)) }
+      next: { html: renderDays(config.scheduleDays) }
     });
   }
 
@@ -146,7 +139,7 @@ function pendingSettingsChanges(d, pendingCommand) {
 
   if (hasOwnValue(config, "intervalSec")) {
     changes.push({
-      label: "Every",
+      label: "Interval",
       current: formatIntervalMinutes(c.interval),
       next: formatIntervalMinutes(config.intervalSec)
     });
@@ -210,7 +203,7 @@ function pendingSettingsChanges(d, pendingCommand) {
 
   if (hasOwnValue(config, "dropboxUploadEnabled") || hasOwnValue(config, "dropboxUploadMode")) {
     changes.push({
-      label: "Upload Last Image",
+      label: "Upload Images",
       current: formatUploadMode(c.uploadMode),
       next: formatUploadMode(pendingUploadMode(config, c.uploadMode))
     });
@@ -563,23 +556,44 @@ function render() {
                   ${d.photosFailed || 0}
                 </span>
               </div>
-              <div class="row">
-                <span>Battery:</span>
-                <span class="${batteryClass(d.batteryPct)}">${batteryLabel(d.batteryPct)}</span>
-              </div>
+              ${d.batteryPct == null || d.batteryPct < 0 ? `
+                <div class="row">
+                  <span>Battery:</span>
+                  <span class="${batteryClass(d.batteryPct)}">${batteryLabel(d.batteryPct)}</span>
+                </div>
+              ` : `
+                <div class="row sd-row">
+                  <div class="sd-wrap">
+                    <i class="fa-solid ${batteryIconClass(d.batteryPct)} ${batteryClass(d.batteryPct)}"></i>
+                    <progress class="sd-progress ${batteryLevelClass(d.batteryPct)}" value="${clampPercent(d.batteryPct)}" max="100"></progress>
+                    <span class="sd-summary ${batteryClass(d.batteryPct)}">${batteryLabel(d.batteryPct)}</span>
+                  </div>
+                </div>
+              `}
               <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
                 <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
               ` : ""}
-              <div class="row">
-                <span>Temperature:</span>
-                <span>${formatTemperature(d.rtcTempC)}</span>
-              </div>
-              <div class="row">
-                <span>Wi-Fi:</span>
-                <span class="${wifiQualityClass(d.wifiQuality)}">
-                  ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)
-                </span>
+              ${d.rtcTempC == null || Number.isNaN(d.rtcTempC) ? `
+                <div class="row">
+                  <span>Temperature:</span>
+                  <span>${formatTemperature(d.rtcTempC)}</span>
+                </div>
+              ` : `
+                <div class="row sd-row">
+                  <div class="sd-wrap">
+                    <i class="fa-solid fa-temperature-half ${temperatureTextClass(d.rtcTempC)}"></i>
+                    <progress class="sd-progress ${temperatureLevelClass(d.rtcTempC)}" value="${temperatureBarPercent(d.rtcTempC)}" max="100"></progress>
+                    <span class="sd-summary ${temperatureTextClass(d.rtcTempC)}">${formatTemperature(d.rtcTempC)}</span>
+                  </div>
+                </div>
+              `}
+              <div class="row sd-row">
+                <div class="sd-wrap">
+                  <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"></i>
+                  <progress class="sd-progress ${wifiLevelClass(d.wifiQuality)}" value="${clampPercent(d.wifiQuality)}" max="100"></progress>
+                  <span class="sd-summary ${wifiQualityClass(d.wifiQuality)}">${wifiQualityLabel(d.wifiQuality)} (${clampPercent(d.wifiQuality)}%)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -589,7 +603,7 @@ function render() {
             <div class="section-body">
               <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
-              <div class="row ${pendingIntervalClass}"><span>Every:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
+              <div class="row ${pendingIntervalClass}"><span>Interval:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
             </div>
@@ -598,7 +612,7 @@ function render() {
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
             <div class="section-body">
-              <div class="row ${pendingUploadModeClass}"><span>Upload:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
+              <div class="row ${pendingUploadModeClass}"><span>Upload Images:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
               ${fullResUpload ? `
                 <div class="row ${pendingEnsureUploadClass}"><span>Ensure full-res upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
               ` : ""}
@@ -606,13 +620,19 @@ function render() {
                 <div class="row ${pendingBackfillMaxClass}"><span>Backfill after schedule:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
               ` : ""}
               ${ensureFullResUpload || hasPendingFullResUploads ? `
-                <div class="row"><span>Pending full-res uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
+                <div class="row"><span>Pending uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
               ` : ""}
               ${uploadEnabled ? `
                 <div class="row ${pendingUploadTimeoutClass}"><span>Upload timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
               ` : ""}
-              ${uploadEnabled && d.dropboxTotalMB > 0 ? `
-                <div class="row"><span>Dropbox free space:</span><span>${formatFreeSmart(d.dropboxFreeMB)} / ${formatTotalGB(d.dropboxTotalMB)}</span></div>
+              ${uploadEnabled && hasDropboxTotal(d) ? `
+                <div class="row sd-row">
+                  <div class="sd-wrap">
+                    <i class="fa-brands fa-dropbox"></i>
+                    <progress class="sd-progress ${dropboxLevelClass(d)}" value="${dropboxUsagePercent(d)}" max="100"></progress>
+                    <span class="sd-summary">${formatFreeSmart(usedSpaceMB(d.dropboxTotalMB, d.dropboxFreeMB))} / ${formatTotalGB(d.dropboxTotalMB)}</span>
+                  </div>
+                </div>
               ` : ""}
             </div>
           </div>
@@ -621,7 +641,7 @@ function render() {
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
               <div class="row">
-                <span>Panino SD:</span>
+                <span>GoPro SD health:</span>
                 <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
                   ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${formatDateTime(d.paninoSdFaultTime, d.tz)}` : ""}` : "OK"}
                 </span>
@@ -631,16 +651,14 @@ function render() {
                   <div class="sd-wrap">
                     <i class="fa-solid fa-sd-card"></i>
                     <progress class="sd-progress ${sdLevelClass(d)}" value="${sdUsagePercent(d)}" max="100"></progress>
-                    <span class="sd-summary">
-                      ${formatFreeSmart(d.sdFreeMB)} / ${formatTotalGB(d.sdTotalMB)}
-                    </span>
+                    <span class="sd-summary">${formatFreeSmart(usedSpaceMB(d.sdTotalMB, d.sdFreeMB))} / ${formatTotalGB(d.sdTotalMB)}</span>
                   </div>
                 </div>
               ` : `
                 <div class="row"><span>SD free space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
               <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
-              <div class="row ${pendingPowerModeClass}"><span>GoPro power:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
+              <div class="row ${pendingPowerModeClass}"><span>Power Mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
               <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row ${pendingOutputClass}"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
             </div>

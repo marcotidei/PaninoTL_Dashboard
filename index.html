@@ -195,7 +195,7 @@
         <label class="fw-settings-row">Start<input id="cmd_scheduleStart" type="time" oninput="markDeviceCommandFieldChanged('scheduleStart')"></label>
         <label class="fw-settings-row">End<input id="cmd_scheduleEnd" type="time" oninput="markDeviceCommandFieldChanged('scheduleEnd')"></label>
         <label class="fw-settings-row">
-          Every
+          Interval
           <span class="fw-input-group">
             <select id="cmd_intervalHours" class="fw-select-sm" onchange="markDeviceCommandFieldChanged('intervalSec')"></select>
             <select id="cmd_intervalMinutes" class="fw-select-md" onchange="markDeviceCommandFieldChanged('intervalSec')"></select>
@@ -221,7 +221,7 @@
           </select>
         </label>
         <label class="fw-settings-row">
-          Upload Last Image
+          Upload Images
           <select id="cmd_dropboxUpload" onchange="markDeviceCommandFieldChanged('dropboxUpload')">
             <option value="0">Disabled</option>
             <option value="1">Thumbnail</option>
@@ -244,7 +244,7 @@
       <h2 class="fw-settings-title">Power</h2>
       <div class="fw-settings-card">
         <label class="fw-settings-row">
-          GoPro Power Control
+          GoPro Power Mode
           <select id="cmd_powerMode" onchange="markDeviceCommandFieldChanged('powerMode')">
             <option value="0">Always On</option>
             <option value="1">Power Save</option>
@@ -403,6 +403,7 @@
 <script src="js/images.js"></script>
 <script src="js/modals.js"></script>
 <script src="js/render.js"></script>
+<script src="js/fake-camera.js"></script>
 <script src="js/boot.js"></script>
 
 </body>
