@@ -1031,7 +1031,7 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   min-width: 132px;
 }
 
-.device-command-abort,
+.cfg-btn.device-command-abort,
 .clear-device-btn {
   flex: 0 0 auto;
   background: #3b0d0d;
@@ -1039,11 +1039,11 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   color: #fff;
 }
 
-.device-command-abort {
+.cfg-btn.device-command-abort {
   min-width: 104px;
 }
 
-.device-command-abort:hover,
+.cfg-btn.device-command-abort:hover,
 .clear-device-btn:hover {
   background: #7f1d1d;
   color: #fff;
