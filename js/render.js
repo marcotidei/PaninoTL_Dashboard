@@ -628,6 +628,12 @@ function render() {
                   <span class="sd-summary ${wifiQualityClass(d.wifiQuality)}">${wifiQualityLabel(d.wifiQuality)} (${clampPercent(d.wifiQuality)}%)</span>
                 </div>
               </div>
+              <div class="row">
+                <span>PaninoTL SD Health:</span>
+                <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
+                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
+                </span>
+              </div>
               <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
                 <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
@@ -677,12 +683,6 @@ function render() {
           <div class="section section-clickable" onclick="openCameraModal(${idLiteral})">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
-              <div class="row">
-                <span>SD Health:</span>
-                <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
-                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
-                </span>
-              </div>
               <div class="row">
                 <span>GoPro SD Health:</span>
                 <span class="${goproSdHealthClass}">${goproSdHealthText}</span>
