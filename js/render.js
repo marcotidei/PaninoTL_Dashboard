@@ -634,7 +634,7 @@ function render() {
                   ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
                 </span>
               </div>
-              <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
+              <div class="row ${pendingSdLogClass}"><span>SD Debug Log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
                 <div class="row"><span>SD Log Link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
               ` : ""}
