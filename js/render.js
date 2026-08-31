@@ -537,11 +537,11 @@ function render() {
         ${captureSrc ? `<span class="capture-slot" data-kind="compact"></span>` : missingImageLink ? capturePlaceholderHtml("compact") : ""}
         <div class="summary-stack">
           <div class="summary-item">
-            <span class="summary-label">Last comm.:</span>
+            <span class="summary-label">Last Comm.:</span>
             <span class="summary-value">${escapeHtml(elapsedAgo(d.lastCommDevice))}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Last capture:</span>
+            <span class="summary-label">Last Capture:</span>
             <span class="summary-value">${escapeHtml(formatDateTime(d.lastShotOk, d.tz))}</span>
           </div>
         </div>
@@ -583,12 +583,12 @@ function render() {
           <div class="section section-clickable" onclick="openFirmwareModal(${idLiteral})">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
-              <div class="row"><span>Last comm.:</span><span>${escapeHtml(elapsedAgo(d.lastCommDevice))}</span></div>
-              <div class="row"><span>Next comm.:</span><span>${escapeHtml(formatDateTime(nextScheduledConnection(d), d.tz))}</span></div>
-              <div class="row"><span>Last capture:</span><span>${escapeHtml(formatDateTime(d.lastShotOk, d.tz))}</span></div>
-              <div class="row"><span>Confirmed photos:</span><span>${d.photosSuccessful}</span></div>
+              <div class="row"><span>Last Comm.:</span><span>${escapeHtml(elapsedAgo(d.lastCommDevice))}</span></div>
+              <div class="row"><span>Next Comm.:</span><span>${escapeHtml(formatDateTime(nextScheduledConnection(d), d.tz))}</span></div>
+              <div class="row"><span>Last Capture:</span><span>${escapeHtml(formatDateTime(d.lastShotOk, d.tz))}</span></div>
+              <div class="row"><span>Confirmed Photos:</span><span>${d.photosSuccessful}</span></div>
               <div class="row">
-                <span>Failed photos:</span>
+                <span>Failed Photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
                   ${d.photosFailed || 0}
                 </span>
@@ -629,14 +629,14 @@ function render() {
                 </div>
               </div>
               <div class="row">
-                <span>SD module health:</span>
+                <span>SD Module Health:</span>
                 <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
                   ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
                 </span>
               </div>
               <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
-                <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
+                <div class="row"><span>SD Log Link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
               ` : ""}
             </div>
           </div>
@@ -644,11 +644,11 @@ function render() {
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
             <div class="section-body">
-              <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
-              <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${escapeHtml(d.config.start)} → ${escapeHtml(d.config.end)}</span></div>
+              <div class="row ${pendingScheduleDaysClass}"><span>Days of the Week:</span><span>${renderDays(d.config.days)}</span></div>
+              <div class="row ${pendingScheduleWindowClass}"><span>Time Window:</span><span>${escapeHtml(d.config.start)} → ${escapeHtml(d.config.end)}</span></div>
               <div class="row ${pendingIntervalClass}"><span>Interval:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
-              <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
+              <div class="row ${pendingNtpSyncClass}"><span>NTP Clock Sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
             </div>
           </div>
 
@@ -657,16 +657,16 @@ function render() {
             <div class="section-body">
               <div class="row ${pendingUploadModeClass}"><span>Upload Images:</span><span>${formatUploadMode(d.config.uploadMode)}</span></div>
               ${fullResUpload ? `
-                <div class="row ${pendingEnsureUploadClass}"><span>Ensure full-res upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
+                <div class="row ${pendingEnsureUploadClass}"><span>Ensure Full-Res Upload:</span><span>${formatEnabled(d.config.ensureFullResUpload)}</span></div>
               ` : ""}
               ${fullResUpload && ensureFullResUpload ? `
-                <div class="row ${pendingBackfillMaxClass}"><span>Backfill after schedule:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
+                <div class="row ${pendingBackfillMaxClass}"><span>Backfill Batch:</span><span>${d.config.backfillMaxAfterSchedule ?? 3}</span></div>
               ` : ""}
               ${ensureFullResUpload || hasPendingFullResUploads ? `
-                <div class="row"><span>Pending uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
+                <div class="row"><span>Pending Uploads:</span><span>${d.pendingFullResUploads || 0}</span></div>
               ` : ""}
               ${uploadEnabled ? `
-                <div class="row ${pendingUploadTimeoutClass}"><span>Upload timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
+                <div class="row ${pendingUploadTimeoutClass}"><span>Upload Timeout:</span><span>${formatTimeoutMin(d.config.uploadTimeout)}</span></div>
               ` : ""}
               ${uploadEnabled && hasDropboxTotal(d) ? `
                 <div class="row sd-row">
@@ -683,11 +683,11 @@ function render() {
           <div class="section section-clickable" onclick="openCameraModal(${idLiteral})">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
-              <div class="row ${pendingPowerModeClass}"><span>Power mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
+              <div class="row ${pendingPowerModeClass}"><span>Power Mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
               <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
-              <div class="row ${pendingOutputClass}"><span>Image format:</span><span>${photoOutputName(d.config.output)}</span></div>
+              <div class="row ${pendingOutputClass}"><span>Image Format:</span><span>${photoOutputName(d.config.output)}</span></div>
               <div class="row">
-                <span>GoPro SD health:</span>
+                <span>GoPro SD Health:</span>
                 <span class="${goproSdHealthClass}">${goproSdHealthText}</span>
               </div>
               <div class="row"><span>Photos on SD:</span><span>${d.sdPhotoCount}</span></div>
@@ -700,7 +700,7 @@ function render() {
                   </div>
                 </div>
               ` : `
-                <div class="row"><span>SD free space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
+                <div class="row"><span>SD Free Space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
             </div>
           </div>
