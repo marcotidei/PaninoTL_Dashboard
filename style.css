@@ -1031,15 +1031,20 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   min-width: 132px;
 }
 
-.device-command-abort {
+.device-command-abort,
+.clear-device-btn {
   flex: 0 0 auto;
-  min-width: 104px;
   background: #3b0d0d;
   border-color: #7f1d1d;
-  color: #fee2e2;
+  color: #fff;
 }
 
-.device-command-abort:hover {
+.device-command-abort {
+  min-width: 104px;
+}
+
+.device-command-abort:hover,
+.clear-device-btn:hover {
   background: #7f1d1d;
   color: #fff;
 }
@@ -1469,8 +1474,6 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .clear-device-btn {
-  background: #3b0d0d;
-  color: #fff;
   border: 1px solid #7f1d1d;
   border-radius: 6px;
   padding: 6px 10px;

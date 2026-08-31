@@ -167,7 +167,7 @@ function pendingSettingsChanges(d, pendingCommand) {
 
   if (hasOwnValue(config, "photoOutput")) {
     changes.push({
-      label: "Format",
+      label: "Image format",
       current: photoOutputName(c.output),
       next: photoOutputName(Number(config.photoOutput))
     });
@@ -628,6 +628,12 @@ function render() {
                   <span class="sd-summary ${wifiQualityClass(d.wifiQuality)}">${wifiQualityLabel(d.wifiQuality)} (${clampPercent(d.wifiQuality)}%)</span>
                 </div>
               </div>
+              <div class="row">
+                <span>SD module health:</span>
+                <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
+                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
+                </span>
+              </div>
               <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
                 <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
@@ -677,16 +683,14 @@ function render() {
           <div class="section section-clickable" onclick="openCameraModal(${idLiteral})">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
+              <div class="row ${pendingPowerModeClass}"><span>Power mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
+              <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
+              <div class="row ${pendingOutputClass}"><span>Image format:</span><span>${photoOutputName(d.config.output)}</span></div>
               <div class="row">
-                <span>SD Health:</span>
-                <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
-                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
-                </span>
-              </div>
-              <div class="row">
-                <span>GoPro SD Health:</span>
+                <span>GoPro SD health:</span>
                 <span class="${goproSdHealthClass}">${goproSdHealthText}</span>
               </div>
+              <div class="row"><span>Photos on SD:</span><span>${d.sdPhotoCount}</span></div>
               ${hasSdTotal(d) ? `
                 <div class="row sd-row">
                   <div class="sd-wrap">
@@ -698,10 +702,6 @@ function render() {
               ` : `
                 <div class="row"><span>SD free space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
-              <div class="row"><span>Photos on GoPro SD:</span><span>${d.sdPhotoCount}</span></div>
-              <div class="row ${pendingPowerModeClass}"><span>Power Mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
-              <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
-              <div class="row ${pendingOutputClass}"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
             </div>
           </div>
         </div>
@@ -709,6 +709,7 @@ function render() {
         ${pendingCommandPanelHtml(id, d, pendingCommand)}
 
         <div class="clear-actions">
+          <button class="clear-device-btn" onclick="clearDeviceState(event, ${idLiteral})">Clear Device</button>
           <div class="command-action-group">
             <button type="button" class="device-command-btn" data-device-id="${escapeAttr(id)}"
               onclick="openDeviceCommandModal(event)" title="Device settings and commands"
@@ -721,7 +722,6 @@ function render() {
               </span>
             ` : ""}
           </div>
-          <button class="clear-device-btn" onclick="clearDeviceState(event, ${idLiteral})">Clear Device</button>
         </div>
       </div>
     `;
