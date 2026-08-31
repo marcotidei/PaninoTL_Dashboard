@@ -168,6 +168,66 @@ function formatDateTime(ts, tz) {
   return t.toLocaleString();
 }
 
+const deviceWallTimeFormatters = {};
+
+function wallTimeFormatter(tz) {
+  if (!tz) return null;
+  if (deviceWallTimeFormatters[tz]) return deviceWallTimeFormatters[tz];
+  deviceWallTimeFormatters[tz] = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  });
+  return deviceWallTimeFormatters[tz];
+}
+
+function localWallParts(date) {
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+    second: date.getSeconds(),
+    jsDay: date.getDay()
+  };
+}
+
+function deviceWallParts(date, tz) {
+  if (!tz) return localWallParts(date);
+  try {
+    const parts = {};
+    wallTimeFormatter(tz).formatToParts(date).forEach(part => {
+      if (part.type !== "literal") parts[part.type] = part.value;
+    });
+    const year = Number(parts.year);
+    const month = Number(parts.month);
+    const day = Number(parts.day);
+    const hour = Number(parts.hour);
+    const minute = Number(parts.minute);
+    const second = Number(parts.second);
+    if (![year, month, day, hour, minute, second].every(Number.isFinite)) {
+      return localWallParts(date);
+    }
+    return {
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second,
+      jsDay: new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+    };
+  } catch {
+    return localWallParts(date);
+  }
+}
+
 function uploadEnabled(config) {
   return Number(config && config.uploadMode) > 0;
 }
@@ -297,40 +357,58 @@ function isDayActive(days, date) {
   return !!(mask & (1 << dayIndexMon0(date.getDay())));
 }
 
-function isInsideWindow(d, date) {
+function isDayActiveWall(days, wall) {
+  const mask = Number(days) & 0x7f;
+  return !!(mask & (1 << dayIndexMon0(wall.jsDay)));
+}
+
+function shiftWallDate(wall, days) {
+  const shifted = new Date(Date.UTC(wall.year, wall.month - 1, wall.day + days));
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: wall.hour,
+    minute: wall.minute,
+    second: wall.second,
+    jsDay: shifted.getUTCDay()
+  };
+}
+
+function isInsideWindowWall(d, wall) {
   if (!d.config || !d.config.days) return false;
   const startSec = hhmmToSeconds(d.config.start);
   const endSec   = hhmmToSeconds(d.config.end);
   const endLimitSec = endSec + 60;
-  const curSec   = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  const curSec   = wall.hour * 3600 + wall.minute * 60 + wall.second;
   const wraps    = startSec >= endSec;
 
   if (!wraps) {
-    return isDayActive(d.config.days, date) && curSec >= startSec && curSec < endLimitSec;
+    return isDayActiveWall(d.config.days, wall) && curSec >= startSec && curSec < endLimitSec;
   }
-  const prev = new Date(date);
-  prev.setDate(prev.getDate() - 1);
+  const prev = shiftWallDate(wall, -1);
   return (
-    (isDayActive(d.config.days, date) && curSec >= startSec) ||
-    (isDayActive(d.config.days, prev) && curSec < endLimitSec)
+    (isDayActiveWall(d.config.days, wall) && curSec >= startSec) ||
+    (isDayActiveWall(d.config.days, prev) && curSec < endLimitSec)
   );
+}
+
+function isInsideWindow(d, date) {
+  return isInsideWindowWall(d, deviceWallParts(date, d && d.tz));
 }
 
 // Device schedules are aligned to midnight; scan minute slots for the next valid one.
 function nextScheduledSlotAfter(d, from) {
   if (!d.config || !d.config.interval) return null;
   const intervalMs = d.config.interval * 1000;
-  const search     = new Date(from);
+  const startMs = Math.floor(from.getTime() / 60000) * 60000 + 60000;
 
   for (let i = 0; i < 8 * 24 * 60; i++) {
-    const t        = new Date(search.getTime() + i * 60000);
-    const midnight = new Date(t);
-    midnight.setHours(0, 0, 0, 0);
-    const elapsedMs     = t.getTime() - midnight.getTime();
-    const nextElapsedMs = Math.ceil(elapsedMs / intervalMs) * intervalMs;
-    const candidate     = new Date(midnight.getTime() + nextElapsedMs);
-    if (candidate <= from) continue;
-    if (isInsideWindow(d, candidate)) return candidate;
+    const candidate = new Date(startMs + i * 60000);
+    const wall = deviceWallParts(candidate, d.tz);
+    const elapsedMs = ((wall.hour * 3600) + (wall.minute * 60) + wall.second) * 1000;
+    if (elapsedMs % intervalMs !== 0) continue;
+    if (isInsideWindowWall(d, wall)) return candidate;
   }
   return null;
 }

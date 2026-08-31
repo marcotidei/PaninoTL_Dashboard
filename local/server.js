@@ -373,7 +373,14 @@ function sendVendor(req, res, pathname) {
 
 function sendStatic(req, res) {
   const requestUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const decoded = decodeURIComponent(requestUrl.pathname);
+  let decoded = "";
+  try {
+    decoded = decodeURIComponent(requestUrl.pathname);
+  } catch {
+    res.writeHead(400);
+    res.end("Bad request");
+    return;
+  }
   const pathname = decoded === "/" ? "/index.html" : decoded;
 
   if (pathname.startsWith("/local-api/") && handleLocalApi(req, res, pathname, requestUrl)) {

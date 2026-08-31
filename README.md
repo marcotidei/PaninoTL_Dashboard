@@ -102,8 +102,10 @@ a local fake camera panel. Browsers usually block `fake-camera.json` when
 - Compact and expanded views are available from Display Settings.
 - Timestamps can be shown in local time or device time.
 - Alerts are shown only when the firmware publishes an active issue or recent error.
-- GoPro power mode displays Always On, Power Save, or Hybrid when published by
+- Power Mode displays Always On, Power Save, or Hybrid when published by
   the firmware.
+- GoPro SD health displays the camera-reported write-issues counter when
+  published by the firmware.
 
 ## Image Behavior
 

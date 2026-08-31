@@ -11,6 +11,8 @@
       "sdpc": 255,
       "st": 32768,
       "sf": 18420,
+      "sdw": 0,
+      "sdwv": 1,
       "psdf": 0,
       "psdt": "-",
       "dbxt": 2048,
@@ -50,8 +52,10 @@
       "sn": "FAKE12345678"
     },
     "f": {
-      "v": "fake-dashboard-test",
-      "b": "2026-08-30T19:10:00Z"
+      "dt": "2026-08-30 19:10:00",
+      "id": "fake-dashboard-test",
+      "wmac": "FA:KE:00:00:00:01",
+      "dirty": false
     },
     "h": {
       "c": 0,

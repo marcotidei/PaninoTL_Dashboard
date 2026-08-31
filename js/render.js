@@ -12,6 +12,18 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function jsStringLiteralAttr(value) {
+  return escapeHtml(JSON.stringify(String(value ?? "")));
+}
+
 function hasOwnValue(obj, key) {
   return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
 }
@@ -163,7 +175,7 @@ function pendingSettingsChanges(d, pendingCommand) {
 
   if (hasOwnValue(config, "powerMode")) {
     changes.push({
-      label: "GoPro Power",
+      label: "Power Mode",
       current: formatPowerMode(c.powerMode),
       next: formatPowerMode(config.powerMode)
     });
@@ -332,13 +344,23 @@ function pendingCommandPanelHtml(id, d, pendingCommand) {
 function buildSnapshot() {
   return JSON.stringify(
     {
+      tzMode,
       timeBucket: Math.floor(Date.now() / RENDER_TIME_BUCKET_MS),
       devices: orderedDeviceIds().map(id => {
         const d = devices[id];
         const s = status(d, id);
+        const captureSrc = captureImageSrc(id);
+        const meta = imageMeta[id];
         return {
           id,
           s,
+          captureSrc,
+          captureMeta: meta && meta.src === captureSrc ? {
+            width: meta.width,
+            height: meta.height,
+            bytes: meta.bytes,
+            exifLoaded: meta.exifLoaded
+          } : null,
           lastCommDevice: d.lastCommDevice,
           batteryPct:     d.batteryPct,
           rtcTempC:       d.rtcTempC,
@@ -348,6 +370,14 @@ function buildSnapshot() {
           photosFailed:   d.photosFailed,
           sdFreeMB:       d.sdFreeMB,
           sdTotalMB:      d.sdTotalMB,
+          paninoSdFault:  d.paninoSdFault,
+          paninoSdFaultTime: d.paninoSdFaultTime,
+          goproSdWriteIssues: d.goproSdWriteIssues,
+          goproSdWriteIssuesValid: d.goproSdWriteIssuesValid,
+          dropboxTotalMB: d.dropboxTotalMB,
+          dropboxFreeMB:  d.dropboxFreeMB,
+          pendingFullResUploads: d.pendingFullResUploads,
+          logUrl:         d.logUrl,
           lastShotOk:     d.lastShotOk,
           lastUploadOk:   d.lastUploadOk,
           imageUrl:       d.imageUrl,
@@ -364,6 +394,7 @@ function buildSnapshot() {
           healthTime:     d.healthTime,
           healthSticky:   d.healthSticky,
           firmware:       d.firmware,
+          config:         d.config,
           pendingCommand:  pendingCommands[id] && pendingCommands[id].command,
           commandAck:     d.commandAck,
           open:           !!openState[id]
@@ -389,6 +420,7 @@ function render() {
   visibleDeviceIds.forEach(id => {
     const d = devices[id];
     if (!d.config) return;
+    const idLiteral = jsStringLiteralAttr(id);
     const captureSrc = captureImageSrc(id);
     const missingImageLink = uploadMissingImageLink(d);
 
@@ -436,6 +468,13 @@ function render() {
     const fullResUpload = Number(d.config.uploadMode) === 2;
     const ensureFullResUpload = Number(d.config.ensureFullResUpload) === 1 || d.config.ensureFullResUpload === true;
     const hasPendingFullResUploads = Number(d.pendingFullResUploads || 0) > 0;
+    const goproSdWriteIssues = Number(d.goproSdWriteIssues || 0);
+    const goproSdHealthClass = !d.goproSdWriteIssuesValid
+      ? ""
+      : (goproSdWriteIssues > 0 ? "text-danger" : "text-success");
+    const goproSdHealthText = !d.goproSdWriteIssuesValid
+      ? "Unknown"
+      : (goproSdWriteIssues > 0 ? `${goproSdWriteIssues} write issues` : "OK");
 
     const dev = document.createElement("div");
     dev.className    = "device " + panelState;
@@ -453,10 +492,10 @@ function render() {
     const alertBannerHtml = `
       <div class="alert-banner ${alertClass(err)} ${err.glow ? "glow" : ""}">
         ${err.hasError ? `
-          <span>${err.text}</span>
-          ${err.time ? `<span class="alert-time">${formatDateTime(err.time, d.tz)}</span>` : ""}
+          <span>${escapeHtml(err.text)}</span>
+          ${err.time ? `<span class="alert-time">${escapeHtml(formatDateTime(err.time, d.tz))}</span>` : ""}
           ${err.jsonError ? `
-            <span class="secondary-alert">${err.jsonError} @ ${formatDateTime(err.jsonErrorTime, d.tz)}</span>
+            <span class="secondary-alert">${escapeHtml(err.jsonError)} @ ${escapeHtml(formatDateTime(err.jsonErrorTime, d.tz))}</span>
           ` : ""}
         ` : "<span>No alerts</span>"}
       </div>
@@ -465,11 +504,11 @@ function render() {
     dev.innerHTML = `
       <div class="header" onclick="maybeToggle(this.parentElement, event)">
         <span class="device-title">
-          <button type="button" class="drag-handle" title="Drag to reorder" aria-label="Drag ${id} to reorder"
-            onpointerdown="handleDeviceDragPointerDown(event, '${id}')" onclick="event.stopPropagation()">
+          <button type="button" class="drag-handle" title="Drag to reorder" aria-label="${escapeAttr(`Drag ${id} to reorder`)}"
+            onpointerdown="handleDeviceDragPointerDown(event, ${idLiteral})" onclick="event.stopPropagation()">
             <i class="fa-solid fa-grip-vertical"></i>
           </button>
-          <b class="device-name">${id}</b>
+          <b class="device-name">${escapeHtml(id)}</b>
         </span>
         <span class="header-metrics">
           ${pendingCommand ? `
@@ -486,10 +525,10 @@ function render() {
           </span>
 
           <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"
-            title="Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)"></i>
+            title="${escapeAttr(`Wi-Fi ${wifiQualityLabel(d.wifiQuality)} (${d.wifiQuality ?? 0}%)`)}"></i>
 
           <i class="fa-solid ${batteryIconClass(d.batteryPct)} ${batteryClass(d.batteryPct)}"
-            title="Battery ${batteryLabel(d.batteryPct)}"></i>
+            title="${escapeAttr(`Battery ${batteryLabel(d.batteryPct)}`)}"></i>
         </span>
       </div>
 
@@ -499,39 +538,37 @@ function render() {
         <div class="summary-stack">
           <div class="summary-item">
             <span class="summary-label">Last comm.:</span>
-            <span class="summary-value">${elapsedAgo(d.lastCommDevice)}</span>
+            <span class="summary-value">${escapeHtml(elapsedAgo(d.lastCommDevice))}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">Last capture:</span>
-            <span class="summary-value">${formatDateTime(d.lastShotOk, d.tz)}</span>
+            <span class="summary-value">${escapeHtml(formatDateTime(d.lastShotOk, d.tz))}</span>
           </div>
         </div>
 
         <div class="summary-schedule">
           <span class="summary-days ${pendingScheduleDaysClass}">${renderDays(d.config.days)}</span>
-          <span class="${pendingScheduleWindowClass}">${d.config.start} → ${d.config.end}</span>
+          <span class="${pendingScheduleWindowClass}">${escapeHtml(d.config.start)} → ${escapeHtml(d.config.end)}</span>
           <span class="${pendingIntervalClass}">${formatIntervalMinutes(d.config.interval)}</span>
         </div>
       </div>
 
       <div class="content">
         ${alertBannerHtml}
-
         <div class="sections">
-
           <div class="section">
             <div class="section-icon"><i class="fa-solid fa-image"></i></div>
             <div class="section-body">
               ${captureSrc ? `
                 <span class="capture-slot" data-kind="expanded"></span>
                 <div class="capture-toolbar">
-                  <button class="capture-tool-btn" onclick="refreshCaptureImage(event, '${id}')" title="Force refresh image">
+                  <button class="capture-tool-btn" onclick="refreshCaptureImage(event, ${idLiteral})" title="Force refresh image">
                     <i class="fa-solid fa-rotate-right"></i>
                   </button>
-                  <button class="capture-tool-btn" onclick="downloadCaptureImageFromToolbar(event, '${id}')" title="Download image">
+                  <button class="capture-tool-btn" onclick="downloadCaptureImageFromToolbar(event, ${idLiteral})" title="Download image">
                     <i class="fa-solid fa-download"></i>
                   </button>
-                  <button class="capture-tool-btn" onclick="openImageInfoModal(event, '${id}')" title="Image info">
+                  <button class="capture-tool-btn" onclick="openImageInfoModal(event, ${idLiteral})" title="Image info">
                     <i class="fa-solid fa-circle-info"></i>
                   </button>
                 </div>
@@ -543,24 +580,19 @@ function render() {
             </div>
           </div>
 
-          <div class="section section-clickable" onclick="openFirmwareModal('${id}')">
+          <div class="section section-clickable" onclick="openFirmwareModal(${idLiteral})">
             <div class="section-icon"><i class="fa-solid fa-heart-pulse"></i></div>
             <div class="section-body">
-              <div class="row"><span>Last comm.:</span><span>${elapsedAgo(d.lastCommDevice)}</span></div>
-
-              <div class="row"><span>Next comm.:</span><span>${formatDateTime(nextScheduledConnection(d), d.tz)}</span></div>
-
-              <div class="row"><span>Last capture:</span><span>${formatDateTime(d.lastShotOk, d.tz)}</span></div>
-
+              <div class="row"><span>Last comm.:</span><span>${escapeHtml(elapsedAgo(d.lastCommDevice))}</span></div>
+              <div class="row"><span>Next comm.:</span><span>${escapeHtml(formatDateTime(nextScheduledConnection(d), d.tz))}</span></div>
+              <div class="row"><span>Last capture:</span><span>${escapeHtml(formatDateTime(d.lastShotOk, d.tz))}</span></div>
               <div class="row"><span>Confirmed photos:</span><span>${d.photosSuccessful}</span></div>
-
               <div class="row">
                 <span>Failed photos:</span>
                 <span class="${failureTextClass(d.photosFailed)}">
                   ${d.photosFailed || 0}
                 </span>
               </div>
-
               ${d.batteryPct == null || d.batteryPct < 0 ? `
                 <div class="row">
                   <span>Battery:</span>
@@ -575,22 +607,20 @@ function render() {
                   </div>
                 </div>
               `}
-
               ${d.rtcTempC == null || Number.isNaN(d.rtcTempC) ? `
                 <div class="row">
                   <span>Temperature:</span>
-                  <span>${formatTemperature(d.rtcTempC)}</span>
+                  <span>${escapeHtml(formatTemperature(d.rtcTempC))}</span>
                 </div>
               ` : `
                 <div class="row sd-row">
                   <div class="sd-wrap">
                     <i class="fa-solid fa-temperature-half ${temperatureTextClass(d.rtcTempC)}"></i>
                     <progress class="sd-progress ${temperatureLevelClass(d.rtcTempC)}" value="${temperatureBarPercent(d.rtcTempC)}" max="100"></progress>
-                    <span class="sd-summary ${temperatureTextClass(d.rtcTempC)}">${formatTemperature(d.rtcTempC)}</span>
+                    <span class="sd-summary ${temperatureTextClass(d.rtcTempC)}">${escapeHtml(formatTemperature(d.rtcTempC))}</span>
                   </div>
                 </div>
               `}
-
               <div class="row sd-row">
                 <div class="sd-wrap">
                   <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"></i>
@@ -598,13 +628,10 @@ function render() {
                   <span class="sd-summary ${wifiQualityClass(d.wifiQuality)}">${wifiQualityLabel(d.wifiQuality)} (${clampPercent(d.wifiQuality)}%)</span>
                 </div>
               </div>
-              
               <div class="row ${pendingSdLogClass}"><span>SD debug log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
-
               ${d.logUrl ? `
                 <div class="row"><span>SD log link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>
               ` : ""}
-
             </div>
           </div>
 
@@ -612,7 +639,7 @@ function render() {
             <div class="section-icon"><i class="fa-solid fa-calendar-days"></i></div>
             <div class="section-body">
               <div class="row ${pendingScheduleDaysClass}"><span>Days of the week:</span><span>${renderDays(d.config.days)}</span></div>
-              <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${d.config.start} → ${d.config.end}</span></div>
+              <div class="row ${pendingScheduleWindowClass}"><span>Time window:</span><span>${escapeHtml(d.config.start)} → ${escapeHtml(d.config.end)}</span></div>
               <div class="row ${pendingIntervalClass}"><span>Interval:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
               <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>Clock sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
@@ -647,14 +674,18 @@ function render() {
             </div>
           </div>
 
-          <div class="section section-clickable" onclick="openCameraModal('${id}')">
+          <div class="section section-clickable" onclick="openCameraModal(${idLiteral})">
             <div class="section-icon"><i class="fa-solid fa-camera"></i></div>
             <div class="section-body">
               <div class="row">
-                <span>GoPro SD health:</span>
+                <span>SD Health:</span>
                 <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
-                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${formatDateTime(d.paninoSdFaultTime, d.tz)}` : ""}` : "OK"}
+                  ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
                 </span>
+              </div>
+              <div class="row">
+                <span>GoPro SD Health:</span>
+                <span class="${goproSdHealthClass}">${goproSdHealthText}</span>
               </div>
               ${hasSdTotal(d) ? `
                 <div class="row sd-row">
@@ -667,7 +698,7 @@ function render() {
               ` : `
                 <div class="row"><span>SD free space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
-              <div class="row"><span>Photos in SD:</span><span>${d.sdPhotoCount}</span></div>
+              <div class="row"><span>Photos on GoPro SD:</span><span>${d.sdPhotoCount}</span></div>
               <div class="row ${pendingPowerModeClass}"><span>Power Mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
               <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row ${pendingOutputClass}"><span>Format:</span><span>${photoOutputName(d.config.output)}</span></div>
@@ -690,7 +721,7 @@ function render() {
               </span>
             ` : ""}
           </div>
-          <button class="clear-device-btn" onclick="clearDeviceState(event, '${id}')">Clear Device</button>
+          <button class="clear-device-btn" onclick="clearDeviceState(event, ${idLiteral})">Clear Device</button>
         </div>
       </div>
     `;

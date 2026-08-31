@@ -11,10 +11,10 @@ const DASHBOARD_UPDATED_AT = "2026-08-29 22:21 EDT";
 const ISSUE_CODE_TEXT = [
   "None",
   "Camera not found",
-  "Camera found but unable to connect",
+  "Camera not connected",
   "Shooting failure",
   "Camera Wi-Fi on 5 GHz - set it to 2.4GHz on the camera to allow PaninoTL to get the image",
-  "Unable to retrieve image from camera"
+  "Camera media wedged - hold the GoPro power button for 20s, then retry; factory reset if it persists"
 ];
 
 // Must stay in sync with LastErrorReason (PaninoTL/include/app_defs.h).
