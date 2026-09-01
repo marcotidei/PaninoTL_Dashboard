@@ -629,7 +629,7 @@ function render() {
                 </div>
               </div>
               <div class="row">
-                <span>SD Module Health:</span>
+                <span>Panino SD Module:</span>
                 <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
                   ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
                 </span>
@@ -686,11 +686,13 @@ function render() {
               <div class="row ${pendingPowerModeClass}"><span>Power Mode:</span><span>${formatPowerMode(d.config.powerMode)}</span></div>
               <div class="row ${pendingLensClass}"><span>Lens:</span><span>${lensName(d.config.lens)}</span></div>
               <div class="row ${pendingOutputClass}"><span>Image Format:</span><span>${photoOutputName(d.config.output)}</span></div>
-              <div class="row">
-                <span>GoPro SD Health:</span>
-                <span class="${goproSdHealthClass}">${goproSdHealthText}</span>
-              </div>
-              <div class="row"><span>Photos on SD:</span><span>${d.sdPhotoCount}</span></div>
+              ${d.goproSdWriteIssuesValid ? `
+                <div class="row">
+                  <span>GoPro SD Health:</span>
+                  <span class="${goproSdHealthClass}">${goproSdHealthText}</span>
+                </div>
+              ` : ""}
+              <div class="row"><span>Photos on GoPro SD:</span><span>${d.sdPhotoCount}</span></div>
               ${hasSdTotal(d) ? `
                 <div class="row sd-row">
                   <div class="sd-wrap">
@@ -700,7 +702,7 @@ function render() {
                   </div>
                 </div>
               ` : `
-                <div class="row"><span>SD Free Space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
+                <div class="row"><span>GoPro SD Free Space:</span><span>${formatFreeSmart(d.sdFreeMB)}</span></div>
               `}
             </div>
           </div>

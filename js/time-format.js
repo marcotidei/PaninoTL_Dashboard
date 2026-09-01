@@ -491,11 +491,65 @@ function runtimeErrorLevel(d, errorText) {
   return "error";
 }
 
-// A standing issue (e.g. camera needs manual recovery) wins the banner over
-// everything else: it needs physical user action and won't clear on its own
-// the way a comm delay or a single failed shot might. Communication
-// delay/loss is next, then JSON errors are still shown too as a secondary line.
+// Communication delay/loss wins the banner because it is the freshest sign that
+// the board is no longer reporting. Camera/media issues remain visible as
+// secondary context when they are not the main active problem.
 function effectiveErrorInfo(d, id, statusLevel) {
+  let commAlert = null;
+  if (statusLevel === "warn" && d.lastCommDevice && d.config && d.config.interval) {
+    const lastComm = parseTS(d.lastCommDevice);
+    if (lastComm && !isNaN(lastComm)) {
+      commAlert = {
+        text:  "COMM DELAY",
+        time:  new Date(lastComm.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
+        level: "warn",
+        glow:  false
+      };
+    }
+  } else if (statusLevel === "error" && d.lastCommDevice && d.config && d.config.interval) {
+    const lastComm = parseTS(d.lastCommDevice);
+    if (lastComm && !isNaN(lastComm)) {
+      commAlert = {
+        text:  "COMM LOST",
+        time:  new Date(lastComm.getTime() + ((2 * d.config.interval) + GRACE_SECONDS) * 1000),
+        level: "error",
+        glow:  true
+      };
+    }
+  }
+
+  const standingIssue = d.healthSticky && d.healthText && d.healthText !== "None"
+    ? {
+        text:  d.healthText,
+        time:  d.healthTime,
+        level: d.healthLevel === "error" ? "error" : "warn"
+      }
+    : (d.issueCode && d.issueCode !== "None")
+      ? {
+          text:  d.issueCode,
+          time:  d.issueTime,
+          level: "warn"
+        }
+      : null;
+
+  const hasJsonError    = !!(d.lastError && d.lastError !== "None");
+  const recentJsonError = hasJsonError && isRecentError(d);
+  const recentJsonLevel = runtimeErrorLevel(d, d.lastError);
+  const secondaryJsonError = recentJsonError ? d.lastError : null;
+  const secondaryJsonErrorTime = recentJsonError ? d.lastErrorTime : null;
+
+  if (commAlert) {
+    return {
+      hasError:      true,
+      text:          commAlert.text,
+      time:          commAlert.time,
+      level:         commAlert.level,
+      glow:          commAlert.glow,
+      jsonError:     standingIssue ? standingIssue.text : secondaryJsonError,
+      jsonErrorTime: standingIssue ? standingIssue.time : secondaryJsonErrorTime
+    };
+  }
+
   if (d.healthSticky && d.healthText && d.healthText !== "None") {
     return {
       hasError:      true,
@@ -530,47 +584,6 @@ function effectiveErrorInfo(d, id, statusLevel) {
       glow:          false,
       jsonError:     null,
       jsonErrorTime: null
-    };
-  }
-
-  let commAlert = null;
-  if (statusLevel === "warn" && d.lastCommDevice && d.config && d.config.interval) {
-    const lastComm = parseTS(d.lastCommDevice);
-    if (lastComm && !isNaN(lastComm)) {
-      commAlert = {
-        text:  "COMM DELAY",
-        time:  new Date(lastComm.getTime() + (d.config.interval + GRACE_SECONDS) * 1000),
-        level: "warn",
-        glow:  false
-      };
-    }
-  } else if (statusLevel === "error" && d.lastCommDevice && d.config && d.config.interval) {
-    const lastComm = parseTS(d.lastCommDevice);
-    if (lastComm && !isNaN(lastComm)) {
-      commAlert = {
-        text:  "COMM LOST",
-        time:  new Date(lastComm.getTime() + ((2 * d.config.interval) + GRACE_SECONDS) * 1000),
-        level: "error",
-        glow:  true
-      };
-    }
-  }
-
-  const hasJsonError    = !!(d.lastError && d.lastError !== "None");
-  const recentJsonError = hasJsonError && isRecentError(d);
-  const recentJsonLevel = runtimeErrorLevel(d, d.lastError);
-  const secondaryJsonError = recentJsonError ? d.lastError : null;
-  const secondaryJsonErrorTime = recentJsonError ? d.lastErrorTime : null;
-
-  if (commAlert) {
-    return {
-      hasError:      true,
-      text:          commAlert.text,
-      time:          commAlert.time,
-      level:         commAlert.level,
-      glow:          commAlert.glow,
-      jsonError:     secondaryJsonError,
-      jsonErrorTime: secondaryJsonErrorTime
     };
   }
 
