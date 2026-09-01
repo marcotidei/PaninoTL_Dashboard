@@ -1,7 +1,3 @@
-let localPollTimer = null;
-let localPollSeq = 0;
-let localConnectToken = 0;
-
 function normalizeTopicPrefix(prefix) {
   return String(prefix || "").trim().replace(/^\/+|\/+$/g, "");
 }
@@ -13,41 +9,6 @@ function withConfigDefaults(config) {
     url: config.url || DEFAULT_BROKER_URL,
     topicPrefix: normalizeTopicPrefix(config.topicPrefix) || DEFAULT_TOPIC_PREFIX
   };
-}
-
-function isLocalProxyMode() {
-  return !!window.PANINOTL_LOCAL_PROXY;
-}
-
-function isLocalHttpMode() {
-  return isLocalProxyMode() && !!window.PANINOTL_LOCAL_HTTP_API;
-}
-
-function localApiBase() {
-  return String(window.PANINOTL_LOCAL_HTTP_API || "/local-api").replace(/\/+$/g, "");
-}
-
-function localApiUrl(path) {
-  return `${localApiBase()}${path}`;
-}
-
-function shouldUseLocalProxyForSavedUrl(url) {
-  if (!isLocalProxyMode()) return false;
-  const savedUrl = String(url || "").trim();
-  if (!savedUrl) return false;
-  return savedUrl === HOSTED_BROKER_URL
-    || savedUrl.includes("hivemq.cloud:8884")
-    || /^wss?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/mqtt\b/i.test(savedUrl);
-}
-
-function migrateConfigForLocalProxy(config) {
-  config = withConfigDefaults(config);
-  if (shouldUseLocalProxyForSavedUrl(config.url)) {
-    config = { ...config, url: DEFAULT_BROKER_URL };
-    localStorage.setItem("mqtt_config", JSON.stringify(config));
-    console.log("Using local HTTP MQTT bridge for saved broker settings");
-  }
-  return config;
 }
 
 function topicPrefix(config = currentConfig) {
@@ -88,7 +49,7 @@ function deviceIdFromTopic(topic, config = currentConfig, end = "/state") {
 async function loadConfig() {
   const saved = localStorage.getItem("mqtt_config");
   if (saved) {
-    try { return migrateConfigForLocalProxy(JSON.parse(saved)); } catch { localStorage.removeItem("mqtt_config"); }
+    try { return withConfigDefaults(JSON.parse(saved)); } catch { localStorage.removeItem("mqtt_config"); }
   }
   return withConfigDefaults({});
 }
@@ -174,157 +135,16 @@ function setConnStatus(state) {
   }
 }
 
-async function readLocalJson(response) {
-  let data = {};
-  try { data = await response.json(); } catch {}
-  if (!response.ok || data.ok === false) {
-    throw new Error(data.error || data.message || `Local dashboard request failed (${response.status})`);
-  }
-  return data;
-}
-
-function postLocalJson(path, body = {}) {
-  return fetch(localApiUrl(path), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    body: JSON.stringify(body)
-  }).then(readLocalJson);
-}
-
-function stopLocalPolling() {
-  localConnectToken += 1;
-  localPollSeq = 0;
-  if (localPollTimer) {
-    clearTimeout(localPollTimer);
-    localPollTimer = null;
-  }
-}
-
-function endActiveClient(notifyLocalServer = true) {
+function endActiveClient() {
   if (!client) return;
   const active = client;
   client = null;
-
-  if (active.localHttp) {
-    active.end({ notifyServer: notifyLocalServer });
-    return;
-  }
-
   active.end(true);
-}
-
-function createLocalHttpClient() {
-  return {
-    localHttp: true,
-    connected: false,
-    end(options = {}) {
-      this.connected = false;
-      stopLocalPolling();
-      if (options.notifyServer) {
-        postLocalJson("/disconnect").catch(err => {
-          console.warn("Local disconnect failed:", err);
-        });
-      }
-    },
-    publish(topic, payload, options = {}, callback) {
-      postLocalJson("/publish", {
-        topic,
-        payload: String(payload ?? ""),
-        retain: !!options.retain
-      }).then(() => {
-        if (callback) callback(null);
-      }).catch(err => {
-        console.error("Local publish failed:", err);
-        if (callback) callback(err);
-      });
-    }
-  };
-}
-
-function setLocalStatusFromServer(status) {
-  if (!client || !client.localHttp) return;
-  client.connected = !!status.connected;
-
-  if (status.state === "connected") {
-    setConnStatus("connected");
-  } else if (status.state === "connecting") {
-    setConnStatus("connecting");
-  } else if (status.state === "reconnecting") {
-    setConnStatus("reconnecting");
-  } else if (status.state === "error") {
-    setConnStatus("error");
-  } else {
-    setConnStatus("disconnected");
-  }
-}
-
-function scheduleLocalPoll(config, token, delayMs) {
-  if (localPollTimer) clearTimeout(localPollTimer);
-  localPollTimer = setTimeout(() => pollLocalEvents(config, token), delayMs);
-}
-
-async function pollLocalEvents(config, token) {
-  if (token !== localConnectToken || !client || !client.localHttp) return;
-
-  let delayMs = 1500;
-  try {
-    const response = await fetch(`${localApiUrl("/events")}?since=${encodeURIComponent(localPollSeq)}`, {
-      cache: "no-store"
-    });
-    const data = await readLocalJson(response);
-    if (token !== localConnectToken || !client || !client.localHttp) return;
-
-    delayMs = Number(data.pollMs) || delayMs;
-    setLocalStatusFromServer(data);
-    (data.messages || []).forEach(entry => {
-      if (Number(entry.seq) > localPollSeq) localPollSeq = Number(entry.seq);
-      handleMqttMessage(entry.topic, entry.payload, config);
-    });
-  } catch (err) {
-    if (token !== localConnectToken || !client || !client.localHttp) return;
-    client.connected = false;
-    setConnStatus("error");
-    console.error("Local dashboard poll failed:", err);
-  } finally {
-    if (token === localConnectToken && client && client.localHttp) {
-      scheduleLocalPoll(config, token, delayMs);
-    }
-  }
-}
-
-async function connectLocalHttp(config) {
-  config = withConfigDefaults(config);
-  currentConfig = config;
-  manualDisconnect = false;
-
-  clearDashboardState();
-  render();
-  if (typeof loadLocalFakeCameras === "function") loadLocalFakeCameras(config);
-  endActiveClient(false);
-
-  localConnectToken += 1;
-  localPollSeq = 0;
-  const token = localConnectToken;
-  client = createLocalHttpClient();
-  setConnStatus("connecting");
-
-  try {
-    const status = await postLocalJson("/connect", config);
-    if (token !== localConnectToken || !client || !client.localHttp) return;
-    setLocalStatusFromServer(status);
-    scheduleLocalPoll(config, token, 0);
-  } catch (err) {
-    if (token !== localConnectToken || !client || !client.localHttp) return;
-    client.connected = false;
-    setConnStatus("error");
-    console.error("Local dashboard connect failed:", err);
-  }
 }
 
 function disconnectMQTT() {
   manualDisconnect = true;
-  endActiveClient(true);
+  endActiveClient();
   clearDashboardState();
   currentConfig = null;
   setConnStatus("disconnected");
@@ -694,11 +514,6 @@ function handleMqttMessage(topic, message, config = currentConfig) {
 }
 
 function connectMQTT(config) {
-  if (isLocalHttpMode()) {
-    connectLocalHttp(config);
-    return;
-  }
-
   config = withConfigDefaults(config);
   currentConfig = config;
   manualDisconnect = false;
@@ -707,7 +522,7 @@ function connectMQTT(config) {
   render();
   if (typeof loadLocalFakeCameras === "function") loadLocalFakeCameras(config);
 
-  endActiveClient(false);
+  endActiveClient();
   setConnStatus("connecting");
 
   const newClient = mqtt.connect(config.url, {

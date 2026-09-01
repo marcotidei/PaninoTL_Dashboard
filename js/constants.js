@@ -1,8 +1,7 @@
 // Customize these defaults for your broker and MQTT topic layout.
-// A local server may set window.PANINOTL_DEFAULT_* before this file loads.
 const HOSTED_BROKER_URL    = "wss://63f5450f2daa43c191b14e9602fcf094.s1.eu.hivemq.cloud:8884/mqtt";
-const DEFAULT_BROKER_URL   = window.PANINOTL_DEFAULT_BROKER_URL || HOSTED_BROKER_URL;
-const DEFAULT_TOPIC_PREFIX = window.PANINOTL_DEFAULT_TOPIC_PREFIX || "panino";
+const DEFAULT_BROKER_URL   = HOSTED_BROKER_URL;
+const DEFAULT_TOPIC_PREFIX = "panino";
 const DEFAULT_TOPIC_FILTER = `${DEFAULT_TOPIC_PREFIX}/+/state`;
 const GRACE_SECONDS = 120;
 const DASHBOARD_UPDATED_AT = "2026-08-29 22:21 EDT";
