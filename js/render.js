@@ -428,10 +428,13 @@ function render() {
     const s   = status(d, id);
     const err = effectiveErrorInfo(d, id, s);
 
-    // Device panels use the highest severity from communication and JSON status.
+    // Outside the schedule, keep the idle blue/clock state unless there is a
+    // sticky issue that still needs physical user action.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
     const errLevel   = err.hasError && (err.level === "error" || err.level === "warn") ? err.level : s;
-    const panelState = [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
+    const panelState = s === "idle" && !d.issueCode && !d.healthSticky
+      ? "idle"
+      : [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
     const statusIconHtml = (() => {
       if (err.hasError && err.level === "warn") {
         return `<i class="fa-solid fa-circle-exclamation text-warning"></i>`;
@@ -630,7 +633,7 @@ function render() {
                 </div>
               </div>
               <div class="row">
-                <span>Panino SD Module:</span>
+                <span>PaninoTL SD:</span>
                 <span class="${d.paninoSdFault ? "text-danger" : "text-success"}">
                   ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
                 </span>
