@@ -80,9 +80,47 @@ function closeConfigModal(force = false) {
   document.getElementById("configModal").classList.remove("is-visible");
 }
 
+function setConfigError(message) {
+  connectionErrorMessage = message || "";
+  const errorEl = document.getElementById("cfg_error");
+  if (!errorEl) return;
+  errorEl.textContent = connectionErrorMessage;
+  errorEl.hidden = !connectionErrorMessage;
+}
+
+function friendlyMqttError(err) {
+  const text = String((err && (err.message || err.code)) || err || "").trim();
+  const lower = text.toLowerCase();
+
+  if (lower.includes("bad username") ||
+      lower.includes("not authorized") ||
+      lower.includes("not authorised") ||
+      lower.includes("identifier rejected") ||
+      lower.includes("connection refused: bad user name or password") ||
+      (lower.includes("connack") && lower.includes("5"))) {
+    return "The MQTT broker rejected the username or password. Check both credentials and try Connect again.";
+  }
+
+  if (lower.includes("certificate") || lower.includes("tls") || lower.includes("ssl")) {
+    return "The secure broker connection failed. Check that the Broker URL uses the correct secure WebSocket address.";
+  }
+
+  if (lower.includes("timeout") || lower.includes("timed out")) {
+    return "The dashboard could not reach the MQTT broker before the timeout. Check the Broker URL and network.";
+  }
+
+  if (lower.includes("websocket") || lower.includes("web socket")) {
+    return "The browser could not open the MQTT WebSocket connection. Check the Broker URL and whether this network blocks WebSockets.";
+  }
+
+  if (text) return `MQTT connection failed: ${text}`;
+  return "MQTT connection failed. Check the Broker URL, topic prefix, username, and password.";
+}
+
 function saveConfig(event) {
   if (event) event.preventDefault();
   primeAudioFromGesture();
+  setConfigError("");
 
   const config = {
     url:      document.getElementById("cfg_url").value.trim(),
@@ -91,11 +129,11 @@ function saveConfig(event) {
     password: document.getElementById("cfg_pass").value
   };
   if (!config.url || !config.topicPrefix || !config.username) {
-    alert("Please enter broker URL, topic prefix, and username");
+    setConfigError("Please enter broker URL, topic prefix, and username.");
     return;
   }
   if (/[+#]/.test(config.topicPrefix)) {
-    alert("Topic prefix cannot contain MQTT wildcards (+ or #)");
+    setConfigError("Topic prefix cannot contain MQTT wildcards (+ or #).");
     return;
   }
   localStorage.setItem("mqtt_config", JSON.stringify(config));
@@ -115,7 +153,7 @@ function setConnStatus(state) {
     connecting:   { icon: "fa-link",       className: "conn-connecting",   title: "Connecting to broker" },
     reconnecting: { icon: "fa-link",       className: "conn-connecting",   title: "Reconnecting to broker" },
     connected:    { icon: "fa-link",       className: "conn-connected",    title: "Forget credentials and reconnect" },
-    error:        { icon: "fa-link-slash", className: "conn-error",        title: "Reconnect to broker" },
+    error:        { icon: "fa-link-slash", className: "conn-error",        title: connectionErrorMessage || "Reconnect to broker" },
   };
 
   const s = map[state] || map.disconnected;
@@ -126,7 +164,9 @@ function setConnStatus(state) {
 
   if (loginRequired()) {
     openConfigModal(currentConfig || { url: DEFAULT_BROKER_URL });
+    if (state === "error" && connectionErrorMessage) setConfigError(connectionErrorMessage);
   } else if (state === "connected") {
+    setConfigError("");
     closeConfigModal(true);
   }
 
@@ -144,6 +184,7 @@ function endActiveClient() {
 
 function disconnectMQTT() {
   manualDisconnect = true;
+  setConfigError("");
   endActiveClient();
   clearDashboardState();
   currentConfig = null;
@@ -523,6 +564,7 @@ function connectMQTT(config) {
   if (typeof loadLocalFakeCameras === "function") loadLocalFakeCameras(config);
 
   endActiveClient();
+  setConfigError("");
   setConnStatus("connecting");
 
   const newClient = mqtt.connect(config.url, {
@@ -544,6 +586,7 @@ function connectMQTT(config) {
       if (client !== newClient) return;
       if (err) {
         console.error("MQTT subscribe failed:", filters, err);
+        setConfigError(friendlyMqttError(err));
         setConnStatus("error");
         return;
       }
@@ -554,17 +597,23 @@ function connectMQTT(config) {
 
   newClient.on("reconnect", () => {
     if (client !== newClient) return;
+    if (connectionErrorMessage) return;
     setConnStatus("reconnecting");
   });
 
   newClient.on("close", () => {
     if (client !== newClient) return;
+    if (!manualDisconnect && connectionErrorMessage) {
+      setConnStatus("error");
+      return;
+    }
     setConnStatus(manualDisconnect ? "disconnected" : "reconnecting");
   });
 
   newClient.on("error", (err) => {
     if (client !== newClient) return;
     console.error("MQTT error:", err);
+    setConfigError(friendlyMqttError(err));
     setConnStatus("error");
   });
 

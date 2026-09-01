@@ -334,6 +334,8 @@
     </div>
 
     <form id="configForm" autocomplete="on" onsubmit="saveConfig(event)">
+      <div id="cfg_error" class="cfg-error" role="alert" hidden></div>
+
       <div class="cfg-field">
         <label for="cfg_url">Broker URL</label>
         <input

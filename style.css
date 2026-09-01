@@ -769,6 +769,17 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
   cursor: pointer;
 }
 
+.cfg-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  background: #3f1018;
+  color: #fecaca;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .image-info-uploaded {
   border: 1px solid #334155;
   background: #111b2f;

@@ -1,6 +1,7 @@
 let client        = null;
 let currentConfig = null;
 let connectionState = "disconnected";
+let connectionErrorMessage = "";
 let manualDisconnect = false;
 let expandAll     = localStorage.getItem("expandAll") === "true";
 let uiLocked      = false;
