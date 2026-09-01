@@ -174,10 +174,20 @@ function imageMarkedNotCurrent(id) {
     lastError === "shutter failed" ||
     lastError === "shot not confirmed" ||
     lastError === "shooting failure";
+  const imageRetrievalError =
+    lastError === "unable to retrieve image from camera" ||
+    lastError === "dropbox image link unavailable";
+  const latestShot = parseTS(d && d.lastShotOk);
+  const imageShot = parseTS(d && d.imageCaptureTime);
+  const imageBehindCapture = latestShot && !isNaN(latestShot)
+    && imageShot && !isNaN(imageShot)
+    && latestShot.getTime() > imageShot.getTime();
 
   return issue.includes("retrieve image")
     || issue.includes("media")
     || health.includes("media wedged")
+    || imageBehindCapture
+    || (imageRetrievalError && isRecentError(d))
     || (staleCaptureError && isRecentError(d));
 }
 

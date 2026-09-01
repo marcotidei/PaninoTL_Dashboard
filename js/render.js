@@ -127,7 +127,7 @@ function pendingSettingsChanges(d, pendingCommand) {
 
   if (hasOwnValue(config, "scheduleDays")) {
     changes.push({
-      label: "Active days",
+      label: "Active Days",
       current: { html: renderDays(c.days) },
       next: { html: renderDays(config.scheduleDays) }
     });
@@ -382,6 +382,7 @@ function buildSnapshot() {
           lastUploadOk:   d.lastUploadOk,
           imageUrl:       d.imageUrl,
           imageRevision:  d.imageRevision,
+          imageCaptureTime: d.imageCaptureTime,
           imagePacketSeq: d.imagePacketSeq,
           uploadMode:     d.config && d.config.uploadMode,
           lastError:      d.lastError,
@@ -711,12 +712,16 @@ function render() {
         ${pendingCommandPanelHtml(id, d, pendingCommand)}
 
         <div class="clear-actions">
-          <button class="clear-device-btn" onclick="clearDeviceState(event, ${idLiteral})">Clear Device</button>
+          <button class="clear-device-btn" onclick="clearDeviceState(event, ${idLiteral})">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Clear Device</span>
+          </button>
           <div class="command-action-group">
             <button type="button" class="device-command-btn" data-device-id="${escapeAttr(id)}"
               onclick="openDeviceCommandModal(event)" title="Device settings and commands"
               aria-label="Device settings and commands for ${escapeAttr(id)}">
               <i class="fa-solid fa-gear"></i>
+              <span>Settings</span>
             </button>
             ${!pendingCommand && commandAck && commandAck.applied === false ? `
               <span class="command-status error" title="${escapeAttr(commandAck.error || "Command rejected")}">

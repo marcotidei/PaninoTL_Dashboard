@@ -1475,7 +1475,10 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .clear-actions .device-command-btn {
-  width: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
   height: auto;
   min-height: 28px;
   padding: 6px 10px;
@@ -1485,6 +1488,9 @@ body.thumb-size-l .capture-thumb-wrap.kind-compact {
 }
 
 .clear-device-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid #7f1d1d;
   border-radius: 6px;
   padding: 6px 10px;

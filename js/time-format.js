@@ -475,6 +475,9 @@ function isRecentError(d) {
   if (!d.lastShotOk || d.lastShotOk === "-") return true;
   const shot = parseTS(d.lastShotOk);
   if (!shot || isNaN(shot)) return true;
+  if (d.lastError === "Unable to retrieve image from camera") {
+    return err.getTime() >= shot.getTime();
+  }
   return err.getTime() > shot.getTime();
 }
 

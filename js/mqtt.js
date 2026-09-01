@@ -435,9 +435,14 @@ function handleMqttMessage(topic, message, config = currentConfig) {
     const packetHasLogUrl = Object.prototype.hasOwnProperty.call(s, "log");
     const logUrl = packetHasLogUrl ? (s.log || "") : (prev.logUrl || "");
     const imageLinkReceived = !!(packetHasImageUrl && s.img);
-    const lastUploadOk = s.up || prev.lastUploadOk || "";
-    const imageRevision = imageUrl ? [imageUrl, lastUploadOk || s.ok || prev.lastShotOk || ""].join("|") : "";
+    const lastShotOk = s.ok || prev.lastShotOk || "";
+    const lastUploadOk = s.up && s.up !== "-" ? s.up : (prev.lastUploadOk || "");
+    const imageStamp = lastUploadOk || prev.imageCaptureTime || lastShotOk;
+    const imageRevision = imageUrl ? [imageUrl, imageStamp].join("|") : "";
     const imageRevisionChanged = imageLinkReceived && imageRevision && imageRevision !== prev.imageRevision;
+    const imageCaptureTime = imageRevisionChanged
+      ? lastShotOk
+      : (prev.imageCaptureTime || (imageLinkReceived ? lastShotOk : ""));
     const imagePacketSeq = imageRevisionChanged
       ? ((prev.imagePacketSeq || 0) + 1)
       : (prev.imagePacketSeq || 0);
@@ -494,7 +499,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       paninoSdFaultTime: s.psdt || "",
       dropboxTotalMB: (typeof s.dbxt === "number") ? s.dbxt : 0,
       dropboxFreeMB:  (typeof s.dbxf === "number") ? s.dbxf : 0,
-      lastShotOk:    s.ok,
+      lastShotOk,
       lastUploadOk,
       lastCaptureFail,
       lastError,
@@ -514,6 +519,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       imageUrl,
       logUrl,
       imageRevision,
+      imageCaptureTime,
       imagePacketSeq,
       config: {
         interval: c.i,
