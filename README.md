@@ -15,6 +15,7 @@ The dashboard connects to the configured MQTT broker, reads retained PaninoTL de
 - `shutter.wav` - successful image sound
 - `error.wav` - alert sound
 - `fake-camera.json` - optional local fake camera payload for UI testing
+- `fake-camera-help.md` - field reference for customizing `fake-camera.json`
 
 ## Usage
 
@@ -35,6 +36,8 @@ For UI work without a device, serve this folder with any simple static web
 server and edit `fake-camera.json`. When that file is available over HTTP, the
 dashboard adds it as a fake camera panel. Browsers usually block
 `fake-camera.json` when `index.html` is opened directly with `file://`.
+
+See `fake-camera-help.md` for the fake payload fields and common test scenarios.
 
 ## Dashboard Behavior
 
