@@ -428,12 +428,11 @@ function render() {
     const s   = status(d, id);
     const err = effectiveErrorInfo(d, id, s);
 
-    // Outside the schedule, keep the idle blue/clock state unless there is a
-    // sticky issue that still needs physical user action.
+    // Outside the schedule, keep the idle blue/clock card state. Alerts can
+    // still render in the banner, but they should not hide the schedule state.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
     const errLevel   = err.hasError && (err.level === "error" || err.level === "warn") ? err.level : s;
-    const hasStandingIssue = !!(d.healthSticky || (d.issueCode && d.issueCode !== "None"));
-    const panelState = s === "idle" && !hasStandingIssue
+    const panelState = s === "idle"
       ? "idle"
       : [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
     const statusIconHtml = (() => {
