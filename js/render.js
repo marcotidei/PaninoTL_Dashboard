@@ -432,10 +432,14 @@ function render() {
     // sticky issue that still needs physical user action.
     const severityOf = level => ({ ok: 1, idle: 0, warn: 2, error: 3 }[level] ?? 0);
     const errLevel   = err.hasError && (err.level === "error" || err.level === "warn") ? err.level : s;
-    const panelState = s === "idle" && !d.issueCode && !d.healthSticky
+    const hasStandingIssue = !!(d.healthSticky || (d.issueCode && d.issueCode !== "None"));
+    const panelState = s === "idle" && !hasStandingIssue
       ? "idle"
       : [s, errLevel].reduce((a, b) => severityOf(a) >= severityOf(b) ? a : b);
     const statusIconHtml = (() => {
+      if (panelState === "idle") {
+        return `<i class="fa-solid fa-clock text-muted"></i>`;
+      }
       if (err.hasError && err.level === "warn") {
         return `<i class="fa-solid fa-circle-exclamation text-warning"></i>`;
       }
