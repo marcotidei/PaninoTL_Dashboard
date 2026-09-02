@@ -651,7 +651,7 @@ function render() {
               <div class="row ${pendingScheduleDaysClass}"><span>Days of the Week:</span><span>${renderDays(d.config.days)}</span></div>
               <div class="row ${pendingScheduleWindowClass}"><span>Time Window:</span><span>${escapeHtml(d.config.start)} → ${escapeHtml(d.config.end)}</span></div>
               <div class="row ${pendingIntervalClass}"><span>Interval:</span><span>${formatIntervalMinutes(d.config.interval)}</span></div>
-              <div class="row ${pendingMaxSleepClass}"><span>Keepalive:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
+              <div class="row ${pendingMaxSleepClass}"><span>Keepalive/Heartbeat:</span><span>${formatMaxSleep(d.config.maxSleepSec)}</span></div>
               <div class="row ${pendingNtpSyncClass}"><span>NTP Clock Sync:</span><span>${formatNtpSyncMode(d.config.ntpSyncMode)}</span></div>
             </div>
           </div>

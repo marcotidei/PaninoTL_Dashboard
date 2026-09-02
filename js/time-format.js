@@ -1,5 +1,4 @@
-// Time helpers. Firmware publishes ISO8601 UTC timestamps when timezone is
-// configured, and local wall-clock strings when it has no zone rule.
+// Time helpers. Firmware publishes ISO8601 UTC timestamps.
 function parseTS(ts) {
   if (!ts || ts === "-") return null;
   if (ts instanceof Date) return ts;
@@ -7,11 +6,6 @@ function parseTS(ts) {
   if (iso) {
     return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]),
                              Number(iso[4]), Number(iso[5]), Number(iso[6])));
-  }
-  const wall = ts.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
-  if (wall) {
-    return new Date(Number(wall[1]), Number(wall[2]) - 1, Number(wall[3]),
-                    Number(wall[4]), Number(wall[5]), Number(wall[6]));
   }
   return null;
 }
