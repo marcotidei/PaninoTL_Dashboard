@@ -346,13 +346,24 @@ function dayIndexMon0(jsDay) {
   return (jsDay + 6) % 7;
 }
 
+function dayMaskFromValue(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value & 0x7f;
+  const str = String(value ?? "").trim();
+  if (/^\d+$/.test(str)) return Number(str) & 0x7f;
+  let mask = 0;
+  for (let i = 0; i < 7; i++) {
+    if (str[i] && str[i] !== "-") mask |= (1 << i);
+  }
+  return mask;
+}
+
 function isDayActive(days, date) {
-  const mask = Number(days) & 0x7f;
+  const mask = dayMaskFromValue(days);
   return !!(mask & (1 << dayIndexMon0(date.getDay())));
 }
 
 function isDayActiveWall(days, wall) {
-  const mask = Number(days) & 0x7f;
+  const mask = dayMaskFromValue(days);
   return !!(mask & (1 << dayIndexMon0(wall.jsDay)));
 }
 
@@ -730,7 +741,7 @@ function dropboxLevelClass(d) {
 }
 
 function renderDays(daysMask) {
-  const mask = Number(daysMask) & 0x7f;
+  const mask = dayMaskFromValue(daysMask);
   const labels = ["M","T","W","T","F","S","S"];
   return labels.map((label, i) => {
     const active = !!(mask & (1 << i));

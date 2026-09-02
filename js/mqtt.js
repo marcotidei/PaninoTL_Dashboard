@@ -523,7 +523,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       imagePacketSeq,
       config: {
         interval: c.i,
-        days:     scheduleDaysMaskFromValue(c.d),
+        days:     dayMaskFromValue(c.d),
         start:    c.s,
         end:      c.e,
         lens:     c.l,
