@@ -628,16 +628,16 @@ function render() {
                   </div>
                 </div>
               `}
-              <div class="row">
-                <span>RTC:</span>
-                <span class="${rtcReliabilityClass(d.rtcReliability)}">${escapeHtml(formatRtcReliability(d.rtcReliability))}</span>
-              </div>
               <div class="row sd-row">
                 <div class="sd-wrap">
                   <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"></i>
                   <progress class="sd-progress ${wifiLevelClass(d.wifiQuality)}" value="${clampPercent(d.wifiQuality)}" max="100"></progress>
                   <span class="sd-summary ${wifiQualityClass(d.wifiQuality)}">${wifiQualityLabel(d.wifiQuality)} (${clampPercent(d.wifiQuality)}%)</span>
                 </div>
+              </div>
+              <div class="row">
+                <span>RTC:</span>
+                <span class="${rtcReliabilityClass(d.rtcReliability)}">${escapeHtml(formatRtcReliability(d.rtcReliability))}</span>
               </div>
               <div class="row">
                 <span>PaninoTL SD:</span>
