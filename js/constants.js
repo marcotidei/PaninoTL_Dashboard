@@ -36,6 +36,13 @@ const LAST_ERR_TEXT = [
   "Dropbox account full"
 ];
 
+// Must stay in sync with rtcReliabilityCode() (PaninoTL/src/mqtt_module.cpp).
+const RTC_RELIABILITY_TEXT = [
+  "Unverified",
+  "Reliable",
+  "Unreliable"
+];
+
 // Compact health-code registry.
 const HEALTH_CODE_TEXT = {
   0:    "None",

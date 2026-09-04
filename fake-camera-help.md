@@ -44,6 +44,7 @@ reference while manually customizing the fake camera.
 - `t`: last communication timestamp. ISO/UTC is preferred.
 - `b`: battery percent. Use `-1` for unknown; `0`-`14` is critical, `15`-`39` is low, `40`+ is ok.
 - `rt`: controller RTC temperature in Celsius.
+- `rtc`: RTC reliability code. `0` unverified, `1` reliable, `2` unreliable.
 - `wq`: WiFi quality percent. Try `0`, `25`, `50`, `78`, or `100`.
 - `pc`: successful confirmed photo count.
 - `pf`: failed photo count.

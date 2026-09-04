@@ -628,6 +628,10 @@ function render() {
                   </div>
                 </div>
               `}
+              <div class="row">
+                <span>RTC:</span>
+                <span class="${rtcReliabilityClass(d.rtcReliability)}">${escapeHtml(formatRtcReliability(d.rtcReliability))}</span>
+              </div>
               <div class="row sd-row">
                 <div class="sd-wrap">
                   <i class="fa-solid fa-wifi ${wifiQualityClass(d.wifiQuality)}"></i>

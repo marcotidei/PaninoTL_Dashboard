@@ -292,6 +292,18 @@ function formatTemperature(celsius) {
   return `${celsius.toFixed(2)}°C (${fahrenheit.toFixed(2)}°F)`;
 }
 
+function formatRtcReliability(value) {
+  return decodeCode(RTC_RELIABILITY_TEXT, value, "Unverified");
+}
+
+function rtcReliabilityClass(value) {
+  switch (Number(value)) {
+    case 1: return "text-success";
+    case 2: return "text-danger";
+    default: return "text-warning";
+  }
+}
+
 function temperatureBarPercent(celsius) {
   const value = Number(celsius);
   if (!Number.isFinite(value)) return 0;

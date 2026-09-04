@@ -486,6 +486,7 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       id,
       batteryPct:    (typeof s.b  === "number") ? s.b : -1,
       rtcTempC:      (typeof s.rt === "number") ? s.rt : null,
+      rtcReliability: (typeof s.rtc === "number") ? s.rtc : 0,
       wifiQuality:   (typeof s.wq === "number") ? s.wq : 0,
       photosSuccessful,
       sdPhotoCount:     (typeof s.sdpc === "number") ? s.sdpc : 0,
