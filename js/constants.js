@@ -38,9 +38,10 @@ const LAST_ERR_TEXT = [
 
 // Must stay in sync with rtcReliabilityCode() (PaninoTL/src/mqtt_module.cpp).
 const RTC_RELIABILITY_TEXT = [
-  "Unverified",
+  "Disabled",
   "Reliable",
-  "Unreliable"
+  "Unreliable",
+  "Unavailable"
 ];
 
 // Compact health-code registry.

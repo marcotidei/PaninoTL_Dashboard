@@ -293,13 +293,15 @@ function formatTemperature(celsius) {
 }
 
 function formatRtcReliability(value) {
-  return decodeCode(RTC_RELIABILITY_TEXT, value, "Unverified");
+  return decodeCode(RTC_RELIABILITY_TEXT, value, "Disabled");
 }
 
 function rtcReliabilityClass(value) {
   switch (Number(value)) {
     case 1: return "text-success";
-    case 2: return "text-danger";
+    case 2:
+    case 3:
+      return "text-danger";
     default: return "text-warning";
   }
 }
@@ -552,6 +554,15 @@ function effectiveErrorInfo(d, id, statusLevel) {
         }
       : null;
 
+  const rtcCode = Number(d.rtcReliability);
+  const rtcAlert = (rtcCode === 2 || rtcCode === 3)
+    ? {
+        text:  `RTC ${formatRtcReliability(rtcCode).toUpperCase()}`,
+        time:  d.lastCommDevice || "-",
+        level: "warn"
+      }
+    : null;
+
   const hasJsonError    = !!(d.lastError && d.lastError !== "None");
   const recentJsonError = hasJsonError && isRecentError(d);
   const recentJsonLevel = runtimeErrorLevel(d, d.lastError);
@@ -565,8 +576,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          commAlert.time,
       level:         commAlert.level,
       glow:          commAlert.glow,
-      jsonError:     standingIssue ? standingIssue.text : secondaryJsonError,
-      jsonErrorTime: standingIssue ? standingIssue.time : secondaryJsonErrorTime
+      jsonError:     standingIssue ? standingIssue.text : (rtcAlert ? rtcAlert.text : secondaryJsonError),
+      jsonErrorTime: standingIssue ? standingIssue.time : (rtcAlert ? rtcAlert.time : secondaryJsonErrorTime)
     };
   }
 
@@ -601,6 +612,18 @@ function effectiveErrorInfo(d, id, statusLevel) {
       text:          d.issueCode,
       time:          d.issueTime,
       level:         "warn",
+      glow:          false,
+      jsonError:     null,
+      jsonErrorTime: null
+    };
+  }
+
+  if (rtcAlert) {
+    return {
+      hasError:      true,
+      text:          rtcAlert.text,
+      time:          rtcAlert.time,
+      level:         rtcAlert.level,
       glow:          false,
       jsonError:     null,
       jsonErrorTime: null

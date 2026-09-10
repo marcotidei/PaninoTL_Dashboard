@@ -389,6 +389,7 @@ function buildSnapshot() {
           lastErrorTime:  d.lastErrorTime,
           issueCode:      d.issueCode,
           issueTime:      d.issueTime,
+          rtcReliability: d.rtcReliability,
           healthCode:     d.healthCode,
           healthText:     d.healthText,
           healthLevel:    d.healthLevel,
