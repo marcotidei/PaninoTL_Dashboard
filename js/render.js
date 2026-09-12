@@ -363,6 +363,7 @@ function buildSnapshot() {
           } : null,
           lastCommDevice: d.lastCommDevice,
           batteryPct:     d.batteryPct,
+          batteryPolicyCode: d.batteryPolicyCode,
           rtcTempC:       d.rtcTempC,
           wifiQuality:    d.wifiQuality,
           photosSuccessful: d.photosSuccessful,

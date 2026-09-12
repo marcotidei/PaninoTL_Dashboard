@@ -513,6 +513,18 @@ function runtimeErrorLevel(d, errorText) {
   return "error";
 }
 
+function batteryPolicyAlert(d) {
+  const code = Number(d && d.batteryPolicyCode);
+  if (!code) return null;
+  const text = decodeCode(BATTERY_POLICY_TEXT, code, "");
+  if (!text || text === "Unknown") return null;
+  return {
+    text,
+    time: d.lastCommDevice || "-",
+    level: code >= 3 ? "error" : "warn"
+  };
+}
+
 // Communication delay/loss wins the banner because it is the freshest sign that
 // the board is no longer reporting. Camera/media issues remain visible as
 // secondary context when they are not the main active problem.
@@ -568,6 +580,7 @@ function effectiveErrorInfo(d, id, statusLevel) {
   const recentJsonLevel = runtimeErrorLevel(d, d.lastError);
   const secondaryJsonError = recentJsonError ? d.lastError : null;
   const secondaryJsonErrorTime = recentJsonError ? d.lastErrorTime : null;
+  const batteryAlert = batteryPolicyAlert(d);
 
   if (commAlert) {
     return {
@@ -576,8 +589,8 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          commAlert.time,
       level:         commAlert.level,
       glow:          commAlert.glow,
-      jsonError:     standingIssue ? standingIssue.text : (rtcAlert ? rtcAlert.text : secondaryJsonError),
-      jsonErrorTime: standingIssue ? standingIssue.time : (rtcAlert ? rtcAlert.time : secondaryJsonErrorTime)
+      jsonError:     standingIssue ? standingIssue.text : (rtcAlert ? rtcAlert.text : (batteryAlert ? batteryAlert.text : secondaryJsonError)),
+      jsonErrorTime: standingIssue ? standingIssue.time : (rtcAlert ? rtcAlert.time : (batteryAlert ? batteryAlert.time : secondaryJsonErrorTime))
     };
   }
 
@@ -637,6 +650,18 @@ function effectiveErrorInfo(d, id, statusLevel) {
       time:          d.lastErrorTime,
       level:         recentJsonLevel,
       glow:          recentJsonLevel === "error",
+      jsonError:     batteryAlert ? batteryAlert.text : null,
+      jsonErrorTime: batteryAlert ? batteryAlert.time : null
+    };
+  }
+
+  if (batteryAlert) {
+    return {
+      hasError:      true,
+      text:          batteryAlert.text,
+      time:          batteryAlert.time,
+      level:         batteryAlert.level,
+      glow:          false,
       jsonError:     null,
       jsonErrorTime: null
     };

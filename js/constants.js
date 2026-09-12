@@ -44,6 +44,14 @@ const RTC_RELIABILITY_TEXT = [
   "Unavailable"
 ];
 
+// Must stay in sync with batteryPolicyCodeForPercent() (PaninoTL/src/mqtt_module.cpp).
+const BATTERY_POLICY_TEXT = [
+  "Normal battery operation",
+  "Battery saving: full-resolution upload deferred; thumbnail only",
+  "Low battery: image upload skipped; MQTT status only",
+  "Critical battery: capture only; internet reporting skipped"
+];
+
 // Compact health-code registry.
 const HEALTH_CODE_TEXT = {
   0:    "None",
