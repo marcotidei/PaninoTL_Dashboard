@@ -371,6 +371,8 @@ function buildSnapshot() {
           photosFailed:   d.photosFailed,
           sdFreeMB:       d.sdFreeMB,
           sdTotalMB:      d.sdTotalMB,
+          paninoSdTotalMB: d.paninoSdTotalMB,
+          paninoSdFreeMB:  d.paninoSdFreeMB,
           paninoSdFault:  d.paninoSdFault,
           paninoSdFaultTime: d.paninoSdFaultTime,
           goproSdWriteIssues: d.goproSdWriteIssues,
@@ -647,6 +649,16 @@ function render() {
                   ${d.paninoSdFault ? `Fault${d.paninoSdFaultTime && d.paninoSdFaultTime !== "-" ? ` @ ${escapeHtml(formatDateTime(d.paninoSdFaultTime, d.tz))}` : ""}` : "OK"}
                 </span>
               </div>
+              ${d.paninoSdTotalMB > 0 ? `
+                <div class="row sd-row">
+                  <div class="sd-wrap">
+                    <i class="fa-solid fa-sd-card"></i>
+                    <progress class="sd-progress ${storageLevelClass(d.paninoSdTotalMB, d.paninoSdFreeMB)}" value="${storageUsagePercent(d.paninoSdTotalMB, d.paninoSdFreeMB)}" max="100"></progress>
+                    <span class="sd-summary">${formatFreeSmart(usedSpaceMB(d.paninoSdTotalMB, d.paninoSdFreeMB))} / ${formatTotalGB(d.paninoSdTotalMB)}</span>
+                  </div>
+                </div>
+                <div class="row"><span>PaninoTL SD Free Space:</span><span>${formatFreeSmart(d.paninoSdFreeMB)}</span></div>
+              ` : ""}
               <div class="row ${pendingSdLogClass}"><span>SD Debug Log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
                 <div class="row"><span>SD Log Link:</span><span><a href="${escapeAttr(d.logUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open</a></span></div>

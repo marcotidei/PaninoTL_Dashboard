@@ -495,6 +495,8 @@ function handleMqttMessage(topic, message, config = currentConfig) {
       photosFailed,
       sdTotalMB:     (typeof s.st === "number") ? s.st : 0,
       sdFreeMB:      (typeof s.sf === "number") ? s.sf : 0,
+      paninoSdTotalMB: (typeof s.pst === "number") ? s.pst : 0,
+      paninoSdFreeMB:  (typeof s.psf === "number") ? s.psf : 0,
       goproSdWriteIssues: (typeof s.sdw === "number") ? s.sdw : 0,
       goproSdWriteIssuesValid: Number(s.sdwv || 0) === 1,
       paninoSdFault: Number(s.psdf || 0) === 1,

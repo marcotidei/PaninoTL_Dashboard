@@ -245,6 +245,11 @@ function sdUsagePercent(d) {
   return Math.round(100 * (1 - (d.sdFreeMB / d.sdTotalMB)));
 }
 
+function storageUsagePercent(totalMB, freeMB) {
+  if (!totalMB || totalMB <= 0) return 0;
+  return clampPercent(100 * (1 - freeMB / totalMB));
+}
+
 function dropboxUsagePercent(d) {
   if (!d.dropboxTotalMB || d.dropboxTotalMB === 0) return 0;
   return Math.round(100 * (1 - (d.dropboxFreeMB / d.dropboxTotalMB)));
@@ -787,6 +792,14 @@ function alertClass(err) {
 function sdLevelClass(d) {
   if (!hasSdTotal(d)) return "";
   const pct = sdUsagePercent(d);
+  if (pct < 70) return "sd-ok";
+  if (pct < 90) return "sd-warn";
+  return "sd-error";
+}
+
+function storageLevelClass(totalMB, freeMB) {
+  if (!totalMB || totalMB <= 0) return "";
+  const pct = storageUsagePercent(totalMB, freeMB);
   if (pct < 70) return "sd-ok";
   if (pct < 90) return "sd-warn";
   return "sd-error";
