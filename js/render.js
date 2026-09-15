@@ -672,7 +672,6 @@ function render() {
                     <span class="sd-summary">${formatFreeSmart(usedSpaceMB(d.paninoSdTotalMB, d.paninoSdFreeMB))} / ${formatTotalGB(d.paninoSdTotalMB)}</span>
                   </div>
                 </div>
-                <div class="row"><span>PaninoTL SD Free Space:</span><span>${formatFreeSmart(d.paninoSdFreeMB)}</span></div>
               ` : ""}
               <div class="row ${pendingSdLogClass}"><span>SD Debug Log:</span><span>${formatEnabled(d.config.sdLogEnabled)}</span></div>
               ${d.logUrl ? `
