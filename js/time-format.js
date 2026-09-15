@@ -333,6 +333,31 @@ function temperatureTextClass(celsius) {
   return "text-default";
 }
 
+function cpuTemperatureBarPercent(celsius) {
+  const value = Number(celsius);
+  if (!Number.isFinite(value)) return 0;
+  return clampPercent(((value - 20) / 70) * 100);
+}
+
+function cpuTemperatureLevelClass(celsius) {
+  // Diagnostic thresholds for internal die temperature. Espressif rates the
+  // ESP32-S3R8 environment to 65 C but does not define an equivalent internal
+  // sensor shutdown threshold; die temperature normally exceeds ambient.
+  const value = Number(celsius);
+  if (!Number.isFinite(value)) return "";
+  if (value >= 85) return "sd-error";
+  if (value >= 70) return "sd-warn";
+  return "sd-ok";
+}
+
+function cpuTemperatureTextClass(celsius) {
+  const value = Number(celsius);
+  if (!Number.isFinite(value)) return "text-default";
+  if (value >= 85) return "text-danger";
+  if (value >= 70) return "text-warning";
+  return "text-default";
+}
+
 function formatIntervalMinutes(seconds) {
   const value = Number(seconds);
   if (!value || Number.isNaN(value)) return "-";

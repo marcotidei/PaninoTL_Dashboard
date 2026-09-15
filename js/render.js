@@ -365,6 +365,7 @@ function buildSnapshot() {
           batteryPct:     d.batteryPct,
           batteryPolicyCode: d.batteryPolicyCode,
           rtcTempC:       d.rtcTempC,
+          cpuTempC:       d.cpuTempC,
           wifiQuality:    d.wifiQuality,
           photosSuccessful: d.photosSuccessful,
           sdPhotoCount:     d.sdPhotoCount,
@@ -620,7 +621,7 @@ function render() {
               `}
               ${d.rtcTempC == null || Number.isNaN(d.rtcTempC) ? `
                 <div class="row">
-                  <span>Temperature:</span>
+                  <span>RTC Temperature:</span>
                   <span>${escapeHtml(formatTemperature(d.rtcTempC))}</span>
                 </div>
               ` : `
@@ -628,7 +629,21 @@ function render() {
                   <div class="sd-wrap">
                     <i class="fa-solid fa-temperature-half ${temperatureTextClass(d.rtcTempC)}"></i>
                     <progress class="sd-progress ${temperatureLevelClass(d.rtcTempC)}" value="${temperatureBarPercent(d.rtcTempC)}" max="100"></progress>
-                    <span class="sd-summary ${temperatureTextClass(d.rtcTempC)}">${escapeHtml(formatTemperature(d.rtcTempC))}</span>
+                    <span class="sd-summary ${temperatureTextClass(d.rtcTempC)}">RTC ${escapeHtml(formatTemperature(d.rtcTempC))}</span>
+                  </div>
+                </div>
+              `}
+              ${d.cpuTempC == null || Number.isNaN(d.cpuTempC) ? `
+                <div class="row">
+                  <span>CPU Temperature:</span>
+                  <span>${escapeHtml(formatTemperature(d.cpuTempC))}</span>
+                </div>
+              ` : `
+                <div class="row sd-row">
+                  <div class="sd-wrap">
+                    <i class="fa-solid fa-microchip ${cpuTemperatureTextClass(d.cpuTempC)}"></i>
+                    <progress class="sd-progress ${cpuTemperatureLevelClass(d.cpuTempC)}" value="${cpuTemperatureBarPercent(d.cpuTempC)}" max="100"></progress>
+                    <span class="sd-summary ${cpuTemperatureTextClass(d.cpuTempC)}">CPU ${escapeHtml(formatTemperature(d.cpuTempC))}</span>
                   </div>
                 </div>
               `}
